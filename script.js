@@ -2260,7 +2260,7 @@ function forge(){
     if(!word) return null;
     // Stick: display separately with fixed multiplier text
     if(word.isStick){
-      return { name: word.name, value: '×0.25', rarity: -1, color: null };
+      return { name: word.name, value: '', tooltip: '×0.25', rarity: -1, color: null };
     }
     // Determine the display name based on slot (prefix vs suffix)
     let displayName = word.name;
@@ -2278,7 +2278,8 @@ function forge(){
     if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
       return {
         name: displayName,
-        value: `×${word.mult}`,
+        value: '',
+        tooltip: `×${word.mult}`,
         rarity: word.rarity,
         color: null
       };
@@ -2318,7 +2319,8 @@ function forge(){
     }
     return {
       name: displayName,
-      value: displayValue,
+      value: '',
+      tooltip: displayValue,
       rarity: word.rarity,
       color
     };
@@ -2350,7 +2352,8 @@ function forge(){
     }
     words.push({
       name: w.name,
-      value: displayValue,
+      value: '',
+      tooltip: displayValue,
       rarity: w.rarity,
       intensity: 1.0,
       color
@@ -2402,7 +2405,8 @@ function forge(){
     value: `${c.baseAP} [AP] x ${c.wordCount} words`,
     rarity: 3,
     intensity: 1.5,
-    valueClass: 'math-subtext'
+    valueClass: 'math-subtext',
+    tooltip: `${c.baseAP} [AP] x ${c.wordCount} words`
   });
 
   // Calculate rewards before combat for display purposes
@@ -2709,6 +2713,9 @@ async function showCombat(r,words,rewards){
     words.forEach(w=>{
       const div=document.createElement("div");
       div.className="combat-word";
+      if(w.tooltip){
+        div.setAttribute("title", w.tooltip);
+      }
       const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
       const valueClass = w.valueClass ? ` combat-word-value ${w.valueClass}` : "combat-word-value";
       div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${w.value?`<div class="${valueClass}">${w.value}</div>`:''}`;
