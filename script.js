@@ -1276,8 +1276,21 @@ function sortInventory(inv, sortMode){
   return list;
 }
 
+function getVisibleBankWords(inv){
+  const used = Object.values(S.sel).filter(Boolean);
+  return inv.filter(w => !used.includes(w) && !w.hiddenInBank);
+}
+
+function getSortedVisibleBankWords(inv, sortMode, sortAsc=true){
+  let sorted = sortInventory(getVisibleBankWords(inv), sortMode);
+  if(!sortAsc){
+    sorted = sorted.slice().reverse();
+  }
+  return sorted;
+}
+
 function renderBank(){
-  const bank=$("#bank"),used=Object.values(S.sel).filter(Boolean);
+  const bank=$("#bank");
   const hasItem=!!S.sel.item,hasNoun=!!S.sel.noun1;
   const noWeapons=!hasWeapons();
   
@@ -1289,12 +1302,7 @@ function renderBank(){
     bank.appendChild(c);
   }
   
-  // Filter out hidden words so elemental adjectives don't appear in the bank
-  let sorted = sortInventory(S.inv.filter(w => !used.includes(w) && !w.hiddenInBank));
-  // Apply ascending/descending order based on the current forge sort direction
-  if(!S.sortAsc){
-    sorted = sorted.slice().reverse();
-  }
+  let sorted = getSortedVisibleBankWords(S.inv, S.sortMode, S.sortAsc);
   sorted.forEach(w=>{
     const disabled=isWordDisabled(w,hasItem,hasNoun);
     const c=mkChip(w,disabled,false);
@@ -3196,9 +3204,8 @@ function renderShopWordBank(){
   document.getElementById("sell-word-btn").disabled = true;
   document.getElementById("sell-price-display").textContent = "";
 
-  // Sort inventory using the same logic as forge bank and apply ascending/descending order
-  let sorted = sortInventory(S.inv, S.shopSortMode);
-  if(!S.shopSortAsc) sorted.reverse();
+  // Sort and filter inventory using the same logic as forge bank and apply ascending/descending order
+  const sorted = getSortedVisibleBankWords(S.inv, S.shopSortMode, S.shopSortAsc);
 
   sorted.forEach((word) => {
     const chip = document.createElement("div");
@@ -3270,7 +3277,7 @@ function renderShopWordBank(){
     cont.appendChild(chip);
   });
 
-  if(S.inv.length === 0){
+  if(sorted.length === 0){
     cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">No words in inventory</div>';
   }
 }
