@@ -57,7 +57,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #weapon-display{text-align:center}
 #weapon-svg{width:120px;height:150px;transition:transform .3s,filter .3s}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
-#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
+#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
 #damage-preview-text::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.6}
 #preview-tooltip-hint{opacity:0.85}
 .damage-number{font-size:24px;font-weight:700;min-width:60px;text-align:center}
@@ -152,7 +152,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   line-height:1;
 }
 #bank{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;background:#0d1017;border-radius:12px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.06);outline:1px solid rgba(0,0,0,0.6)}
-.chip{background:rgba(20,26,40,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:center;min-width:90px;transition:all .15s;user-select:none;position:relative;box-shadow:0 0 0 1px rgba(0,0,0,0.8),0 14px 30px rgba(0,0,0,0.65);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden}
+.chip{background:rgba(20,26,40,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:center;min-width:90px;transition:all .15s;user-select:none;position:relative;box-shadow:0 0 0 1px rgba(0,0,0,0.8),0 14px 30px rgba(0,0,0,0.65);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:visible}
 .chip::before{content:"";position:absolute;top:-40%;left:-40%;width:80%;height:200%;background:linear-gradient(60deg,rgba(255,255,255,0.28),rgba(255,255,255,0.12),transparent 70%);opacity:.4;transform:translateX(-30%);pointer-events:none}
 .chip:hover:not(.disabled){border-color:rgba(244,208,63,0.7);transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,0.7)}
 .chip:hover::before{animation:shine .9s ease-out forwards}
@@ -177,9 +177,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #forge-btn{background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055;font-size:15px;padding:12px 28px;position:relative;overflow:hidden}
 #forge-btn:hover:not(:disabled){background:linear-gradient(180deg,#4d6a47,#3d5a37);transform:scale(1.02)}
 #forge-btn:active:not(:disabled){transform:scale(0.98)}
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility .3s}
 #pause-menu{z-index:200}
-.overlay.show{opacity:1;pointer-events:auto}
+.overlay.show{opacity:1;pointer-events:auto;visibility:visible}
 .modal{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(0,0,0,0.45)),radial-gradient(circle at 15% 15%,rgba(255,255,255,0.03),transparent 35%),radial-gradient(circle at 80% 0,rgba(255,255,255,0.02),transparent 40%);background-blend-mode:overlay;border-radius:16px;padding:24px;border:2px solid #f4d03f44;min-width:400px;max-width:90vw;box-shadow:0 0 0 1px rgba(0,0,0,0.8),0 18px 36px rgba(0,0,0,0.55);position:relative;overflow:hidden}
 .modal::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.5}
 .modal-title{text-align:center;font-size:18px;margin-bottom:16px}

@@ -661,22 +661,30 @@ function init(){
     rerollBtn.onmouseenter = sfxHover;
   }
   // Attach multiplier breakdown tooltip to the damage preview panel on first init.
+  // Reuse the same breakdown builder as the combat result so players see identical
+  // math both before and after a fight.
   const previewPanel = document.getElementById('damage-preview-text');
-  if(previewPanel && !previewPanel.__tooltipAttached){
+  const previewTarget = document.getElementById('preview-hero-dmg') || previewPanel;
+  if(previewPanel && previewTarget && !previewPanel.__tooltipAttached){
     previewPanel.__tooltipAttached = true;
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip';
     tooltip.style.whiteSpace = 'normal';
     tooltip.style.pointerEvents = 'none';
     previewPanel.appendChild(tooltip);
-    previewPanel.addEventListener('mouseenter', () => {
-      const content = buildMultiplierTooltip();
+
+    const showPreviewBreakdown = () => {
+      const precomputed = S.sel.item ? calc({ breakdown: true }) : null;
+      const content = buildMultiplierTooltip(precomputed);
       tooltip.innerHTML = content;
       tooltip.style.opacity = content ? '1' : '0';
-    });
-    previewPanel.addEventListener('mouseleave', () => {
-      tooltip.style.opacity = '0';
-    });
+    };
+    const hidePreviewBreakdown = () => { tooltip.style.opacity = '0'; };
+
+    previewTarget.addEventListener('mouseenter', showPreviewBreakdown);
+    previewTarget.addEventListener('focus', showPreviewBreakdown);
+    previewTarget.addEventListener('mouseleave', hidePreviewBreakdown);
+    previewTarget.addEventListener('blur', hidePreviewBreakdown);
   }
   const sellWordBtn = document.getElementById("sell-word-btn");
   if (sellWordBtn) {
