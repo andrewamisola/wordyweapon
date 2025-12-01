@@ -1525,7 +1525,7 @@ function render(){
   $("#hero-weak").innerHTML=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
   // Update proficiency display in details panel: reflect Weapon Master if active
   if(hasWM){
-    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×2.0 (Weapon Master)</span>`;
+    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×1.5 (Weapon Master)</span>`;
   }else{
     $("#hero-prof").innerHTML=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
   }
@@ -2512,6 +2512,7 @@ function calc(){
   const e = S.enemy;
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
+  const hasWeaponMaster=!!(S.tempEffects && S.tempEffects.weaponMaster);
   const weakTo=(el)=>e.weak.includes(el);
   const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
@@ -2590,7 +2591,9 @@ function calc(){
 
     // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
     if(slotKey === 'item' && !word.isStick && word.category){
-      if(h.good === word.category){
+      if(hasWeaponMaster){
+        tierValue = Math.floor(tierValue * 1.5);
+      } else if(h.good === word.category){
         tierValue = Math.floor(tierValue * 2.0);
       } else if(h.bad === word.category){
         tierValue = Math.floor(tierValue * 0.5);
@@ -2758,6 +2761,7 @@ function forge(){
   // expected structure.
   const words = [];
   const e = S.enemy;
+  const resists = (el) => !(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
   // Helper to convert words for display based on slot.  All non-weapon words
   // use their prefix form when occupying an adjective slot and suffix form when
@@ -3126,153 +3130,181 @@ async function showCombat(r,words,rewards){
   const total=$("#combat-total");
   const flames=$("#combat-flames");
   const weaponSvg=$("#combat-weapon-svg");
-
-  cw.innerHTML="";
-  total.classList.remove("show");
-  total.textContent="";
-  flames.style.opacity="0";
-  weaponSvg.style.transform="";
-  // Compute how many parts of the weapon need to be built based on selected words
-  var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
-  // Track progress of displayed parts
-  var progressSeen=0;
-  // Begin with an empty weapon SVG
-  renderWeaponProgress(weaponSvg,0);
-
-  $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
-  const heroStartHP=r.currentHP;
-  const heroPercent=(heroStartHP/r.heroMax)*100;
-  $("#bar-hero").style.width=`${heroPercent}%`;
-  $("#bar-enemy").style.width="100%";
-  $("#txt-hero").textContent=`${heroStartHP}/${r.heroMax}`;
-  $("#txt-enemy").textContent=`${r.enemyMax}/${r.enemyMax}`;
-  $("#combat-result").style.display="none";
-  ov.classList.add("show");
-
-  // Hide the continue button at the start of the battle until the animation completes
+  const resultBox=$("#combat-result");
+  const resultTitle=$("#combat-result-title");
+  const resultDetail=$("#combat-result-detail");
   const continueBtn=document.getElementById("combat-continue");
+
   if(continueBtn) continueBtn.style.display="none";
 
-  await dly(300);
+  try{
+    cw.innerHTML="";
+    total.classList.remove("show");
+    total.textContent="";
+    flames.style.opacity="0";
+    weaponSvg.style.transform="";
+    // Compute how many parts of the weapon need to be built based on selected words
+    var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
+    // Track progress of displayed parts
+    var progressSeen=0;
+    // Begin with an empty weapon SVG
+    renderWeaponProgress(weaponSvg,0);
 
-  words.forEach(w=>{
-    const div=document.createElement("div");
-    div.className="combat-word";
-    const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
-    div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
-    cw.appendChild(div);
-  });
+    $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
+    const heroStartHP=r.currentHP;
+    const heroPercent=(heroStartHP/r.heroMax)*100;
+    $("#bar-hero").style.width=`${heroPercent}%`;
+    $("#bar-enemy").style.width="100%";
+    $("#txt-hero").textContent=`${heroStartHP}/${r.heroMax}`;
+    $("#txt-enemy").textContent=`${r.enemyMax}/${r.enemyMax}`;
+    if(resultBox) resultBox.style.display="none";
+    ov.classList.add("show");
 
-  const wordEls=[...cw.querySelectorAll(".combat-word")];
+    await dly(300);
 
-  for(let i=0;i<wordEls.length;i++){
-    const w=words[i],el=wordEls[i];
-    await dly(400);
+    words.forEach(w=>{
+      const div=document.createElement("div");
+      div.className="combat-word";
+      const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
+      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
+      cw.appendChild(div);
+    });
 
-    el.classList.add("show");
-    // Play ascending tone sequence for each word (pleasant arpeggio)
-    try{
-      const freq=440*Math.pow(2,i/(wordEls.length*1.5));
-      playTone(freq,0.25,'sine',0.18);
-    }catch(err){}
+    const wordEls=[...cw.querySelectorAll(".combat-word")];
 
-    if(w.intensity>0.3){
-      el.classList.add("impact");
-      // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
-      weaponSvg.style.animation="weaponShake .3s ease-out";
-      setTimeout(()=>weaponSvg.style.animation="",300);
+    for(let i=0;i<wordEls.length;i++){
+      const w=words[i],el=wordEls[i];
+      await dly(400);
 
-      if(w.intensity>1){
-        document.body.classList.add("shake");
-        setTimeout(()=>document.body.classList.remove("shake"),150);
-        spawnFlames(3+Math.floor(w.intensity*2));
+      el.classList.add("show");
+      // Play ascending tone sequence for each word (pleasant arpeggio)
+      try{
+        const freq=440*Math.pow(2,i/(wordEls.length*1.5));
+        playTone(freq,0.25,'sine',0.18);
+      }catch(err){}
+
+      if(w.intensity>0.3){
+        el.classList.add("impact");
+        // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
+        weaponSvg.style.animation="weaponShake .3s ease-out";
+        setTimeout(()=>weaponSvg.style.animation="",300);
+
+        if(w.intensity>1){
+          document.body.classList.add("shake");
+          setTimeout(()=>document.body.classList.remove("shake"),150);
+          spawnFlames(3+Math.floor(w.intensity*2));
+        }
+      }
+
+      await dly(200);
+      el.classList.remove("impact");
+      // Gradually build the weapon SVG as relevant words are processed.  Only the
+      // actual selected words (item, adjectives, gem) count towards the build.
+      if(progressSeen < relevantCount){
+        progressSeen++;
+        const progressRatio = progressSeen / Math.max(relevantCount, 1);
+        renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
       }
     }
 
-    await dly(200);
-    el.classList.remove("impact");
-    // Gradually build the weapon SVG as relevant words are processed.  Only the
-    // actual selected words (item, adjectives, gem) count towards the build.
-    if(progressSeen < relevantCount){
-      progressSeen++;
-      const progressRatio = progressSeen / Math.max(relevantCount, 1);
-      renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
+    await dly(400);
+    flames.style.opacity="0.5";
+    spawnFlames(10);
+    setTimeout(()=>document.body.classList.remove("shake"),150);
+
+    total.textContent=`${Math.round(r.heroDmg)} DAMAGE!`;
+    total.classList.add("show");
+
+    // Play a final note that continues the ascending arpeggio sequence rather than
+    // jumping to a fixed pitch.  Compute the next frequency based on the number
+    // of words displayed so the ending tone feels like a natural continuation.
+    try{
+      const totalWords = wordEls.length;
+      // Use the same exponent growth used in the ascending loop: freq = 440×2^(i/(n*1.5))
+      // For the final note, let i = n (next position).  This produces a gentle rise.
+      const nextFreq = 440 * Math.pow(2, totalWords / (totalWords * 1.5));
+      playTone(nextFreq, 0.4, 'sine', 0.3);
+    }catch(err){}
+
+    await dly(800);
+    flames.style.opacity="0";
+
+    await dly(300);
+    await anim($("#cb-hero"),0,r.heroDmg,500);
+    await dly(150);
+    await anim($("#cb-enemy"),0,r.enemyDmg,350);
+    await dly(300);
+
+    $("#bar-hero").style.width=`${(r.heroFin/r.heroMax)*100}%`;
+    $("#bar-enemy").style.width=`${(r.enemyFin/r.enemyMax)*100}%`;
+    await anim($("#txt-hero"),heroStartHP,r.heroFin,400,v=>`${Math.round(v)}/${r.heroMax}`);
+    await anim($("#txt-enemy"),r.enemyMax,r.enemyFin,400,v=>`${Math.round(v)}/${r.enemyMax}`);
+    await dly(250);
+
+    if(resultBox) resultBox.className="";
+    if(resultBox) resultBox.style.display="block";
+    if(r.win){
+      if(resultBox) resultBox.classList.add("win");
+      if(resultTitle){
+        resultTitle.textContent="⚔️ VICTORY!";
+        resultTitle.style.color="#4ade80";
+      }
+
+      // Show rewards
+      let detailText = "Enemy defeated!";
+      if(rewards && rewards.gold > 0){
+        detailText += `
+💰 +${rewards.gold} Gold`;
+      }
+      if(rewards && rewards.items.length > 0){
+        detailText += `
+🎁 Boss Loot: ${rewards.items.join(", ")}`;
+      }
+      if(resultDetail){
+        resultDetail.textContent=detailText;
+        resultDetail.style.whiteSpace="pre-line"; // Allow newlines
+      }
+      sfxWin();
+    }else if(r.tie){
+      if(resultBox) resultBox.classList.add("lose");
+      if(resultTitle){
+        resultTitle.textContent="💀 DRAW";
+        resultTitle.style.color="#f59e0b";
+      }
+      if(resultDetail) resultDetail.textContent="Both fell...";
+      sfxLose();
+    }else{
+      if(resultBox) resultBox.classList.add("lose");
+      if(resultTitle){
+        resultTitle.textContent="💀 DEFEAT";
+        resultTitle.style.color="#f87171";
+      }
+      if(resultDetail) resultDetail.textContent="The enemy won...";
+      sfxLose();
     }
-  }
-
-  await dly(400);
-  flames.style.opacity="0.5";
-  spawnFlames(10);
-  document.body.classList.add("shake");
-  setTimeout(()=>document.body.classList.remove("shake"),150);
-
-  total.textContent=`${Math.round(r.heroDmg)} DAMAGE!`;
-  total.classList.add("show");
-
-  // Play a final note that continues the ascending arpeggio sequence rather than
-  // jumping to a fixed pitch.  Compute the next frequency based on the number
-  // of words displayed so the ending tone feels like a natural continuation.
-  try{
-    const totalWords = wordEls.length;
-    // Use the same exponent growth used in the ascending loop: freq = 440×2^(i/(n*1.5))
-    // For the final note, let i = n (next position).  This produces a gentle rise.
-    const nextFreq = 440 * Math.pow(2, totalWords / (totalWords * 1.5));
-    playTone(nextFreq, 0.4, 'sine', 0.3);
-  }catch(err){}
-
-  await dly(800);
-  flames.style.opacity="0";
-
-  await dly(300);
-  await anim($("#cb-hero"),0,r.heroDmg,500);
-  await dly(150);
-  await anim($("#cb-enemy"),0,r.enemyDmg,350);
-  await dly(300);
-
-  $("#bar-hero").style.width=`${(r.heroFin/r.heroMax)*100}%`;
-  $("#bar-enemy").style.width=`${(r.enemyFin/r.enemyMax)*100}%`;
-  await anim($("#txt-hero"),heroStartHP,r.heroFin,400,v=>`${Math.round(v)}/${r.heroMax}`);
-  await anim($("#txt-enemy"),r.enemyMax,r.enemyFin,400,v=>`${Math.round(v)}/${r.enemyMax}`);
-  await dly(250);
-
-  const res=$("#combat-result"),title=$("#combat-result-title"),det=$("#combat-result-detail");
-  res.className="";res.style.display="block";
-  if(r.win){
-    res.classList.add("win");
-    title.textContent="⚔️ VICTORY!";
-    title.style.color="#4ade80";
-
-    // Show rewards
-    let detailText = "Enemy defeated!";
-    if(rewards && rewards.gold > 0){
-      detailText += `\n💰 +${rewards.gold} Gold`;
+    // No text log appended; calculation details are available via slot indicators
+    render();
+  }catch(err){
+    console.error(err);
+    if(resultBox){
+      resultBox.className="lose";
+      resultBox.style.display="block";
     }
-    if(rewards && rewards.items.length > 0){
-      detailText += `\n🎁 Boss Loot: ${rewards.items.join(", ")}`;
+    if(resultTitle){
+      resultTitle.textContent="⚠️ Combat Error";
+      resultTitle.style.color="#f59e0b";
     }
-    det.textContent=detailText;
-    det.style.whiteSpace="pre-line"; // Allow newlines
-    sfxWin();
-  }else if(r.tie){
-    res.classList.add("lose");
-    title.textContent="💀 DRAW";
-    title.style.color="#f59e0b";
-    det.textContent="Both fell...";
-    sfxLose();
-  }else{
-    res.classList.add("lose");
-    title.textContent="💀 DEFEAT";
-    title.style.color="#f87171";
-    det.textContent="The enemy won...";
-    sfxLose();
-  }
-  // No text log appended; calculation details are available via slot indicators
-  render();
-
-  // Reveal the continue button now that combat has resolved
-  if(continueBtn){
-    continueBtn.style.display="block";
-    continueBtn.focus();
+    if(resultDetail){
+      resultDetail.textContent="Something went wrong resolving combat. You can continue to keep playing.";
+      resultDetail.style.whiteSpace="pre-line";
+    }
+  }finally{
+    // Reveal the continue button now that combat has resolved (even on error)
+    if(continueBtn){
+      continueBtn.style.display="block";
+      continueBtn.disabled=false;
+      continueBtn.focus();
+    }
   }
 }
 
