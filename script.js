@@ -1773,6 +1773,60 @@ function createAuraAnimation(fromSlot, slotKey, word){
   }
 }
 
+function attachParallaxTilt(wrapper){
+  if(!wrapper || wrapper.dataset.parallaxInit) return;
+  const prefersReduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hoverable = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
+  if(prefersReduce || !hoverable){
+    wrapper.dataset.parallaxEnabled = 'false';
+    wrapper.dataset.parallaxInit = '1';
+    return;
+  }
+
+  const maxTilt = 6;
+  const handleMove = (e)=>{
+    const rect = wrapper.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    wrapper.style.setProperty('--tilt-y', `${(x * maxTilt).toFixed(2)}deg`);
+    wrapper.style.setProperty('--tilt-x', `${(-y * maxTilt).toFixed(2)}deg`);
+  };
+  const reset = ()=>{
+    wrapper.style.setProperty('--tilt-x','0deg');
+    wrapper.style.setProperty('--tilt-y','0deg');
+  };
+  wrapper.addEventListener('pointermove', handleMove);
+  wrapper.addEventListener('pointerleave', reset);
+  wrapper.dataset.parallaxEnabled = 'true';
+  wrapper.dataset.parallaxInit = '1';
+}
+
+function ensureWeaponLayers(target){
+  const host = typeof target === 'string' ? $(target) : target;
+  if(!host) return null;
+  host.classList.add('weapon-canvas');
+  if(!host.querySelector('.weapon-layered')){
+    host.innerHTML = `<div class="weapon-layered"><div class="weapon-shadow"></div><svg class="weapon-layer base" viewBox="0 0 100 130"></svg><svg class="weapon-layer flair flair2" viewBox="0 0 100 130"></svg><svg class="weapon-layer flair flair1" viewBox="0 0 100 130"></svg><div class="weapon-glow"></div></div>`;
+    attachParallaxTilt(host.querySelector('.weapon-layered'));
+  }
+  const wrapper = host.querySelector('.weapon-layered');
+  const base = host.querySelector('.weapon-layer.base');
+  const flair1 = host.querySelector('.weapon-layer.flair1');
+  const flair2 = host.querySelector('.weapon-layer.flair2');
+  const glow = host.querySelector('.weapon-glow');
+  const shadow = host.querySelector('.weapon-shadow');
+  return {host, wrapper, base, flair1, flair2, glow, shadow};
+}
+
+function clearWeaponLayers(layers){
+  if(!layers) return;
+  if(layers.base) layers.base.innerHTML = '';
+  if(layers.flair1) layers.flair1.innerHTML = '';
+  if(layers.flair2) layers.flair2.innerHTML = '';
+  if(layers.glow) layers.glow.style.background = 'none';
+  if(layers.shadow) layers.shadow.style.background = 'none';
+}
+
 function setupEvents(){
   // Attach click handlers to each slot to support assigning selected words or removing existing ones.
   ["item","adj1","adj2","adj3","adj4","noun1"].forEach(k=>{
@@ -1836,22 +1890,28 @@ function setupEvents(){
 }
 
 function renderWeapon(target="#weapon-svg"){
-  const svg=$(target),s=S.sel;
-  if(!s.item){svg.innerHTML="";if(target==="#weapon-svg")$("#weapon-name").textContent="";return}
-  
+  const layers = ensureWeaponLayers(target);
+  const s=S.sel;
+  if(!layers){return}
+  if(!s.item){
+    clearWeaponLayers(layers);
+    if(target==="#weapon-svg")$("#weapon-name").textContent="";
+    return;
+  }
+
   const wt=s.item.isStick?"stick":s.item.id;
   const tmpl=WEAPON_SVG[wt];
   const baseCol=s.affinity?EC[s.affinity.elem]:BASE_COLORS[wt];
-  // Use noun1 for gem color; adjectives come from any adjective slot
   const f1Col = s.noun1 ? EC[s.noun1.elem] : "transparent";
-  const f2Col = s.adj1 || s.adj2 || s.adj3 || s.adj4 ? ((s.adj1 || s.adj2 || s.adj3 || s.adj4).elem !== undefined ? EC[(s.adj1 || s.adj2 || s.adj3 || s.adj4).elem] : "#f4d03f") : "transparent";
-  
-  let html=tmpl.base.replace(/BASECOLOR/g,baseCol);
-  if(s.noun1 && tmpl.flair1) html += tmpl.flair1.replace(/FLAIR1COLOR/g, f1Col);
-  // Use the first available adjective slot for flair2
-  if((s.adj1 || s.adj2 || s.adj3 || s.adj4) && tmpl.flair2) html += tmpl.flair2.replace(/FLAIR2COLOR/g, f2Col);
-  svg.innerHTML=html;
-  
+  const adj = s.adj1 || s.adj2 || s.adj3 || s.adj4;
+  const f2Col = adj ? (adj.elem !== undefined ? EC[adj.elem] : "#f4d03f") : "transparent";
+
+  if(layers.base) layers.base.innerHTML=tmpl.base.replace(/BASECOLOR/g,baseCol);
+  if(layers.flair1) layers.flair1.innerHTML=s.noun1&&tmpl.flair1?tmpl.flair1.replace(/FLAIR1COLOR/g,f1Col):"";
+  if(layers.flair2) layers.flair2.innerHTML=adj&&tmpl.flair2?tmpl.flair2.replace(/FLAIR2COLOR/g,f2Col):"";
+  if(layers.glow) layers.glow.style.background = `radial-gradient(circle at 50% 35%, ${f1Col!=="transparent"?f1Col:baseCol}55, transparent 70%)`;
+  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
+
   if(target==="#weapon-svg"){
     const nm=buildWeaponName();
     $("#weapon-name").textContent=nm;
@@ -1864,39 +1924,30 @@ function renderWeapon(target="#weapon-svg"){
 // added.  Colours are derived from the currently selected words (affinity,
 // adjective, gem).  This helper is used during combat to visually build the
 // weapon as each word is tallied.
-function renderWeaponProgress(svgElem, progress){
+function renderWeaponProgress(target, progress){
+  const layers = ensureWeaponLayers(target);
   const s = S.sel || {};
-  if(!svgElem) return;
-  // If no weapon is selected, clear the SVG and return early
+  if(!layers) return;
   if(!s.item){
-    svgElem.innerHTML = '';
+    clearWeaponLayers(layers);
     return;
   }
   const wt = s.item.isStick ? 'stick' : s.item.id;
   const tmpl = WEAPON_SVG[wt];
   if(!tmpl){
-    svgElem.innerHTML = '';
+    clearWeaponLayers(layers);
     return;
   }
-  // Determine colours for base and flairs
   const baseCol = (s.affinity && s.affinity.elem !== undefined) ? EC[s.affinity.elem] : (BASE_COLORS[wt] || '#888');
   const f1Col = s.noun1 ? EC[s.noun1.elem] : 'transparent';
   const adj = s.adj1 || s.adj2 || s.adj3 || s.adj4;
   const f2Col = adj && adj.elem !== undefined ? EC[adj.elem] : (adj ? '#f4d03f' : 'transparent');
-  let html = '';
-  // Always show the base when any progress has been made
-  if(progress > 0){
-    html += tmpl.base.replace(/BASECOLOR/g, baseCol);
-  }
-  // Show the second flair once two‑thirds of progress has been reached
-  if(progress >= 0.66 && tmpl.flair2){
-    html += tmpl.flair2.replace(/FLAIR2COLOR/g, f2Col);
-  }
-  // Show the gem flair only when progress is complete
-  if(progress >= 1.0 && tmpl.flair1){
-    html += tmpl.flair1.replace(/FLAIR1COLOR/g, f1Col);
-  }
-  svgElem.innerHTML = html;
+
+  if(layers.base) layers.base.innerHTML = progress > 0 ? tmpl.base.replace(/BASECOLOR/g, baseCol) : '';
+  if(layers.flair2) layers.flair2.innerHTML = (progress >= 0.66 && tmpl.flair2) ? tmpl.flair2.replace(/FLAIR2COLOR/g, f2Col) : '';
+  if(layers.flair1) layers.flair1.innerHTML = (progress >= 1.0 && tmpl.flair1) ? tmpl.flair1.replace(/FLAIR1COLOR/g, f1Col) : '';
+  if(layers.glow) layers.glow.style.background = progress >= 1.0 ? `radial-gradient(circle at 50% 35%, ${f1Col!=="transparent"?f1Col:baseCol}55, transparent 70%)` : 'none';
+  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
 }
 
 function buildWeaponName(){
@@ -2631,7 +2682,9 @@ async function showCombat(r,words,rewards){
   const cw=$("#combat-words");
   const total=$("#combat-total");
   const flames=$("#combat-flames");
-  const weaponSvg=$("#combat-weapon-svg");
+  const weaponHost=$("#combat-weapon-svg");
+  const weaponLayers=ensureWeaponLayers(weaponHost);
+  const weaponSvg=weaponLayers?.wrapper||weaponHost;
   const cbHero=$("#cb-hero"),cbEnemy=$("#cb-enemy");
   const barHero=$("#bar-hero"),barEnemy=$("#bar-enemy");
   const txtHero=$("#txt-hero"),txtEnemy=$("#txt-enemy");
@@ -2667,7 +2720,7 @@ async function showCombat(r,words,rewards){
     if(tip) tip.innerHTML = el.__tooltipContent();
   });
 
-  if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
+  if(!ov||!cw||!total||!flames||!weaponHost||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
     console.warn("[combat] Missing combat DOM; skipping animation");
     return;
   }
@@ -2676,7 +2729,7 @@ async function showCombat(r,words,rewards){
   total.classList.remove("show");
   total.textContent="";
   flames.style.opacity="0";
-  weaponSvg.style.transform="";
+  if(weaponSvg) weaponSvg.style.transform="";
   // Hide the new-run button at the start of combat
   const newRunBtnInit=document.getElementById("combat-new-run");
   if(newRunBtnInit) newRunBtnInit.style.display="none";
@@ -2685,7 +2738,7 @@ async function showCombat(r,words,rewards){
   // Track progress of displayed parts
   var progressSeen=0;
   // Begin with an empty weapon SVG
-  renderWeaponProgress(weaponSvg,0);
+  renderWeaponProgress(weaponHost,0);
 
   cbHero.textContent="0";cbEnemy.textContent="0";
   const heroStartHP=safeResult.currentHP;
@@ -2712,13 +2765,13 @@ async function showCombat(r,words,rewards){
     total.classList.remove("show");
     total.textContent="";
     flames.style.opacity="0";
-    weaponSvg.style.transform="";
+    if(weaponSvg) weaponSvg.style.transform="";
     // Compute how many parts of the weapon need to be built based on selected words
     var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
     // Track progress of displayed parts
     var progressSeen=0;
     // Begin with an empty weapon SVG
-    renderWeaponProgress(weaponSvg,0);
+    renderWeaponProgress(weaponHost,0);
 
     $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
     const heroStartHP=r.currentHP;
@@ -2760,8 +2813,10 @@ async function showCombat(r,words,rewards){
       if(w.intensity>0.3){
         el.classList.add("impact");
         // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
-        weaponSvg.style.animation="weaponShake .3s ease-out";
-        setTimeout(()=>weaponSvg.style.animation="",300);
+        if(weaponSvg){
+          weaponSvg.style.animation="weaponShake .3s ease-out";
+          setTimeout(()=>weaponSvg.style.animation="",300);
+        }
 
         if(w.intensity>1){
           document.body.classList.add("shake");
@@ -2777,7 +2832,7 @@ async function showCombat(r,words,rewards){
       if(progressSeen < relevantCount){
         progressSeen++;
         const progressRatio = progressSeen / Math.max(relevantCount, 1);
-        renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
+        renderWeaponProgress(weaponHost, progressRatio >= 1 ? 1.0 : progressRatio);
       }
     }
 

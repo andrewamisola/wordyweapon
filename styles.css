@@ -55,7 +55,14 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .details-content{font-size:12px}
 #vs-center{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:16px}
 #weapon-display{text-align:center}
-#weapon-svg{width:120px;height:150px;transition:transform .3s,filter .3s}
+.weapon-canvas{position:relative;transition:transform .3s,filter .3s;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));perspective:800px}
+.weapon-layered{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .25s ease,filter .25s ease;--tilt-x:0deg;--tilt-y:0deg;transform:rotateX(var(--tilt-x)) rotateY(var(--tilt-y));}
+.weapon-layered[data-parallax-enabled="false"]{transform:none}
+.weapon-layered:hover{filter:drop-shadow(0 10px 24px rgba(0,0,0,0.55));}
+.weapon-layer{position:absolute;inset:0;pointer-events:none;width:100%;height:100%;}
+.weapon-shadow{position:absolute;inset:0;filter:blur(10px);opacity:0.25;transform:translateZ(-20px);background:radial-gradient(circle at 50% 10%, rgba(0,0,0,0.35), transparent 65%);}
+.weapon-glow{position:absolute;inset:-6%;mix-blend-mode:screen;pointer-events:none;opacity:0.9;transform:translateZ(16px);}
+#weapon-display .weapon-canvas{width:120px;height:150px;margin:0 auto;}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
 #damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
 #damage-preview-text::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.6}
@@ -236,7 +243,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #combat-container{position:relative;overflow:hidden}
 #combat-flames{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;opacity:0;transition:opacity .3s}
 #combat-weapon-container{position:relative;width:140px;height:180px;margin:0 auto 16px}
-#combat-weapon-svg{width:100%;height:100%;transition:transform .1s}
+#combat-weapon-container .weapon-canvas{width:100%;height:100%;}
 #combat-words{display:flex;justify-content:center;align-items:center;gap:8px;min-height:60px;margin-bottom:16px;flex-wrap:wrap}
 .combat-word{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;background:#1a1d24;font-size:15px;opacity:0;transform:scale(0.3) translateY(20px);transition:all .15s}
 .combat-word.show{opacity:1;transform:scale(1) translateY(0)}
