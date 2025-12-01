@@ -153,11 +153,13 @@ const CONSUMABLES=[
    use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
   {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
    use:(S)=>{
-     const target=S.sel.item||S.sel.noun1||S.sel.adj1||S.sel.adj2||S.sel.adj3||S.sel.adj4||S.inv[0];
-     if(!target) return "No word to upgrade.";
+     const target = S.pendingWord;
+     if(!target) return "Highlight a word to upgrade.";
+     const rank = getTierRank(target);
+     if(rank >= 3) return `${target.name} is already at the highest rank.`;
      const nextTierWord=findNextTierWord(target);
      if(!nextTierWord){
-       return `${target.name} is already top tier.`;
+       return `${target.name} is already at the highest rank.`;
      }
      applyWordUpgrade(target,nextTierWord);
      return `${target.name} refined!`;
