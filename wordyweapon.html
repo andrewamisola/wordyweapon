@@ -58,6 +58,7 @@
       <div class="damage-number hero-damage" id="preview-hero-dmg">0</div>
       <!-- Calculation shown as muted subtext beneath the primary damage number -->
       <div class="ap-number math-subtext" id="preview-base-ap">0</div>
+      <div id="preview-tooltip-hint" class="math-subtext">Hover for breakdown</div>
     </div>
   </div>
 
@@ -189,6 +190,10 @@
       <div class="bar-block"><div class="bar-label">Enemy HP</div><div class="bar-outer"><div class="bar-inner enemy" id="bar-enemy"></div></div><div class="bar-text enemy-c" id="txt-enemy">100/100</div></div>
     </div>
     <div id="combat-result"><div id="combat-result-title"></div><div id="combat-result-detail"></div></div>
+    <div id="combat-breakdown-row">
+      <button id="combat-breakdown-btn" class="breakdown-pill" type="button">ℹ Damage breakdown</button>
+      <div id="combat-breakdown-tooltip" class="tooltip"></div>
+    </div>
     <div class="modal-buttons">
       <button id="combat-continue">Continue</button>
     </div>
