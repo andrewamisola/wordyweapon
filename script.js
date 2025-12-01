@@ -20,110 +20,62 @@ const BUFF_LIMIT=0;
 const HEROES=[
   {
     id:"warrior",
-<<<<<<< HEAD
-    name:"Alaric Ironclause",
-=======
     name:"Grammorian the Ironclause",
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     hp:100,
     str:[E.PHYS,E.EARTH],
     weak:[E.POISON,E.DARK],
     good:"slash",
     bad:"magic",
-<<<<<<< HEAD
-    desc:"A stoic warrior forged in countless battles who rewrites fate with iron-clad clauses.",
-    dialogue:[
-      "Greetings, Wordsmith. Draft me a weapon worthy of this battle.",
-      "Forge me something strong. I shall not falter nor add a weak clause.",
-      "Another foe? Good. My blade grows restless for a new paragraph."
-=======
     desc:"A battle-scribe who edits with his blade, turning run-on sentences into run-off enemies.",
     dialogue:[
       "Greetings, Wordsmith. Let's punctuate our foes with steel.",
       "Forge me something strong; I'll handle the proofreading.",
       "Another foe? Good. My blade craves correct clauses."
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   },
   {
     id:"ranger",
-<<<<<<< HEAD
-    name:"Selene Syntaxarrow",
-=======
     name:"Selene Syllabow",
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     hp:100,
     str:[E.LIGHTNING,E.LIGHT],
     weak:[E.EARTH,E.DARK],
     good:"pierce",
     bad:"blunt",
-<<<<<<< HEAD
-    desc:"A nimble huntress who edits the skyline with starlit syntax and stormy punctuation.",
-    dialogue:[
-      "Swift greetings! Let's make something electrifyingly eloquent.",
-      "The wind whispers of danger—arm me well and mind the commas!",
-      "Ooh, this one looks tough! I love a challenge with good grammar."
-=======
     desc:"A nimble huntress who hears every stressed syllable and strings them into lightning-fast shots.",
     dialogue:[
       "Swift greetings! Let's craft a well-accented volley.",
       "The wind whispers in meter. Arm me with rhythm!",
       "This foe looks tough—perfect cadence for a challenge."
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   },
   {
     id:"mage",
-<<<<<<< HEAD
-    name:"Lyra Spellweaver",
-=======
     name:"Lyra Lexiflame",
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     hp:100,
     str:[E.FIRE,E.LIGHT],
     weak:[E.WATER,E.PHYS],
     good:"magic",
     bad:"slash",
-<<<<<<< HEAD
-    desc:"A brilliant pyromancer who stitches flames into arcane runes and fiery wordplay.",
-    dialogue:[
-      "Wordsmith! Let us craft something that BURNS… syllables included.",
-      "Fire cleanses all. Make me an instrument of punctuation purification.",
-      "Mmm, I sense powerful words nearby—let's weave them."
-=======
     desc:"A lexiconjurer who brands every spell with fiery wordplay and glowing glyphs.",
     dialogue:[
       "Wordsmith! Let's ignite a flaming first draft.",
       "Fire cleanses, commas clarify. Make me an instrument of both.",
       "Mmm, I sense powerful verbs nearby..."
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   },
   {
     id:"paladin",
-<<<<<<< HEAD
-    name:"Theron Palindent",
-=======
     name:"Theron Paladiction",
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     hp:100,
     str:[E.LIGHT,E.PHYS],
     weak:[E.DARK,E.POISON],
     good:"blunt",
     bad:"pierce",
-<<<<<<< HEAD
-    desc:"A holy knight blessed by divine light whose tidy indentations could shame a scribe.",
-    dialogue:[
-      "By the light! I need a holy weapon with perfect alignment.",
-      "Evil approaches. Together, we shall vanquish it—no sloppy margins.",
-      "The darkness will fall before our well-formatted might!"
-=======
     desc:"A holy knight sworn to defend syntax and smite misquoted vows.",
     dialogue:[
       "By the light! I need a righteous rebuttal.",
       "Evil approaches—prepare a weapon with proper citation.",
       "The darkness will fall before our well-structured argument!"
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   },
   {
@@ -134,70 +86,32 @@ const HEROES=[
     weak:[E.LIGHT,E.FIRE],
     good:"pierce",
     bad:"blunt",
-<<<<<<< HEAD
-    desc:"A deadly shadow who hides meaning between the lines while poison drips from every footnote.",
-    dialogue:[
-      "Shhh... they won't see the subtext coming.",
-      "Craft me something subtle and lethal—leave no typo behind.",
-      "The shadows hunger. Feed them a sharp aside."
-=======
     desc:"A whisper of ink and implication, she buries foes under layers of meaning and poison.",
     dialogue:[
       "Shhh... the subtext will slit their confidence.",
       "Craft me something subtle—let the meaning linger before the sting.",
       "The margins hunger. Feed them a sharp aside."
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   },
   {
     id:"druid",
-<<<<<<< HEAD
-    name:"Oakheart Lexiroot",
-=======
     name:"Oakheart the Punbark",
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     hp:100,
     str:[E.EARTH,E.WATER],
     weak:[E.FIRE,E.LIGHTNING],
     good:"blunt",
     bad:"magic",
-<<<<<<< HEAD
-    desc:"An ancient guardian of the forest who roots for puns and commands stone and tide.",
-    dialogue:[
-      "The earth speaks... it demands balance and better diction.",
-      "Nature provides. Now let us take… minding every homonym.",
-      "Root and stone shall be our weapons—rhymed if possible."
-=======
     desc:"An ancient guardian who tends groves and groan-worthy puns with equal fervor.",
     dialogue:[
       "The earth speaks... mostly in dad jokes.",
       "Nature provides. I'll provide the punchlines.",
       "Root and stone shall be our weapons—branch out accordingly."
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
     ]
   }
 ];
 
 // === 8 ENEMIES ===
 const ENEMIES=[
-<<<<<<< HEAD
-  {id:"frost",name:"Frostbite Footnote",hp:100,ap:24,weak:[E.FIRE,E.LIGHTNING],res:[E.WATER,E.DARK],atk:E.WATER,
-   desc:"An ancient undead giant encased in eternal ice, scribbling chilly citations on the battlefield.",dialogue:["CRRREAAAK... WARM BLOOD...","YOUR HEAT... WILL FADE TO A FOOTNOTE..."]},
-  {id:"hydra",name:"Hyperbole Hydra",hp:80,ap:22,weak:[E.FIRE,E.LIGHT],res:[E.POISON,E.WATER],atk:E.POISON,
-   desc:"A writhing mass of serpentine heads dripping toxins and dramatic overstatements.",dialogue:["Hssss... another morsel...","Three headsss, three deathsss—AT LEAST!"]},
-  {id:"shade",name:"Syntax Widow",hp:70,ap:28,weak:[E.LIGHT,E.FIRE],res:[E.DARK,E.POISON],atk:E.DARK,
-   desc:"A void-touched spider queen who weaves webs of syntax errors and shadows alike.",dialogue:["Come, little fly... my tangled grammar awaits...","The void hungers for mispunctuation..."]},
-  {id:"golem",name:"Ironclad Idiomaton",hp:120,ap:20,weak:[E.LIGHTNING,E.WATER],res:[E.EARTH,E.PHYS],atk:E.PHYS,
-   desc:"A mechanical titan of gears, runes, and terrible mixed metaphors.",dialogue:["DIRECTIVE: ELIMINATE WITH EXTREME LITERALS.","COMBAT: INITIATED. CLICHÉS LOADED."]},
-  {id:"phoenix",name:"Ashen Apostrophe",hp:75,ap:26,weak:[E.WATER,E.EARTH],res:[E.FIRE,E.LIGHT],atk:E.FIRE,
-   desc:"A blazing bird of eternal flame that never misses its possessive marks.",dialogue:["SCREEEEE! BURN THE ERRATA!","From ash YOU fall—apostrophe and all!"]},
-  {id:"lich",name:"Vazreth the Unabridged",hp:85,ap:25,weak:[E.LIGHT,E.PHYS],res:[E.DARK,E.POISON],atk:E.DARK,
-   desc:"An ancient sorcerer who conquered death and refuses to edit himself down.",dialogue:["Death is merely... an inconvenient comma.","Your soul will join my endless edition."]},
-  {id:"elemental",name:"Stormcore Simile",hp:90,ap:23,weak:[E.EARTH,E.DARK],res:[E.LIGHTNING,E.WATER],atk:E.LIGHTNING,
-   desc:"Pure elemental fury given form—like thunder trying to rhyme with itself.",dialogue:["CRACKLE... OBLITERATE LIKE A BOLT!","THE STORM CANNOT BE CONTAINED—IT'S A RUN-ON!"]},
-  {id:"treant",name:"Blightwood Bibliograft",hp:130,ap:18,weak:[E.FIRE,E.POISON],res:[E.EARTH,E.WATER],atk:E.EARTH,
-   desc:"A corrupted forest guardian twisted by dark magic and plagiarized roots.",dialogue:["The forest... remembers every citation...","You will feed... the roots' appendix..."]}
-=======
   {id:"frost",name:"Thesaur-ice Colossus",hp:100,ap:24,weak:[E.FIRE,E.LIGHTNING],res:[E.WATER,E.DARK],atk:E.WATER,
    desc:"An undead giant who hoards every cold synonym and freezes heroes with pedantry.",dialogue:["CRRREAAAK... FIND A BETTER WORD...","YOUR HEAT... WILL BE EDITED OUT..."]},
   {id:"hydra",name:"Syn-Tacks Hydra",hp:80,ap:22,weak:[E.FIRE,E.LIGHT],res:[E.POISON,E.WATER],atk:E.POISON,
@@ -214,7 +128,6 @@ const ENEMIES=[
    desc:"Pure tempestuous diction given form, booming every syllable with perfect enunciation.",dialogue:["CRACKLE... ENUNCIATE!","THE STORM DEMANDS CLEAR ARTICULATION!"]},
   {id:"treant",name:"Blightwood Punbark",hp:130,ap:18,weak:[E.FIRE,E.POISON],res:[E.EARTH,E.WATER],atk:E.EARTH,
    desc:"A corrupted guardian whose roots are tangled in puns and blight alike.",dialogue:["The forest... groans...","You will leaf... reluctantly..."]}
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
 ];
 
 // Talents are retired for this build to simplify balance.
@@ -2731,7 +2644,6 @@ async function showCombat(r,words,rewards){
   const resultBox=$("#combat-result");
   const resultTitle=$("#combat-result-title");
   const resultDetail=$("#combat-result-detail");
-<<<<<<< HEAD
   const resultBreakBtn=$("#combat-breakdown-btn");
   const resultBreakTooltip=$("#combat-breakdown-tooltip");
 
@@ -2753,7 +2665,6 @@ async function showCombat(r,words,rewards){
     resultBreakBtn.addEventListener('mouseleave', hideTip);
     resultBreakBtn.addEventListener('blur', hideTip);
   }
-=======
   const breakdownHtml = buildMultiplierTooltip() || '<div class="tooltip-line">Forge a weapon to see the breakdown.</div>';
   [total, resultBox].forEach(el => {
     if(!el) return;
@@ -2762,7 +2673,6 @@ async function showCombat(r,words,rewards){
     const tip = el.querySelector('.tooltip.modal-tooltip, .tooltip');
     if(tip) tip.innerHTML = breakdownHtml;
   });
->>>>>>> origin/codex/refactor-shop-modal-layout-and-styles
 
   if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
     console.warn("[combat] Missing combat DOM; skipping animation");
