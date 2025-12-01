@@ -4,12 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wordy Weapon</title>
-<<<<<<< HEAD
-=======
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'EB Garamond', 'Segoe UI',system-ui,serif;background:#0a0a0f;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
@@ -500,13 +497,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
     <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
 
-<<<<<<< HEAD
-    <div class="modal-buttons" style="gap:10px;justify-content:center">
-      <button id="shop-menu-btn">Menu</button>
-=======
     <div class="modal-buttons" style="display:flex;justify-content:center;gap:8px">
       <button id="shop-menu">Menu</button>
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="shop-continue">Continue</button>
     </div>
   </div>
@@ -571,11 +563,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="modal" style="text-align:center;min-width:360px">
     <div style="font-size:22px;font-weight:bold;margin-bottom:10px" class="gold">Wordy Weapon</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-<<<<<<< HEAD
-      <button id="pause-continue" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055">Return to Run</button>
-=======
       <button id="pause-continue" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055">Continue Run</button>
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="pause-new" style="padding:8px 24px;border-radius:8px;background:#2d4a27;border:1px solid #4ade8055">Start New Run</button>
       <button id="pause-achievements" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Achievements & Stats</button>
       <button id="pause-exit" style="padding:8px 24px;border-radius:8px;background:#0f172a;border:1px solid #374151">Close Menu</button>
@@ -588,12 +576,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="modal" style="min-width:420px">
     <div class="modal-title gold" style="text-align:center">📜 Achievements & Stats</div>
     <div id="stats-container" style="font-size:12px;color:#d1d5db;line-height:1.5"></div>
-<<<<<<< HEAD
-    <div style="text-align:center;margin-top:12px">
-=======
     <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:8px">
       <button id="stats-reset">Reset Data</button>
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="achievements-close">Close</button>
     </div>
   </div>
@@ -1091,11 +1075,7 @@ function saveStats(){
   try{localStorage.setItem(STATS_KEY,JSON.stringify(PStats));}catch(e){console.warn("Failed to save stats",e);}
 }
 function saveRun(){
-<<<<<<< HEAD
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){console.warn("Failed to save run",e);}
-=======
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){console.warn("Failed to save run",e);}finally{updateContinueButtons();}
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 function loadRun(){
   try{
@@ -1108,9 +1088,6 @@ function loadRun(){
   }catch(e){console.warn("Failed to load run",e);}return false;
 }
 function clearRunSave(){
-<<<<<<< HEAD
-  try{localStorage.removeItem(SAVE_KEY);}catch(e){console.warn("Failed to clear save",e);}
-=======
   try{localStorage.removeItem(SAVE_KEY);}catch(e){console.warn("Failed to clear save",e);}finally{updateContinueButtons();}
 }
 
@@ -1136,7 +1113,6 @@ function showMainMenu(){
     mainMenu.classList.add('show');
     mainMenu.focus?.();
   }
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 
 function renderStats(){
@@ -1762,6 +1738,7 @@ function updateSlotCalcs(){
   const h=S.hero,e=S.enemy,s=S.sel;
   const weakTo=(el)=>e.weak.includes(el);
   const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
+  const effectiveRes=(S.tempEffects && S.tempEffects.polymorph)?[]:e.res;
 
   // Helper function to show tier value contribution. A slotKey is provided so that
   // nouns placed into the gem slot (noun1) can grant an extra point of AP to emphasize
@@ -1769,22 +1746,15 @@ function updateSlotCalcs(){
   // benefit from this bonus when they morph into a noun. For adjectives used in
   // adjective slots, no bonus is applied.
   function showWordContribution(word, slotKey) {
-<<<<<<< HEAD
-    if(!word) return "";
-=======
     if(!word || word.isStick) return "";
 
     // Check if this is a multiplier word (rarity-based adjectives like Common, Legendary)
     // When an adjective is placed in the gem slot it behaves like a noun: it
     // contributes base AP and does not simply show its multiplier.  In all
     // other slots, adjectives act purely as multipliers.
-    if(word.mult !== undefined && word.type === 'adjective'){
-      if(slotKey !== 'noun1'){
-        return `×${word.mult}`;
-      }
-      // Fall through for gem‑slot adjectives: handle like a noun below
+    if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
+      return `×${word.mult}`;
     }
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
 
     // Determine base AP.  Use explicit 'ap' when defined or derive from rarity.
     const baseValue = getBaseAP(word);
@@ -1792,27 +1762,19 @@ function updateSlotCalcs(){
     const parts = [];
 
     // Weapon proficiency for weapons.  Good doubles, poor halves.
-<<<<<<< HEAD
-    if(S.tempEffects && S.tempEffects.weaponMaster){
-      multiplier *= 1.5;
-      parts.push("1.5");
-    } else if(slotKey === 'item' && word.category){
-=======
     let proficiencyMultiplier = 1;
     if(S.tempEffects && S.tempEffects.weaponMaster){
       proficiencyMultiplier = 1.5;
-    } else if(slotKey === 'item' && !word.isStick && word.category){
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
+    } else if(slotKey === 'item' && word.category){
       if(h.good === word.category){
-        multiplier *= 2.0;
-        parts.push("2");
+        proficiencyMultiplier = 2.0;
       } else if(h.bad === word.category){
-        multiplier *= 0.5;
-        parts.push("0.5");
+        proficiencyMultiplier = 0.5;
       }
     }
+    multiplier *= proficiencyMultiplier;
+    if(proficiencyMultiplier !== 1) parts.push(String(proficiencyMultiplier));
 
-<<<<<<< HEAD
     // Elemental interaction
     if(word.elem !== undefined){
       if(weakTo(word.elem)){
@@ -1821,46 +1783,6 @@ function updateSlotCalcs(){
       } else if(resists(word.elem)){
         multiplier *= 0;
         parts.push("0");
-=======
-    // Apply proficiency to tier value
-    const profTierValue = parseFloat((tierValue * proficiencyMultiplier).toFixed(2));
-
-    let calc = "";
-
-    // Show calculation formula
-    if(word.elem !== undefined) {
-      const el = word.elem;
-      if(weakTo(el)) {
-        // Show formula: tierValue × 2 = result (WEAK)
-        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-          calc = `${baseTierValue}×${proficiencyMultiplier}×2 = ${profTierValue*2}`;
-        } else if(slotKey === 'noun1'){
-          calc = `${tierValue}×2×2 = ${tierValue*4}`;
-        } else {
-          calc = `${tierValue}×2 = ${tierValue*2}`;
-        }
-      } else if(resists(el)) {
-        // Show resistance negates AP
-        calc = `${tierValue}×0 = 0`;
-      } else {
-        // Normal element, no weakness/resistance
-        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-          calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
-        } else if(slotKey === 'noun1'){
-          calc = `${tierValue}×2 = ${tierValue*2}`;
-        } else {
-          calc = `+${tierValue}`;
-        }
-      }
-    } else {
-      // No element
-      if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-        calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
-      } else if(slotKey === 'noun1'){
-        calc = `${tierValue}×2 = ${tierValue*2}`;
-      } else {
-        calc = `+${tierValue}`;
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
       }
     }
 
@@ -2601,10 +2523,7 @@ function calc(){
   const {hero:h,enemy:e}=getCombatants();
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
-<<<<<<< HEAD
-=======
   const hasWeaponMaster=!!(S.tempEffects && S.tempEffects.weaponMaster);
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const weakTo=(el)=>e.weak.includes(el);
   const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
@@ -2841,11 +2760,8 @@ function forge(){
   PStats.weaponsForged++;
   PStats.bestDamage=Math.max(PStats.bestDamage,Math.round(c.heroDmg||0));
   if(Object.values(S.sel).every(v=>v)) PStats.stackedCreations++;
-<<<<<<< HEAD
-  saveStats();saveRun();
-=======
   saveStats();
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
+  saveRun();
   // No descriptive combat log: rely on slot calculation details for transparency
   renderWeapon("#combat-weapon-svg");
 
@@ -3240,10 +3156,12 @@ async function showCombat(r,words,rewards){
   const total=$("#combat-total");
   const flames=$("#combat-flames");
   const weaponSvg=$("#combat-weapon-svg");
-<<<<<<< HEAD
   const cbHero=$("#cb-hero"),cbEnemy=$("#cb-enemy");
   const barHero=$("#bar-hero"),barEnemy=$("#bar-enemy");
   const txtHero=$("#txt-hero"),txtEnemy=$("#txt-enemy");
+  const resultBox=$("#combat-result");
+  const resultTitle=$("#combat-result-title");
+  const resultDetail=$("#combat-result-detail");
 
   if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
     console.warn("[combat] Missing combat DOM; skipping animation");
@@ -3274,13 +3192,6 @@ async function showCombat(r,words,rewards){
   txtEnemy.textContent=`${safeResult.enemyMax}/${safeResult.enemyMax}`;
   $("#combat-result").style.display="none";
   ov.classList.add("show");
-
-  // Hide the continue button at the start of the battle until the animation completes
-=======
-  const resultBox=$("#combat-result");
-  const resultTitle=$("#combat-result-title");
-  const resultDetail=$("#combat-result-detail");
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const continueBtn=document.getElementById("combat-continue");
   const strayNewRun=document.getElementById("combat-new-run");
 
@@ -3461,78 +3372,6 @@ async function showCombat(r,words,rewards){
       continueBtn.focus();
     }
   }
-<<<<<<< HEAD
-
-  await dly(400);
-  flames.style.opacity="0.5";
-  spawnFlames(10);
-  document.body.classList.add("shake");
-  setTimeout(()=>document.body.classList.remove("shake"),150);
-
-  total.textContent=`${Math.round(safeResult.heroDmg)} DAMAGE!`;
-  total.classList.add("show");
-
-  // Play a final note that continues the ascending arpeggio sequence rather than
-  // jumping to a fixed pitch.  Compute the next frequency based on the number
-  // of words displayed so the ending tone feels like a natural continuation.
-  try{
-    const totalWords = wordEls.length;
-    // Use the same exponent growth used in the ascending loop: freq = 440×2^(i/(n*1.5))
-    // For the final note, let i = n (next position).  This produces a gentle rise.
-    const nextFreq = 440 * Math.pow(2, totalWords / (totalWords * 1.5));
-    playTone(nextFreq, 0.4, 'sine', 0.3);
-  }catch(err){}
-
-  await dly(800);
-  flames.style.opacity="0";
-
-  await dly(300);
-  await anim(cbHero,0,safeResult.heroDmg,500);
-  await dly(150);
-  await anim(cbEnemy,0,safeResult.enemyDmg,350);
-  await dly(300);
-
-  barHero.style.width=`${(safeResult.heroFin/safeResult.heroMax)*100}%`;
-  barEnemy.style.width=`${(safeResult.enemyFin/safeResult.enemyMax)*100}%`;
-  await anim(txtHero,heroStartHP,safeResult.heroFin,400,v=>`${Math.round(v)}/${safeResult.heroMax}`);
-  await anim(txtEnemy,safeResult.enemyMax,safeResult.enemyFin,400,v=>`${Math.round(v)}/${safeResult.enemyMax}`);
-  await dly(250);
-
-  const res=$("#combat-result"),title=$("#combat-result-title"),det=$("#combat-result-detail");
-  res.className="";res.style.display="block";
-  if(safeResult.win){
-    res.classList.add("win");
-    title.textContent="⚔️ VICTORY!";
-    title.style.color="#4ade80";
-
-    // Show rewards
-    let detailText = "Enemy defeated!";
-    if(safeRewards.gold > 0){
-      detailText += `\n💰 +${safeRewards.gold} Gold`;
-    }
-    if(safeRewards.items.length > 0){
-      detailText += `\n🎁 Boss Loot: ${safeRewards.items.join(", ")}`;
-    }
-    det.textContent=detailText;
-    det.style.whiteSpace="pre-line"; // Allow newlines
-    sfxWin();
-  }else{
-    res.classList.add("lose");
-    title.textContent="💀 DEFEAT";
-    title.style.color="#f87171";
-    det.textContent="The enemy won...";
-    sfxLose();
-  }
-  // No text log appended; calculation details are available via slot indicators
-  render();
-
-  // Reveal the continue button now that combat has resolved
-  if(continueBtn) continueBtn.style.display="block";
-  // Also reveal the new-run button when the fight concludes
-  const newRunBtnShow=document.getElementById('combat-new-run');
-  if(newRunBtnShow) newRunBtnShow.style.display='block';
-=======
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 
 function spawnFlames(count){
@@ -4163,23 +4002,14 @@ function closePauseMenu(){
 // that the menu behaves reliably across reloads.
 document.addEventListener('DOMContentLoaded', () => {
   loadStats();
-<<<<<<< HEAD
-  const hasSave = loadRun();
-=======
   loadRun();
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const mm = document.getElementById('main-menu');
   const startBtn = document.getElementById('start-game-btn');
   const contBtn = document.getElementById('continue-btn');
   const exitBtn = document.getElementById('exit-btn');
   const achBtn = document.getElementById('achievements-btn');
-<<<<<<< HEAD
-  if(contBtn){
-    contBtn.style.display = hasSave ? 'block' : 'none';
-=======
   updateContinueButtons();
   if(contBtn){
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
     contBtn.onclick = ()=>{if(mm)mm.classList.remove('show');render();};
   }
   if(startBtn){
@@ -4189,20 +4019,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if(exitBtn){exitBtn.onclick=()=>{if(mm)mm.classList.remove('show');};}
   if(achBtn){achBtn.onclick=()=>{document.getElementById('achievements-overlay').classList.add('show');renderStats();};}
   const pauseBtn=document.getElementById('pause-btn');
-<<<<<<< HEAD
   if(pauseBtn){pauseBtn.onclick=()=>openPauseMenu(isShopOpen()?"shop":"run");}
   $("#pause-continue").onclick=()=>closePauseMenu();
   $("#pause-new").onclick=()=>{closePauseMenu();startNewRun();};
   $("#pause-achievements").onclick=()=>{closePauseMenu();document.getElementById('achievements-overlay').classList.add('show');renderStats();};
   $("#pause-exit").onclick=()=>closePauseMenu();
-  const shopMenuBtn=document.getElementById('shop-menu-btn');
+  const shopMenuBtn=document.getElementById('shop-menu');
   if(shopMenuBtn){shopMenuBtn.onclick=()=>openPauseMenu('shop');shopMenuBtn.onmouseenter=sfxHover;}
-=======
-  if(pauseBtn){pauseBtn.onclick=()=>document.getElementById('pause-menu').classList.add('show');}
-  $("#pause-continue").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
-  $("#pause-new").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');startNewRun();};
-  $("#pause-achievements").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');document.getElementById('achievements-overlay').classList.add('show');renderStats();};
-  $("#pause-exit").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
   const resetBtn=document.getElementById('stats-reset');
   if(resetBtn){
     resetBtn.onclick=()=>{
@@ -4212,7 +4035,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderStats();
     };
   }
->>>>>>> codex/update-game-mechanics-and-features-jlc23s
   $("#achievements-close").onclick=()=>document.getElementById('achievements-overlay').classList.remove('show');
 });
 
