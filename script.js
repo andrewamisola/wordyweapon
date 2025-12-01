@@ -1049,11 +1049,9 @@ function updateHealthBars(){
     const heroDmg=Math.round(c.heroDmg);
     const enemyDmg=Math.round(c.enemyDmg);
 
-    // Update damage preview - show only "AP × Multiplier"
-    $("#preview-hero-dmg").textContent = `${c.baseAP}×${c.wordCount}`;
-
-    // Show final hero AP below the calculation
-    $("#preview-base-ap").textContent = `${heroDmg}`;
+    // Show final damage as the main number with the calculation as muted subtext
+    $("#preview-hero-dmg").textContent = `${heroDmg}`;
+    $("#preview-base-ap").textContent = `${c.baseAP} [AP] x ${c.wordCount}`;
 
     // Highlight preview panel when damage meets or exceeds enemy HP
     const previewPanel = document.getElementById("damage-preview-text");
@@ -1087,12 +1085,12 @@ function updateHealthBars(){
     }
   }else{
     // Show 0 damage when no weapon selected
-    $("#preview-hero-dmg").textContent="0×0";
+    $("#preview-hero-dmg").textContent="0";
     $("#enemy-damage-preview").style.display="none";
     $("#hero-damage-preview").style.display="none";
 
-    // Clear base AP and remove highlight when no weapon
-    $("#preview-base-ap").textContent = "0";
+    // Clear calculation and remove highlight when no weapon
+    $("#preview-base-ap").textContent = "0 [AP] x 0";
     const previewPanel = document.getElementById("damage-preview-text");
     if(previewPanel){
       previewPanel.classList.remove("goal-achieved");
@@ -2390,12 +2388,13 @@ function forge(){
     });
   }
 
-  // Append summary line at the end: base AP × word count = hero damage
+  // Append summary line at the end with the math shown as subdued subtext
   words.push({
-    name: `${c.baseAP} AP × ${c.wordCount} words`,
-    value: `= ${c.heroDmg} AP`,
+    name: `${Math.round(c.heroDmg)} AP total`,
+    value: `${c.baseAP} [AP] x ${c.wordCount} words`,
     rarity: 3,
-    intensity: 1.5
+    intensity: 1.5,
+    valueClass: 'math-subtext'
   });
 
   // Calculate rewards before combat for display purposes
@@ -2703,7 +2702,8 @@ async function showCombat(r,words,rewards){
       const div=document.createElement("div");
       div.className="combat-word";
       const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
-      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
+      const valueClass = w.valueClass ? ` combat-word-value ${w.valueClass}` : "combat-word-value";
+      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${w.value?`<div class="${valueClass}">${w.value}</div>`:''}`;
       cw.appendChild(div);
     });
 
