@@ -1010,12 +1010,12 @@ function updateHealthBars(){
     const c=calc();
     const heroDmg=Math.round(c.heroDmg);
     const enemyDmg=Math.round(c.enemyDmg);
+    const fmtVal = (v)=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
+    const calcLine = `${fmtVal(c.baseAP)} AP × ${fmtVal(c.wordCount)}`;
 
-    // Update damage preview - show only "AP × Multiplier"
-    $("#preview-hero-dmg").textContent = `${c.baseAP}×${c.wordCount}`;
-
-    // Show final hero AP below the calculation
-    $("#preview-base-ap").textContent = `${heroDmg}`;
+    // Show AP × multiplier as the main line with the total centered beneath
+    $("#preview-hero-dmg").textContent = calcLine;
+    $("#preview-base-ap").textContent = `${heroDmg} total`;
 
     // Highlight preview panel when damage meets or exceeds enemy HP
     const previewPanel = document.getElementById("damage-preview-text");
@@ -1049,12 +1049,12 @@ function updateHealthBars(){
     }
   }else{
     // Show 0 damage when no weapon selected
-    $("#preview-hero-dmg").textContent="0×0";
+    $("#preview-hero-dmg").textContent="0 AP × 0";
     $("#enemy-damage-preview").style.display="none";
     $("#hero-damage-preview").style.display="none";
 
-    // Clear base AP and remove highlight when no weapon
-    $("#preview-base-ap").textContent = "0";
+    // Clear calculation and remove highlight when no weapon
+    $("#preview-base-ap").textContent = "0 total";
     const previewPanel = document.getElementById("damage-preview-text");
     if(previewPanel){
       previewPanel.classList.remove("goal-achieved");
@@ -1160,20 +1160,14 @@ function updateSlotCalcs(){
   // benefit from this bonus when they morph into a noun. For adjectives used in
   // adjective slots, no bonus is applied.
   function showWordContribution(word, slotKey) {
-    if(!word || word.isStick) return "";
-
-    // Check if this is a multiplier word (rarity-based adjectives like Common, Legendary)
-    // When an adjective is placed in the gem slot it behaves like a noun: it
-    // contributes base AP and does not simply show its multiplier.  In all
-    // other slots, adjectives act purely as multipliers.
-    if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
-      return `×${word.mult}`;
+    if(!word) return {apText:"",multText:"",className:""};
+    if(word.isStick){
+      return {apText:"0 AP (0.25x)",multText:"",className:"negative"};
     }
 
-    // Determine base AP.  Use explicit 'ap' when defined or derive from rarity.
     const baseValue = getBaseAP(word);
-    let multiplier = 1;
-    const parts = [];
+    let apMult = 1;
+    let className = "";
 
     // Weapon proficiency for weapons.  Good doubles, poor halves.
     let proficiencyMultiplier = 1;
@@ -1186,75 +1180,73 @@ function updateSlotCalcs(){
         proficiencyMultiplier = 0.5;
       }
     }
-    multiplier *= proficiencyMultiplier;
-    if(proficiencyMultiplier !== 1) parts.push(String(proficiencyMultiplier));
+    apMult *= proficiencyMultiplier;
 
     // Elemental interaction
     if(word.elem !== undefined){
       if(weakTo(word.elem)){
-        multiplier *= 2;
-        parts.push("2");
+        apMult *= 2;
+        className = "positive";
       } else if(resists(word.elem)){
-        multiplier *= 0;
-        parts.push("0");
+        apMult *= 0;
+        className = "negative";
       }
     }
 
     // Gem slot bonus doubles the AP contribution
     if(slotKey === 'noun1'){
-      multiplier *= 2;
-      parts.push("2");
+      apMult *= 2;
     }
 
-    // Multiplier adjectives scale the total damage. Treat them as part of the
-    // per-slot equation so players see the full multiplier stack.
-    if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
-      multiplier *= word.mult;
-      parts.push(String(word.mult));
-    }
+    // Multiplier adjectives scale the total damage but should be displayed separately
+    const multText = (word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1')
+      ? `×${word.mult}`
+      : "";
 
-    // Backup stick penalty
-    if(word.isStick){
-      multiplier *= 0.25;
-      parts.push("0.25");
-    }
+    // Backup stick penalty (handled above for stick check)
 
-    // Ensure we always show at least one multiplier so the equation is explicit
-    const suffix = (parts.length ? parts.map(p=>`×${p}`).join('') : '×1');
-    const total = Math.floor(baseValue * multiplier);
-    return `${baseValue}${suffix} = ${total}`;
+    const apValue = Math.floor(baseValue * apMult);
+    const apMultText = apMult !== 1 ? ` (${parseFloat(apMult.toFixed(2)).toString()}x)` : "";
+    const apText = `${apValue} AP${apMultText}`;
+
+    // If AP was reduced to zero, force negative styling
+    if(apValue === 0) className = "negative";
+
+    return {apText,multText,className};
   }
 
   // WEAPON (shows tier contribution)
-  let itemCalc = "";
+  let itemCalc = {apText:"",multText:"",className:""};
   if(s.item){
     itemCalc = showWordContribution(s.item, 'item');
   }
-  $("#calc-item").textContent = itemCalc;
-  $("#calc-item").className = "slot-calc" + (s.item && !s.item.isStick ? " positive" : "");
+  $("#calc-item").textContent = itemCalc.apText || "";
+  $("#calc-item").className = "slot-calc" + (itemCalc.className ? ` ${itemCalc.className}` : "");
+  const itemMultEl = document.getElementById('mult-item');
+  if(itemMultEl) itemMultEl.textContent = itemCalc.multText || "";
 
   // ADJECTIVES (all 4 slots)
   ["adj1","adj2","adj3","adj4"].forEach(k=>{
     const el = $("#calc-" + k);
+    const multEl = document.getElementById('mult-' + k);
     if(!el) return;
     const word = s[k];
     const calc = showWordContribution(word, k);
-    const isPos = word && word.elem && e.weak.includes(word.elem);
-    const isNeg = word && word.elem && effectiveRes.includes(word.elem);
-    el.textContent = calc;
-    el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
+    el.textContent = calc.apText;
+    el.className = "slot-calc" + (calc.className ? ` ${calc.className}` : "");
+    if(multEl) multEl.textContent = calc.multText;
   });
 
   // NOUN (single gem slot)
   ["noun1"].forEach(k=>{
     const el = $("#calc-" + k);
+    const multEl = document.getElementById('mult-' + k);
     if(!el) return;
     const word = s[k];
     const calc = showWordContribution(word, k);
-    const isPos = word && word.elem && e.weak.includes(word.elem);
-    const isNeg = word && word.elem && effectiveRes.includes(word.elem);
-    el.textContent = calc;
-    el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
+    el.textContent = calc.apText;
+    el.className = "slot-calc" + (calc.className ? ` ${calc.className}` : "");
+    if(multEl) multEl.textContent = calc.multText;
   });
 
   // Update forge button state
@@ -2143,7 +2135,8 @@ function calc(){
     wordCount: displayWordCount,
     heroBonus,
     weaponType: weaponWord?.id || 'stick',
-    allWords
+    allWords,
+    totalMultiplier
   };
 }
 
@@ -2333,12 +2326,13 @@ function forge(){
     });
   }
 
-  // Append summary line at the end: base AP × word count = hero damage
+  // Append summary line at the end with the math shown as subdued subtext
   words.push({
-    name: `${c.baseAP} AP × ${c.wordCount} words`,
-    value: `= ${c.heroDmg} AP`,
+    name: `${Math.round(c.heroDmg)} AP total`,
+    value: `${c.baseAP} [AP] x ${c.wordCount} words`,
     rarity: 3,
-    intensity: 1.5
+    intensity: 1.5,
+    valueClass: 'math-subtext'
   });
 
   // Calculate rewards before combat for display purposes
@@ -2646,7 +2640,8 @@ async function showCombat(r,words,rewards){
       const div=document.createElement("div");
       div.className="combat-word";
       const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
-      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
+      const valueClass = w.valueClass ? ` combat-word-value ${w.valueClass}` : "combat-word-value";
+      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${w.value?`<div class="${valueClass}">${w.value}</div>`:''}`;
       cw.appendChild(div);
     });
 
