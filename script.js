@@ -1517,8 +1517,8 @@ function mkTooltip(w){
     </div>`;
   }
   const rc=w.isStick?"rarity-rusty":RC[w.rarity];
-  const tn=w.type==="weapon"?"Weapon":w.type.charAt(0).toUpperCase()+w.type.slice(1);
-  const rn=w.isStick?"Backup":RN[w.rarity];
+  const rarityRank = RRANK[w.rarity] ?? w.rarity ?? 0;
+  const tierLabel = w.isStick?"Backup":(RN[rarityRank] || RN[w.rarity] || "T1");
   
   let lines=[];
   if(w.desc)lines.push(`<div class="tooltip-line">${w.desc}</div>`);
@@ -1602,9 +1602,12 @@ function mkTooltip(w){
     elemBadge=`<span class="tooltip-elem" style="background:${EC[w.elem]}33;color:${EC[w.elem]}">${EN[w.elem]}</span>`;
   }
   
+  const typeParts = [tierLabel];
+  if(elemBadge) typeParts.push(elemBadge);
+
   return `<div class="tooltip">
     <div class="tooltip-title ${rc}">${w.name}</div>
-    <div class="tooltip-type">${rn} ${tn} ${elemBadge}</div>
+    <div class="tooltip-type">${typeParts.join(" ")}</div>
     ${lines.join("")}
   </div>`;
 }
