@@ -4,27 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wordy Weapon</title>
+<<<<<<< HEAD
+=======
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-/* Import Garamond font family uploaded alongside this file */
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Regular.ttf') format('truetype');
-  font-weight:normal;
-  font-style:normal;
-}
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Bold.ttf') format('truetype');
-  font-weight:bold;
-  font-style:normal;
-}
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Italic.ttf') format('truetype');
-  font-weight:normal;
-  font-style:italic;
-}
 body{font-family:'EB Garamond', 'Segoe UI',system-ui,serif;background:#0a0a0f;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
 .gold{color:#f4d03f}.hero-c{color:#4ade80}.enemy-c{color:#f87171}.dim{color:#6b7280}
 button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
@@ -418,8 +405,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div id="consumables-bar"></div>
   <div id="buttons">
     <button id="forge-btn" disabled>⚔️ FORGE WEAPON</button>
-    <button id="new-btn">🎲 New Quest</button>
-    <!-- Inventory button removed -->
   </div>
 </div>
 
@@ -445,8 +430,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <div id="combat-result"><div id="combat-result-title"></div><div id="combat-result-detail"></div></div>
     <div class="modal-buttons">
       <button id="combat-continue">Continue</button>
-      <!-- New run button appears after combat resolves -->
-      <button id="combat-new-run" style="display:none">New Run</button>
     </div>
   </div>
 </div>
@@ -517,8 +500,13 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
     <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
 
+<<<<<<< HEAD
     <div class="modal-buttons" style="gap:10px;justify-content:center">
       <button id="shop-menu-btn">Menu</button>
+=======
+    <div class="modal-buttons" style="display:flex;justify-content:center;gap:8px">
+      <button id="shop-menu">Menu</button>
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="shop-continue">Continue</button>
     </div>
   </div>
@@ -583,7 +571,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="modal" style="text-align:center;min-width:360px">
     <div style="font-size:22px;font-weight:bold;margin-bottom:10px" class="gold">Wordy Weapon</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+<<<<<<< HEAD
       <button id="pause-continue" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055">Return to Run</button>
+=======
+      <button id="pause-continue" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055">Continue Run</button>
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="pause-new" style="padding:8px 24px;border-radius:8px;background:#2d4a27;border:1px solid #4ade8055">Start New Run</button>
       <button id="pause-achievements" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Achievements & Stats</button>
       <button id="pause-exit" style="padding:8px 24px;border-radius:8px;background:#0f172a;border:1px solid #374151">Close Menu</button>
@@ -596,7 +588,12 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="modal" style="min-width:420px">
     <div class="modal-title gold" style="text-align:center">📜 Achievements & Stats</div>
     <div id="stats-container" style="font-size:12px;color:#d1d5db;line-height:1.5"></div>
+<<<<<<< HEAD
     <div style="text-align:center;margin-top:12px">
+=======
+    <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:8px">
+      <button id="stats-reset">Reset Data</button>
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
       <button id="achievements-close">Close</button>
     </div>
   </div>
@@ -793,24 +790,13 @@ const WORDS=[
   {id:"mace",name:"Mace",type:"weapon",category:"blunt",rarity:R.COMMON,desc:"A heavy bludgeon."},
   {id:"warhammer",name:"Warhammer",type:"weapon",category:"blunt",rarity:R.UNCOMMON,desc:"A crushing war weapon."},
   {id:"maul",name:"Maul",type:"weapon",category:"blunt",rarity:R.RARE,desc:"A massive two-handed hammer."},
-  // Adjectives - Pure multipliers (MORE VARIETY)
-  {id:"lesser",name:"Lesser",type:"adjective",mult:1.2,rarity:R.COMMON,desc:"×1.2 multiplier."},
-  // Updated pure multiplier adjectives and new progression sets
-  {id:"great",name:"Great",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"greater",name:"Greater",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"greatest",name:"Greatest",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-
-  // Mighty now becomes the T3 form of the Strength/Resilient/Mighty progression
-
-  {id:"sturdy",name:"Sturdy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"stalwart",name:"Stalwart",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"unyielding",name:"Unyielding",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-
-  {id:"supremacy",name:"Supremacy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"superior",name:"Superior",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"supreme",name:"Supreme",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-  {id:"ultimate",name:"Ultimate",type:"adjective",mult:2.5,rarity:R.RARE,desc:"×2.5 multiplier."},
-  {id:"divine",name:"Divine",type:"adjective",mult:3.0,rarity:R.RARE,desc:"×3.0 multiplier."},
+  // Adjectives - Pure multipliers (rarity-themed progression)
+  {id:"adj_common",name:"Common",type:"adjective",mult:1.1,rarity:R.COMMON,desc:"×1.1 multiplier."},
+  {id:"adj_uncommon",name:"Uncommon",type:"adjective",mult:1.2,rarity:R.UNCOMMON,desc:"×1.2 multiplier."},
+  {id:"adj_magic",name:"Magic",type:"adjective",mult:1.3,rarity:R.MAGIC,desc:"×1.3 multiplier."},
+  {id:"adj_rare",name:"Rare",type:"adjective",mult:1.4,rarity:R.RARE,desc:"×1.4 multiplier."},
+  {id:"adj_epic",name:"Epic",type:"adjective",mult:1.5,rarity:R.EPIC,desc:"×1.5 multiplier."},
+  {id:"adj_legendary",name:"Legendary",type:"adjective",mult:2.0,rarity:R.LEGENDARY,desc:"×2.0 multiplier."},
   // Adjectives - Elemental (ALL ELEMENTS, 3 tiers each)
   {id:"blazing",name:"Blazing",type:"adjective",mult:1.4,elem:E.FIRE,rarity:R.COMMON,desc:"Fire. ×1.4",hiddenInBank:true},
   {id:"scorching",name:"Scorching",type:"adjective",mult:1.7,elem:E.FIRE,rarity:R.UNCOMMON,desc:"Fire. ×1.7",hiddenInBank:true},
@@ -861,10 +847,6 @@ const WORDS=[
   {id:"tempest",name:"Tempest",type:"noun",elem:E.LIGHTNING,ap:3,rarity:R.RARE,desc:"+3 AP Lightning"},
   {id:"impact",name:"Impact",type:"noun",elem:E.PHYS,ap:1,rarity:R.COMMON,desc:"+1 AP Physical"},
   {id:"force",name:"Force",type:"noun",elem:E.PHYS,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Physical"},
-  // Morphological nouns for high-tier adjectives (hidden in bank). These allow words like
-  // "Supreme" and "Mighty" to transform into noun forms when used in the gem slot.
-  {id:"superiority",name:"Superiority",type:"noun",ap:3,rarity:R.UNCOMMON,desc:"+3 AP",hiddenInBank:true},
-  {id:"supremacy_noun",name:"Supremacy",type:"noun",ap:3,rarity:R.RARE,desc:"+3 AP",hiddenInBank:true},
   {id:"cataclysm",name:"Cataclysm",type:"noun",elem:E.PHYS,ap:3,rarity:R.RARE,desc:"+3 AP Physical"}];
 
 // === Morphological mapping ===
@@ -906,15 +888,11 @@ const NOUN_TO_ADJ = {
   impact: 'Savage',
   force: 'Vicious',
   cataclysm: 'Devastating'
-  ,
-  // High-tier morph nouns mapping back to adjectives
-  superiority: 'Superior',
-  supremacy_noun: 'Supreme'
 };
 
 // Build the reverse mapping from adjectives back to nouns. This allows adjectives dropped into
 // gem slots to revert to their noun form. Only adjectives that have a corresponding noun are
-// included; other adjectives (e.g. Lesser, Mighty) remain unchanged when placed in noun slots.
+// included; other adjectives (e.g. Common, Epic) remain unchanged when placed in noun slots.
 const ADJ_TO_NOUN = {};
 Object.entries(NOUN_TO_ADJ).forEach(([nounId, adjName]) => {
   ADJ_TO_NOUN[adjName] = WORDS.find(w => w.type === 'noun' && w.id === nounId)?.name || nounId;
@@ -944,17 +922,6 @@ const WORD_FORMS = {};
     earthen: { prefix: "Earthen", suffix: "Stone" },
     charged: { prefix: "Charged", suffix: "Spark" },
     brutal: { prefix: "Brutal", suffix: "Impact" },
-    lesser: { prefix: "Lesser", suffix: "Lesser" },
-    greater: { prefix: "Greater", suffix: "Greater" },
-    superior: { prefix: "Superior", suffix: "Superiority" },
-    supreme: { prefix: "Supreme", suffix: "Supremacy" },
-    ultimate: { prefix: "Ultimate", suffix: "Ultimate" },
-    divine: { prefix: "Divine", suffix: "Divinity" },
-    great: { prefix: "Great", suffix: "Greatness" },
-    greatest: { prefix: "Greatest", suffix: "Greatness" },
-    sturdy: { prefix: "Sturdy", suffix: "Sturdiness" },
-    stalwart: { prefix: "Stalwart", suffix: "Stalwart" },
-    unyielding: { prefix: "Unyielding", suffix: "Unyielding Resolve" },
   };
   WORDS.forEach(w => {
     // Weapons retain their own name regardless of position
@@ -1092,6 +1059,7 @@ let S={
   level:1, // Hero level (increments each battle)
   roundIndex:1, // Current round in the run
   floor:1, // Current floor (3 rounds per floor)
+  nextEnemy:null, // Cached preview enemy for next round
   talents:[], // Active talents for this run
   consumables:[], // Owned consumables
   inv:[], // Word inventory
@@ -1123,7 +1091,11 @@ function saveStats(){
   try{localStorage.setItem(STATS_KEY,JSON.stringify(PStats));}catch(e){console.warn("Failed to save stats",e);}
 }
 function saveRun(){
+<<<<<<< HEAD
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){console.warn("Failed to save run",e);}
+=======
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){console.warn("Failed to save run",e);}finally{updateContinueButtons();}
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 function loadRun(){
   try{
@@ -1136,7 +1108,35 @@ function loadRun(){
   }catch(e){console.warn("Failed to load run",e);}return false;
 }
 function clearRunSave(){
+<<<<<<< HEAD
   try{localStorage.removeItem(SAVE_KEY);}catch(e){console.warn("Failed to clear save",e);}
+=======
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){console.warn("Failed to clear save",e);}finally{updateContinueButtons();}
+}
+
+function hasSavedRun(){
+  try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}
+}
+
+function updateContinueButtons(){
+  const contBtn=document.getElementById('continue-btn');
+  if(contBtn){
+    contBtn.style.display = hasSavedRun()? 'block' : 'none';
+  }
+}
+
+function showMainMenu(){
+  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay'];
+  overlays.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('show');
+  });
+  const mainMenu=document.getElementById('main-menu');
+  if(mainMenu){
+    mainMenu.classList.add('show');
+    mainMenu.focus?.();
+  }
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 
 function renderStats(){
@@ -1201,22 +1201,10 @@ function init(){
     forgeBtn.onclick = forge;
     forgeBtn.onmouseenter = sfxHover;
   }
-  const newBtn = document.getElementById("new-btn");
-  if(newBtn){
-    newBtn.onclick = startNewRun;
-    newBtn.onmouseenter = sfxHover;
-  }
   const combatContinueBtn = document.getElementById("combat-continue");
   if(combatContinueBtn){
     combatContinueBtn.onclick = afterCombat;
     combatContinueBtn.onmouseenter = sfxHover;
-  }
-  // Bind the new-run button within the combat overlay.  It will be shown after
-  // combat resolves and allows starting a new run directly from the result screen.
-  const combatNewRunBtn = document.getElementById("combat-new-run");
-  if(combatNewRunBtn){
-    combatNewRunBtn.onclick = startNewRun;
-    combatNewRunBtn.onmouseenter = sfxHover;
   }
   const shopContinueBtn = document.getElementById("shop-continue");
   if(shopContinueBtn){
@@ -1228,6 +1216,14 @@ function init(){
       render();
     };
     shopContinueBtn.onmouseenter = sfxHover;
+  }
+  const shopMenuBtn = document.getElementById("shop-menu");
+  if(shopMenuBtn){
+    shopMenuBtn.onclick = () => {
+      document.getElementById("shop-overlay").classList.remove("show");
+      document.getElementById('pause-menu').classList.add('show');
+    };
+    shopMenuBtn.onmouseenter = sfxHover;
   }
   const rerollBtn = document.getElementById("reroll-btn");
   if(rerollBtn){
@@ -1466,8 +1462,12 @@ function updateCarousel(){
 function newEnc(){
   if(!S.heroSelected){showHeroSelect();return}
 
-  // Scale enemy based on roundIndex - Balatro-style exponential scaling
-  const baseEnemy=ENEMIES[Math.random()*ENEMIES.length|0];
+  // Scale enemy based on roundIndex - Balatro-style exponential scaling.
+  // Use the cached preview enemy so the shop preview matches the upcoming fight.
+  if(!S.nextEnemy){
+    S.nextEnemy = (ENEMIES[Math.random()*ENEMIES.length|0]||{}).id;
+  }
+  const baseEnemy = ENEMIES.find(en=>en.id===S.nextEnemy) || ENEMIES[0];
   S.enemy={...baseEnemy};
 
   // Start at 4 HP for round 1, scale to ~115 for round 9 (becomes 150 after 1.3x boss multiplier)
@@ -1491,12 +1491,16 @@ function newEnc(){
     S.enemy.name="[BOSS] "+S.enemy.name;
   }
 
+  // Consume cached preview so the next shop call will roll a fresh foe
+  S.nextEnemy=null;
+
   // [T2] Shadow Pact: Apply HP steal from previous dark word use
   if(S.shadowBonusHP > 0){
     S.enemy.hp = Math.max(1, S.enemy.hp - S.shadowBonusHP);
     S.shadowBonusHP = 0; // Reset after applying
   }
 
+  saveRun();
   render();
 }
 
@@ -1556,7 +1560,7 @@ function render(){
   $("#hero-weak").innerHTML=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
   // Update proficiency display in details panel: reflect Weapon Master if active
   if(hasWM){
-    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×2.0 (Weapon Master)</span>`;
+    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×1.5 (Weapon Master)</span>`;
   }else{
     $("#hero-prof").innerHTML=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
   }
@@ -1765,7 +1769,22 @@ function updateSlotCalcs(){
   // benefit from this bonus when they morph into a noun. For adjectives used in
   // adjective slots, no bonus is applied.
   function showWordContribution(word, slotKey) {
+<<<<<<< HEAD
     if(!word) return "";
+=======
+    if(!word || word.isStick) return "";
+
+    // Check if this is a multiplier word (rarity-based adjectives like Common, Legendary)
+    // When an adjective is placed in the gem slot it behaves like a noun: it
+    // contributes base AP and does not simply show its multiplier.  In all
+    // other slots, adjectives act purely as multipliers.
+    if(word.mult !== undefined && word.type === 'adjective'){
+      if(slotKey !== 'noun1'){
+        return `×${word.mult}`;
+      }
+      // Fall through for gem‑slot adjectives: handle like a noun below
+    }
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
 
     // Determine base AP.  Use explicit 'ap' when defined or derive from rarity.
     const baseValue = getBaseAP(word);
@@ -1773,10 +1792,17 @@ function updateSlotCalcs(){
     const parts = [];
 
     // Weapon proficiency for weapons.  Good doubles, poor halves.
+<<<<<<< HEAD
     if(S.tempEffects && S.tempEffects.weaponMaster){
       multiplier *= 1.5;
       parts.push("1.5");
     } else if(slotKey === 'item' && word.category){
+=======
+    let proficiencyMultiplier = 1;
+    if(S.tempEffects && S.tempEffects.weaponMaster){
+      proficiencyMultiplier = 1.5;
+    } else if(slotKey === 'item' && !word.isStick && word.category){
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
       if(h.good === word.category){
         multiplier *= 2.0;
         parts.push("2");
@@ -1786,6 +1812,7 @@ function updateSlotCalcs(){
       }
     }
 
+<<<<<<< HEAD
     // Elemental interaction
     if(word.elem !== undefined){
       if(weakTo(word.elem)){
@@ -1794,6 +1821,46 @@ function updateSlotCalcs(){
       } else if(resists(word.elem)){
         multiplier *= 0;
         parts.push("0");
+=======
+    // Apply proficiency to tier value
+    const profTierValue = parseFloat((tierValue * proficiencyMultiplier).toFixed(2));
+
+    let calc = "";
+
+    // Show calculation formula
+    if(word.elem !== undefined) {
+      const el = word.elem;
+      if(weakTo(el)) {
+        // Show formula: tierValue × 2 = result (WEAK)
+        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+          calc = `${baseTierValue}×${proficiencyMultiplier}×2 = ${profTierValue*2}`;
+        } else if(slotKey === 'noun1'){
+          calc = `${tierValue}×2×2 = ${tierValue*4}`;
+        } else {
+          calc = `${tierValue}×2 = ${tierValue*2}`;
+        }
+      } else if(resists(el)) {
+        // Show resistance negates AP
+        calc = `${tierValue}×0 = 0`;
+      } else {
+        // Normal element, no weakness/resistance
+        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+          calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
+        } else if(slotKey === 'noun1'){
+          calc = `${tierValue}×2 = ${tierValue*2}`;
+        } else {
+          calc = `+${tierValue}`;
+        }
+      }
+    } else {
+      // No element
+      if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+        calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
+      } else if(slotKey === 'noun1'){
+        calc = `${tierValue}×2 = ${tierValue*2}`;
+      } else {
+        calc = `+${tierValue}`;
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
       }
     }
 
@@ -2163,7 +2230,7 @@ function buildMultiplierTooltip(){
   if(weapon && weapon.isStick){
     lines.push("×0.25 from backup stick");
   }
-  // Adjective multipliers (e.g. Lesser ×0.75, Greater ×1.25, etc.) apply when used in adjective slots
+  // Adjective multipliers (rarity multipliers like Common ×1.1 up to Legendary ×2.0) apply when used in adjective slots
   allWords.forEach(word => {
     if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
       lines.push(`×${word.mult} from ${word.name}`);
@@ -2534,6 +2601,10 @@ function calc(){
   const {hero:h,enemy:e}=getCombatants();
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
+<<<<<<< HEAD
+=======
+  const hasWeaponMaster=!!(S.tempEffects && S.tempEffects.weaponMaster);
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const weakTo=(el)=>e.weak.includes(el);
   const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
@@ -2612,10 +2683,12 @@ function calc(){
 
     // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
     if(slotKey === 'item' && !word.isStick && word.category){
-      if(h.good === word.category){
-        tierValue = Math.floor(tierValue * 2.0);
+      if(hasWeaponMaster){
+        tierValue = parseFloat((tierValue * 1.5).toFixed(2));
+      } else if(h.good === word.category){
+        tierValue = parseFloat((tierValue * 2.0).toFixed(2));
       } else if(h.bad === word.category){
-        tierValue = Math.floor(tierValue * 0.5);
+        tierValue = parseFloat((tierValue * 0.5).toFixed(2));
       }
     }
 
@@ -2693,7 +2766,7 @@ function calc(){
     if(!hasT2 && allWords.length > 0) totalMultiplier *= 1.75;
   }
 
-  // Apply multiplier words (Lesser, Greater, Superior, etc.).  Adjectives in
+  // Apply multiplier words (rarity multipliers such as Common through Legendary).  Adjectives in
   // adjective slots multiply the final total, but if an adjective is used as
   // the gem (noun1) it should behave like a noun and not apply its multiplier
   // again.  Check against the selected noun slot to avoid double dipping.
@@ -2768,7 +2841,11 @@ function forge(){
   PStats.weaponsForged++;
   PStats.bestDamage=Math.max(PStats.bestDamage,Math.round(c.heroDmg||0));
   if(Object.values(S.sel).every(v=>v)) PStats.stackedCreations++;
+<<<<<<< HEAD
   saveStats();saveRun();
+=======
+  saveStats();
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
   // No descriptive combat log: rely on slot calculation details for transparency
   renderWeapon("#combat-weapon-svg");
 
@@ -2780,6 +2857,7 @@ function forge(){
   // expected structure.
   const words = [];
   const e = S.enemy;
+  const resists = (el) => !(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
   // Helper to convert words for display based on slot.  All non-weapon words
   // use their prefix form when occupying an adjective slot and suffix form when
@@ -2800,7 +2878,7 @@ function forge(){
       displayName = (forms && forms.suffix) || word.name;
     }
 
-    // Check if this is a multiplier word (e.g. Lesser, Greater).  When placed in the
+    // Check if this is a multiplier word (rarity-based adjectives).  When placed in the
     // gem slot (noun1), adjectives should behave like nouns and contribute AP rather
     // than acting as multipliers.  Only treat adjectives as multipliers in
     // non‑gem slots.
@@ -3071,8 +3149,10 @@ function afterCombat(){
     // Defeat: run ends
     S.losses++;S.streak=0;
     S.heroSelected=false;
-    alert("Defeat! Your run has ended. Starting a new run...");
-    startNewRun();
+    clearRunSave();
+    alert("Defeat! Your run has ended. Returning to the main menu.");
+    showMainMenu();
+    clrSel();
   }
 }
 
@@ -3160,6 +3240,7 @@ async function showCombat(r,words,rewards){
   const total=$("#combat-total");
   const flames=$("#combat-flames");
   const weaponSvg=$("#combat-weapon-svg");
+<<<<<<< HEAD
   const cbHero=$("#cb-hero"),cbEnemy=$("#cb-enemy");
   const barHero=$("#bar-hero"),barEnemy=$("#bar-enemy");
   const txtHero=$("#txt-hero"),txtEnemy=$("#txt-enemy");
@@ -3195,55 +3276,192 @@ async function showCombat(r,words,rewards){
   ov.classList.add("show");
 
   // Hide the continue button at the start of the battle until the animation completes
+=======
+  const resultBox=$("#combat-result");
+  const resultTitle=$("#combat-result-title");
+  const resultDetail=$("#combat-result-detail");
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const continueBtn=document.getElementById("combat-continue");
-  if(continueBtn) continueBtn.style.display="none";
+  const strayNewRun=document.getElementById("combat-new-run");
 
-  await dly(300);
+  // Ensure only the Continue button is shown on the combat result modal.
+  if(strayNewRun) strayNewRun.remove();
 
-  words.forEach(w=>{
-    const div=document.createElement("div");
-    div.className="combat-word";
-    const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
-    div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
-    cw.appendChild(div);
-  });
+  if(continueBtn){
+    continueBtn.style.display="none";
+    continueBtn.disabled=true;
+  }
 
-  const wordEls=[...cw.querySelectorAll(".combat-word")];
+  try{
+    cw.innerHTML="";
+    total.classList.remove("show");
+    total.textContent="";
+    flames.style.opacity="0";
+    weaponSvg.style.transform="";
+    // Compute how many parts of the weapon need to be built based on selected words
+    var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
+    // Track progress of displayed parts
+    var progressSeen=0;
+    // Begin with an empty weapon SVG
+    renderWeaponProgress(weaponSvg,0);
 
-  for(let i=0;i<wordEls.length;i++){
-    const w=words[i],el=wordEls[i];
-    await dly(400);
+    $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
+    const heroStartHP=r.currentHP;
+    const heroPercent=(heroStartHP/r.heroMax)*100;
+    $("#bar-hero").style.width=`${heroPercent}%`;
+    $("#bar-enemy").style.width="100%";
+    $("#txt-hero").textContent=`${heroStartHP}/${r.heroMax}`;
+    $("#txt-enemy").textContent=`${r.enemyMax}/${r.enemyMax}`;
+    if(resultBox) resultBox.style.display="none";
+    ov.classList.add("show");
 
-    el.classList.add("show");
-    // Play ascending tone sequence for each word (pleasant arpeggio)
-    try{
-      const freq=440*Math.pow(2,i/(wordEls.length*1.5));
-      playTone(freq,0.25,'sine',0.18);
-    }catch(err){}
+    await dly(300);
 
-    if(w.intensity>0.3){
-      el.classList.add("impact");
-      // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
-      weaponSvg.style.animation="weaponShake .3s ease-out";
-      setTimeout(()=>weaponSvg.style.animation="",300);
+    words.forEach(w=>{
+      const div=document.createElement("div");
+      div.className="combat-word";
+      const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
+      div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
+      cw.appendChild(div);
+    });
 
-      if(w.intensity>1){
-        document.body.classList.add("shake");
-        setTimeout(()=>document.body.classList.remove("shake"),150);
-        spawnFlames(3+Math.floor(w.intensity*2));
+    const wordEls=[...cw.querySelectorAll(".combat-word")];
+
+    for(let i=0;i<wordEls.length;i++){
+      const w=words[i],el=wordEls[i];
+      await dly(400);
+
+      el.classList.add("show");
+      // Play ascending tone sequence for each word (pleasant arpeggio)
+      try{
+        const freq=440*Math.pow(2,i/(wordEls.length*1.5));
+        playTone(freq,0.25,'sine',0.18);
+      }catch(err){}
+
+      if(w.intensity>0.3){
+        el.classList.add("impact");
+        // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
+        weaponSvg.style.animation="weaponShake .3s ease-out";
+        setTimeout(()=>weaponSvg.style.animation="",300);
+
+        if(w.intensity>1){
+          document.body.classList.add("shake");
+          setTimeout(()=>document.body.classList.remove("shake"),150);
+          spawnFlames(3+Math.floor(w.intensity*2));
+        }
+      }
+
+      await dly(200);
+      el.classList.remove("impact");
+      // Gradually build the weapon SVG as relevant words are processed.  Only the
+      // actual selected words (item, adjectives, gem) count towards the build.
+      if(progressSeen < relevantCount){
+        progressSeen++;
+        const progressRatio = progressSeen / Math.max(relevantCount, 1);
+        renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
       }
     }
 
-    await dly(200);
-    el.classList.remove("impact");
-    // Gradually build the weapon SVG as relevant words are processed.  Only the
-    // actual selected words (item, adjectives, gem) count towards the build.
-    if(progressSeen < relevantCount){
-      progressSeen++;
-      const progressRatio = progressSeen / Math.max(relevantCount, 1);
-      renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
+    await dly(400);
+    flames.style.opacity="0.5";
+    spawnFlames(10);
+    setTimeout(()=>document.body.classList.remove("shake"),150);
+
+    total.textContent=`${Math.round(r.heroDmg)} DAMAGE!`;
+    total.classList.add("show");
+
+    // Play a final note that continues the ascending arpeggio sequence rather than
+    // jumping to a fixed pitch.  Compute the next frequency based on the number
+    // of words displayed so the ending tone feels like a natural continuation.
+    try{
+      const totalWords = wordEls.length;
+      // Use the same exponent growth used in the ascending loop: freq = 440×2^(i/(n*1.5))
+      // For the final note, let i = n (next position).  This produces a gentle rise.
+      const nextFreq = 440 * Math.pow(2, totalWords / (totalWords * 1.5));
+      playTone(nextFreq, 0.4, 'sine', 0.3);
+    }catch(err){}
+
+    await dly(800);
+    flames.style.opacity="0";
+
+    await dly(300);
+    await anim($("#cb-hero"),0,r.heroDmg,500);
+    await dly(150);
+    await anim($("#cb-enemy"),0,r.enemyDmg,350);
+    await dly(300);
+
+    $("#bar-hero").style.width=`${(r.heroFin/r.heroMax)*100}%`;
+    $("#bar-enemy").style.width=`${(r.enemyFin/r.enemyMax)*100}%`;
+    await anim($("#txt-hero"),heroStartHP,r.heroFin,400,v=>`${Math.round(v)}/${r.heroMax}`);
+    await anim($("#txt-enemy"),r.enemyMax,r.enemyFin,400,v=>`${Math.round(v)}/${r.enemyMax}`);
+    await dly(250);
+
+    if(resultBox) resultBox.className="";
+    if(resultBox) resultBox.style.display="block";
+    if(r.win){
+      if(resultBox) resultBox.classList.add("win");
+      if(resultTitle){
+        resultTitle.textContent="⚔️ VICTORY!";
+        resultTitle.style.color="#4ade80";
+      }
+
+      // Show rewards
+      let detailText = "Enemy defeated!";
+      if(rewards && rewards.gold > 0){
+        detailText += `
+💰 +${rewards.gold} Gold`;
+      }
+      if(rewards && rewards.items.length > 0){
+        detailText += `
+🎁 Boss Loot: ${rewards.items.join(", ")}`;
+      }
+      if(resultDetail){
+        resultDetail.textContent=detailText;
+        resultDetail.style.whiteSpace="pre-line"; // Allow newlines
+      }
+      sfxWin();
+    }else if(r.tie){
+      if(resultBox) resultBox.classList.add("lose");
+      if(resultTitle){
+        resultTitle.textContent="💀 DRAW";
+        resultTitle.style.color="#f59e0b";
+      }
+      if(resultDetail) resultDetail.textContent="Both fell...";
+      sfxLose();
+    }else{
+      if(resultBox) resultBox.classList.add("lose");
+      if(resultTitle){
+        resultTitle.textContent="💀 DEFEAT";
+        resultTitle.style.color="#f87171";
+      }
+      if(resultDetail) resultDetail.textContent="The enemy won...";
+      sfxLose();
+    }
+    // No text log appended; calculation details are available via slot indicators
+    render();
+  }catch(err){
+    console.error(err);
+    if(resultBox){
+      resultBox.className="lose";
+      resultBox.style.display="block";
+    }
+    if(resultTitle){
+      resultTitle.textContent="⚠️ Combat Error";
+      resultTitle.style.color="#f59e0b";
+    }
+    if(resultDetail){
+      resultDetail.textContent="Something went wrong resolving combat. You can continue to keep playing.";
+      resultDetail.style.whiteSpace="pre-line";
+    }
+  }finally{
+    // Reveal the continue button now that combat has resolved (even on error)
+    if(continueBtn){
+      continueBtn.style.display="block";
+      continueBtn.disabled=false;
+      continueBtn.focus();
     }
   }
+<<<<<<< HEAD
 
   await dly(400);
   flames.style.opacity="0.5";
@@ -3313,6 +3531,8 @@ async function showCombat(r,words,rewards){
   // Also reveal the new-run button when the fight concludes
   const newRunBtnShow=document.getElementById('combat-new-run');
   if(newRunBtnShow) newRunBtnShow.style.display='block';
+=======
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
 }
 
 function spawnFlames(count){
@@ -3334,6 +3554,7 @@ function showShop(){
   S.rerollCost=5;
   rollShop();
   renderShop();
+  saveRun();
   $("#shop-overlay").classList.add("show");
 }
 
@@ -3434,7 +3655,11 @@ function renderShop(){
 function renderNextEnemyPreview(){
   // Calculate what the next enemy will be
   const nextRound = S.roundIndex;
-  const baseEnemy = ENEMIES[Math.floor(Math.random() * ENEMIES.length)];
+  if(!S.nextEnemy){
+    const roll = ENEMIES[Math.floor(Math.random() * ENEMIES.length)];
+    S.nextEnemy = roll ? roll.id : null;
+  }
+  const baseEnemy = ENEMIES.find(en=>en.id===S.nextEnemy) || ENEMIES[0];
   const previewEnemy = {...baseEnemy};
 
   // Apply HP scaling
@@ -3938,14 +4163,23 @@ function closePauseMenu(){
 // that the menu behaves reliably across reloads.
 document.addEventListener('DOMContentLoaded', () => {
   loadStats();
+<<<<<<< HEAD
   const hasSave = loadRun();
+=======
+  loadRun();
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
   const mm = document.getElementById('main-menu');
   const startBtn = document.getElementById('start-game-btn');
   const contBtn = document.getElementById('continue-btn');
   const exitBtn = document.getElementById('exit-btn');
   const achBtn = document.getElementById('achievements-btn');
+<<<<<<< HEAD
   if(contBtn){
     contBtn.style.display = hasSave ? 'block' : 'none';
+=======
+  updateContinueButtons();
+  if(contBtn){
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
     contBtn.onclick = ()=>{if(mm)mm.classList.remove('show');render();};
   }
   if(startBtn){
@@ -3955,6 +4189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(exitBtn){exitBtn.onclick=()=>{if(mm)mm.classList.remove('show');};}
   if(achBtn){achBtn.onclick=()=>{document.getElementById('achievements-overlay').classList.add('show');renderStats();};}
   const pauseBtn=document.getElementById('pause-btn');
+<<<<<<< HEAD
   if(pauseBtn){pauseBtn.onclick=()=>openPauseMenu(isShopOpen()?"shop":"run");}
   $("#pause-continue").onclick=()=>closePauseMenu();
   $("#pause-new").onclick=()=>{closePauseMenu();startNewRun();};
@@ -3962,6 +4197,22 @@ document.addEventListener('DOMContentLoaded', () => {
   $("#pause-exit").onclick=()=>closePauseMenu();
   const shopMenuBtn=document.getElementById('shop-menu-btn');
   if(shopMenuBtn){shopMenuBtn.onclick=()=>openPauseMenu('shop');shopMenuBtn.onmouseenter=sfxHover;}
+=======
+  if(pauseBtn){pauseBtn.onclick=()=>document.getElementById('pause-menu').classList.add('show');}
+  $("#pause-continue").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
+  $("#pause-new").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');startNewRun();};
+  $("#pause-achievements").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');document.getElementById('achievements-overlay').classList.add('show');renderStats();};
+  $("#pause-exit").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
+  const resetBtn=document.getElementById('stats-reset');
+  if(resetBtn){
+    resetBtn.onclick=()=>{
+      PStats={attempts:0,victories:0,weaponsForged:0,bestDamage:0,heroClears:{},stackedCreations:0};
+      saveStats();
+      clearRunSave();
+      renderStats();
+    };
+  }
+>>>>>>> codex/update-game-mechanics-and-features-jlc23s
   $("#achievements-close").onclick=()=>document.getElementById('achievements-overlay').classList.remove('show');
 });
 
