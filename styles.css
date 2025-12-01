@@ -240,9 +240,15 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #forge-btn{background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055;font-size:15px;padding:12px 28px;position:relative;overflow:hidden}
 #forge-btn:hover:not(:disabled){background:linear-gradient(180deg,#4d6a47,#3d5a37);transform:scale(1.02)}
 #forge-btn:active:not(:disabled){transform:scale(0.98)}
+<<<<<<< HEAD
 .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility .3s}
 #pause-menu{z-index:200}
 .overlay.show{opacity:1;pointer-events:auto;visibility:visible}
+=======
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility .3s}
+#pause-menu{z-index:200}
+.overlay.show{display:flex;opacity:1;pointer-events:auto;visibility:visible}
+>>>>>>> origin/codex/fix-button-and-tooltip-issues-p5sgjd
 .modal{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(0,0,0,0.45)),radial-gradient(circle at 15% 15%,rgba(255,255,255,0.03),transparent 35%),radial-gradient(circle at 80% 0,rgba(255,255,255,0.02),transparent 40%);background-blend-mode:overlay;border-radius:16px;padding:24px;border:2px solid #f4d03f44;min-width:400px;max-width:90vw;box-shadow:0 0 0 1px rgba(0,0,0,0.8),0 18px 36px rgba(0,0,0,0.55);position:relative;overflow:hidden}
 .modal::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.5}
 .modal-title{text-align:center;font-size:18px;margin-bottom:16px}
