@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wordsmith</title>
+<title>Wordy Weapon</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 /* Import Garamond font family uploaded alongside this file */
@@ -269,7 +269,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </head>
 <body>
 <div id="header">
-  <div id="title" class="gold">⚒️ WORDSMITH</div>
+  <div id="title" class="gold">⚒️ WORDY WEAPON</div>
   <div id="stats">
     <!-- Wins and losses removed for a streamlined UI; only streak is shown -->
     <span>🔥<span id="streak" class="gold">0</span></span>
@@ -277,6 +277,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <!-- Removed level tracker for simplicity; the streak already communicates progress -->
     <span>Round <span id="round-num" class="gold">1</span></span>
   </div>
+  <button id="pause-btn" style="font-size:12px;padding:6px 12px">Menu</button>
 </div>
 
 <div id="battle-view">
@@ -443,8 +444,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <div id="combat-result"><div id="combat-result-title"></div><div id="combat-result-detail"></div></div>
     <div class="modal-buttons">
       <button id="combat-continue">Continue</button>
-      <!-- New run button appears after combat resolves -->
-      <button id="combat-new-run" style="display:none">New Run</button>
     </div>
   </div>
 </div>
@@ -480,13 +479,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
         <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
       </div>
     </div>
-    <!-- Consumables disabled for now -->
-    <!--
     <div class="shop-section">
       <div class="shop-section-title">🎴 CONSUMABLES</div>
       <div id="shop-consumables" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
     </div>
-    -->
     <!-- Word Bank for selling -->
     <div class="shop-section">
       <!-- Inventory header row includes title, capacity tracker, and sort controls -->
@@ -565,9 +561,38 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <!-- Main menu overlay displayed on initial load.  Provides a simple title screen with a start button.  -->
 <div class="overlay show" id="main-menu">
   <div class="modal" style="text-align:center;min-width:400px">
-    <div style="font-size:32px;font-weight:bold;margin-bottom:10px" class="gold">WORDSMITH</div>
+    <div style="font-size:32px;font-weight:bold;margin-bottom:10px" class="gold">WORDY WEAPON</div>
     <div style="font-size:14px;color:#9ca3af;margin-bottom:20px">Forge a "wordy" weapon to defeat the enemy</div>
-    <button id="start-game-btn" style="padding:10px 30px;font-size:16px;background:linear-gradient(180deg,#3d5a37,#2d4a27);border:1px solid #4ade8055;border-radius:8px;cursor:pointer" onclick="document.getElementById('main-menu').classList.remove('show');startNewRun();">START</button>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+      <button id="continue-btn" style="padding:10px 30px;font-size:16px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055;display:none">Continue Run</button>
+      <button id="start-game-btn" style="padding:10px 30px;font-size:16px;background:linear-gradient(180deg,#3d5a37,#2d4a27);border:1px solid #4ade8055;border-radius:8px;cursor:pointer">Start New Run</button>
+      <button id="achievements-btn" style="padding:10px 30px;font-size:14px;border-radius:8px;background:#111827;border:1px solid #374151">Achievements & Stats</button>
+      <button id="exit-btn" style="padding:8px 26px;font-size:14px;border-radius:8px;background:#0f172a;border:1px solid #374151">Exit Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pause / Menu overlay accessible during runs -->
+<div class="overlay" id="pause-menu">
+  <div class="modal" style="text-align:center;min-width:360px">
+    <div style="font-size:22px;font-weight:bold;margin-bottom:10px" class="gold">Wordy Weapon</div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+      <button id="pause-continue" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #4ade8055">Continue Run</button>
+      <button id="pause-new" style="padding:8px 24px;border-radius:8px;background:#2d4a27;border:1px solid #4ade8055">Start New Run</button>
+      <button id="pause-achievements" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Achievements & Stats</button>
+      <button id="pause-exit" style="padding:8px 24px;border-radius:8px;background:#0f172a;border:1px solid #374151">Close Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Achievements overlay shows persistent progress -->
+<div class="overlay" id="achievements-overlay">
+  <div class="modal" style="min-width:420px">
+    <div class="modal-title gold" style="text-align:center">📜 Achievements & Stats</div>
+    <div id="stats-container" style="font-size:12px;color:#d1d5db;line-height:1.5"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button id="achievements-close">Close</button>
+    </div>
   </div>
 </div>
 
@@ -585,9 +610,8 @@ TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
 // Maximum inventory size to prevent hoarding too many words
 // Increase inventory limit so players can hold more words
 const INV_LIMIT=30;
-// Maximum number of active buffs (talents) the player may hold at once.  Treat buffs like
-// their own inventory with a fixed capacity.  Additional buffs beyond this limit cannot be acquired.
-const BUFF_LIMIT=5;
+// Talents are disabled for this build; keep the limit at zero to prevent acquisition.
+const BUFF_LIMIT=0;
 
 // === 8 HEROES ===
 const HEROES=[
@@ -703,68 +727,8 @@ const ENEMIES=[
    desc:"A corrupted forest guardian twisted by dark magic.",dialogue:["The forest... remembers...","You will feed... the roots..."]}
 ];
 
-// === TALENTS/BUFFS (Diverse persistent modifiers) ===
-const TALENTS=[
-  // T1 Buffs - Individual Word AP & Basic Modifiers
-  {id:"wordsmith",name:"Wordsmith",tier:1,desc:"All words gain +2 AP"},
-  {id:"keen_edge",name:"Keen Edge",tier:1,desc:"Weapon words (sword, bow, etc.) gain +3 AP"},
-  {id:"elemental_spark",name:"Elemental Spark",tier:1,desc:"Words with elements gain +2 AP"},
-  {id:"descriptive",name:"Descriptive",tier:1,desc:"Each adjective word adds +1 AP"},
-  {id:"gem_polish",name:"Gem Polish",tier:1,desc:"Gem slot multiplier becomes ×2.5 (from ×2)"},
-
-  // T1 Buffs - Economy & Shop
-  {id:"bargain_hunter",name:"Bargain Hunter",tier:1,desc:"All shop items cost 20% less gold"},
-  {id:"golden_touch",name:"Golden Touch",tier:1,desc:"Gain +3 gold after each victory"},
-  {id:"ninja_loot",name:"Ninja Loot",tier:1,desc:"20% chance to get free item when buying"},
-
-  // T2 Buffs - Multipliers & Word Count
-  {id:"combo_master",name:"Combo Master",tier:2,desc:"Using 4+ words: ×1.3 total damage"},
-  {id:"minimalist",name:"Minimalist",tier:2,desc:"Using 2 or fewer words: ×1.5 total damage"},
-  {id:"word_weaver",name:"Word Weaver",tier:2,desc:"Each word used adds +5% to total multiplier"},
-  {id:"precise_strike",name:"Precise Strike",tier:2,desc:"Final damage ×1.25"},
-
-  // T2 Buffs - Element Modifiers
-  {id:"pyromancer",name:"Pyromancer",tier:2,desc:"Fire words gain +1 tier value and ×1.2 damage"},
-  {id:"frost_mage",name:"Frost Mage",tier:2,desc:"Water words gain +1 tier value and ×1.2 damage"},
-  {id:"stormcaller",name:"Stormcaller",tier:2,desc:"Lightning words gain +1 tier value and ×1.2 damage"},
-  {id:"void_scholar",name:"Void Scholar",tier:2,desc:"Dark words gain +1 tier value and ×1.2 damage"},
-
-  // T2 Buffs - Weapon Type Modifiers
-  {id:"blade_dancer",name:"Blade Dancer",tier:2,desc:"Slash weapons: ×1.4 damage"},
-  {id:"marksman",name:"Marksman",tier:2,desc:"Pierce weapons: ×1.4 damage"},
-  {id:"arcane_focus",name:"Arcane Focus",tier:2,desc:"Magic weapons: ×1.4 damage"},
-  {id:"crusher",name:"Crusher",tier:2,desc:"Blunt weapons: ×1.4 damage"},
-
-  // T2 Buffs - Strength/Weakness Modifiers
-  {id:"exploit_weakness",name:"Exploit Weakness",tier:2,desc:"Hitting enemy weakness: +50% damage"},
-  {id:"elemental_mastery",name:"Elemental Mastery",tier:2,desc:"Using hero's strong element: +30% damage"},
-
-  // T2 Buffs - Accumulative
-  {id:"battle_rhythm",name:"Battle Rhythm",tier:2,desc:"Each victory: +2 to all word AP (resets on shop)"},
-  {id:"momentum",name:"Momentum",tier:2,desc:"Each victory: +5% total damage (resets on shop)"},
-
-  // T3 Buffs - Advanced Multipliers
-  {id:"dual_spec",name:"Dual Spec",tier:3,desc:"Using 2+ different elements: ×1.8 total damage"},
-  {id:"trinity",name:"Trinity",tier:3,desc:"Using exactly 3 elements: ×2.2 total damage"},
-  {id:"rainbow_forge",name:"Rainbow Forge",tier:3,desc:"Using 4+ different elements: ×2.5 total damage"},
-  {id:"min_max",name:"Min-Max",tier:3,desc:"Only T1 or T3 words (no T2): +75% damage"},
-
-  // T3 Buffs - Tier Modifiers
-  {id:"quality_control",name:"Quality Control",tier:3,desc:"All T2 words become T3 in combat"},
-  {id:"budget_build",name:"Budget Build",tier:3,desc:"All T1 words gain ×1.8 damage"},
-  {id:"luxury_forge",name:"Luxury Forge",tier:3,desc:"All T3 words gain +8 AP and ×1.3 damage"},
-
-  // T3 Buffs - Shop & Economy
-  {id:"merchant_guild",name:"Merchant Guild",tier:3,desc:"Shop refresh costs -50%, start with +20g"},
-  {id:"treasure_hunter",name:"Treasure Hunter",tier:3,desc:"Gain gold equal to 20% of overkill damage"},
-  {id:"bulk_discount",name:"Bulk Discount",tier:3,desc:"Crates contain +1 extra item"},
-
-  // T3 Buffs - Complex Mechanics
-  {id:"sharpening_stone",name:"Sharpening Stone",tier:3,desc:"Each word: 35% chance to gain +1 tier in combat"},
-  {id:"word_hoarder",name:"Word Hoarder",tier:3,desc:"Each word in inventory over 15: +1 total AP"},
-  {id:"glass_cannon",name:"Glass Cannon",tier:3,desc:"×2.0 total damage, but lose on tie"},
-  {id:"battle_hardened",name:"Battle Hardened",tier:3,desc:"Each round survived: +3 base AP (permanent)"}
-];
+// Talents are retired for this build to simplify balance.
+const TALENTS=[];
 
 // === CONSUMABLES (one-time use) ===
 const CONSUMABLES=[
@@ -783,7 +747,16 @@ const CONSUMABLES=[
      return "No Rare words available.";
    }},
   {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"All weapons ×1.5 proficiency for one battle.",
-   use:(S)=>{S.tempTalents=S.tempTalents||[];S.tempTalents.push("weapon_master");return "Weapon Master active!"}}
+   use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
+  {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
+   use:(S)=>{
+     const target=S.sel.item||S.sel.noun1||S.sel.adj1||S.sel.adj2||S.sel.adj3||S.sel.adj4||S.inv[0];
+     if(!target) return "No word to upgrade.";
+     if(target.rarity<3){target.rarity+=1;return `${target.name} refined!`;}
+     return `${target.name} is already top tier.`;
+   }},
+  {id:"polymorph",name:"Polymorph",cost:12,desc:"Remove the enemy's resistances for the next battle.",
+   use:(S)=>{S.tempEffects.polymorph=true;return "Enemy resistances nullified!"}}
 ];
 
 // === WORDS ===
@@ -814,24 +787,13 @@ const WORDS=[
   {id:"mace",name:"Mace",type:"weapon",category:"blunt",rarity:R.COMMON,desc:"A heavy bludgeon."},
   {id:"warhammer",name:"Warhammer",type:"weapon",category:"blunt",rarity:R.UNCOMMON,desc:"A crushing war weapon."},
   {id:"maul",name:"Maul",type:"weapon",category:"blunt",rarity:R.RARE,desc:"A massive two-handed hammer."},
-  // Adjectives - Pure multipliers (MORE VARIETY)
-  {id:"lesser",name:"Lesser",type:"adjective",mult:1.2,rarity:R.COMMON,desc:"×1.2 multiplier."},
-  // Updated pure multiplier adjectives and new progression sets
-  {id:"great",name:"Great",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"greater",name:"Greater",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"greatest",name:"Greatest",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-
-  // Mighty now becomes the T3 form of the Strength/Resilient/Mighty progression
-
-  {id:"sturdy",name:"Sturdy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"stalwart",name:"Stalwart",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"unyielding",name:"Unyielding",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-
-  {id:"supremacy",name:"Supremacy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
-  {id:"superior",name:"Superior",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
-  {id:"supreme",name:"Supreme",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
-  {id:"ultimate",name:"Ultimate",type:"adjective",mult:2.5,rarity:R.RARE,desc:"×2.5 multiplier."},
-  {id:"divine",name:"Divine",type:"adjective",mult:3.0,rarity:R.RARE,desc:"×3.0 multiplier."},
+  // Adjectives - Pure multipliers (rarity-themed progression)
+  {id:"adj_common",name:"Common",type:"adjective",mult:1.1,rarity:R.COMMON,desc:"×1.1 multiplier."},
+  {id:"adj_uncommon",name:"Uncommon",type:"adjective",mult:1.2,rarity:R.UNCOMMON,desc:"×1.2 multiplier."},
+  {id:"adj_magic",name:"Magic",type:"adjective",mult:1.3,rarity:R.MAGIC,desc:"×1.3 multiplier."},
+  {id:"adj_rare",name:"Rare",type:"adjective",mult:1.4,rarity:R.RARE,desc:"×1.4 multiplier."},
+  {id:"adj_epic",name:"Epic",type:"adjective",mult:1.5,rarity:R.EPIC,desc:"×1.5 multiplier."},
+  {id:"adj_legendary",name:"Legendary",type:"adjective",mult:2.0,rarity:R.LEGENDARY,desc:"×2.0 multiplier."},
   // Adjectives - Elemental (ALL ELEMENTS, 3 tiers each)
   {id:"blazing",name:"Blazing",type:"adjective",mult:1.4,elem:E.FIRE,rarity:R.COMMON,desc:"Fire. ×1.4",hiddenInBank:true},
   {id:"scorching",name:"Scorching",type:"adjective",mult:1.7,elem:E.FIRE,rarity:R.UNCOMMON,desc:"Fire. ×1.7",hiddenInBank:true},
@@ -882,10 +844,6 @@ const WORDS=[
   {id:"tempest",name:"Tempest",type:"noun",elem:E.LIGHTNING,ap:3,rarity:R.RARE,desc:"+3 AP Lightning"},
   {id:"impact",name:"Impact",type:"noun",elem:E.PHYS,ap:1,rarity:R.COMMON,desc:"+1 AP Physical"},
   {id:"force",name:"Force",type:"noun",elem:E.PHYS,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Physical"},
-  // Morphological nouns for high-tier adjectives (hidden in bank). These allow words like
-  // "Supreme" and "Mighty" to transform into noun forms when used in the gem slot.
-  {id:"superiority",name:"Superiority",type:"noun",ap:3,rarity:R.UNCOMMON,desc:"+3 AP",hiddenInBank:true},
-  {id:"supremacy_noun",name:"Supremacy",type:"noun",ap:3,rarity:R.RARE,desc:"+3 AP",hiddenInBank:true},
   {id:"cataclysm",name:"Cataclysm",type:"noun",elem:E.PHYS,ap:3,rarity:R.RARE,desc:"+3 AP Physical"}];
 
 // === Morphological mapping ===
@@ -927,15 +885,11 @@ const NOUN_TO_ADJ = {
   impact: 'Savage',
   force: 'Vicious',
   cataclysm: 'Devastating'
-  ,
-  // High-tier morph nouns mapping back to adjectives
-  superiority: 'Superior',
-  supremacy_noun: 'Supreme'
 };
 
 // Build the reverse mapping from adjectives back to nouns. This allows adjectives dropped into
 // gem slots to revert to their noun form. Only adjectives that have a corresponding noun are
-// included; other adjectives (e.g. Lesser, Mighty) remain unchanged when placed in noun slots.
+// included; other adjectives (e.g. Common, Epic) remain unchanged when placed in noun slots.
 const ADJ_TO_NOUN = {};
 Object.entries(NOUN_TO_ADJ).forEach(([nounId, adjName]) => {
   ADJ_TO_NOUN[adjName] = WORDS.find(w => w.type === 'noun' && w.id === nounId)?.name || nounId;
@@ -965,17 +919,6 @@ const WORD_FORMS = {};
     earthen: { prefix: "Earthen", suffix: "Stone" },
     charged: { prefix: "Charged", suffix: "Spark" },
     brutal: { prefix: "Brutal", suffix: "Impact" },
-    lesser: { prefix: "Lesser", suffix: "Lesser" },
-    greater: { prefix: "Greater", suffix: "Greater" },
-    superior: { prefix: "Superior", suffix: "Superiority" },
-    supreme: { prefix: "Supreme", suffix: "Supremacy" },
-    ultimate: { prefix: "Ultimate", suffix: "Ultimate" },
-    divine: { prefix: "Divine", suffix: "Divinity" },
-    great: { prefix: "Great", suffix: "Greatness" },
-    greatest: { prefix: "Greatest", suffix: "Greatness" },
-    sturdy: { prefix: "Sturdy", suffix: "Sturdiness" },
-    stalwart: { prefix: "Stalwart", suffix: "Stalwart" },
-    unyielding: { prefix: "Unyielding", suffix: "Unyielding Resolve" },
   };
   WORDS.forEach(w => {
     // Weapons retain their own name regardless of position
@@ -1091,6 +1034,20 @@ const BASE_COLORS={
   axe:"#7a4c30"
 };
 
+// Persistent storage keys for saves and lifetime stats
+const SAVE_KEY="wordyweapon-save";
+const STATS_KEY="wordyweapon-stats";
+
+// Lifetime stats and achievement tracking. These values persist between runs.
+let PStats={
+  attempts:0,
+  victories:0,
+  weaponsForged:0,
+  bestDamage:0,
+  heroClears:{},
+  stackedCreations:0
+};
+
 // === STATE ===
 let S={
   wins:0,losses:0,streak:0,gold:30,
@@ -1114,8 +1071,62 @@ let S={
   heroSelected:false, // Whether hero has been selected for this run
   shadowBonusHP:0, // For Shadow Pact talent
   battleHardenedBonus:0, // For Battle Hardened talent cap tracking
-  quickStudyBonus:0 // For Quick Study talent cap tracking
+  quickStudyBonus:0, // For Quick Study talent cap tracking
+  tempEffects:{} // One-battle temporary modifiers
 },audioOn=true;
+
+function loadStats(){
+  try{
+    const raw=localStorage.getItem(STATS_KEY);
+    if(raw){
+      PStats={...PStats,...JSON.parse(raw)};
+    }
+  }catch(e){console.warn("Failed to load stats",e);}
+}
+function saveStats(){
+  try{localStorage.setItem(STATS_KEY,JSON.stringify(PStats));}catch(e){console.warn("Failed to save stats",e);}
+}
+function saveRun(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){console.warn("Failed to save run",e);}finally{updateContinueButtons();}
+}
+function loadRun(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const data=JSON.parse(raw);
+      S={...S,...data};
+      return true;
+    }
+  }catch(e){console.warn("Failed to load run",e);}return false;
+}
+function clearRunSave(){
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){console.warn("Failed to clear save",e);}finally{updateContinueButtons();}
+}
+
+function hasSavedRun(){
+  try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}
+}
+
+function updateContinueButtons(){
+  const contBtn=document.getElementById('continue-btn');
+  if(contBtn){
+    contBtn.style.display = hasSavedRun()? 'block' : 'none';
+  }
+}
+
+function renderStats(){
+  const box=document.getElementById('stats-container');
+  if(!box) return;
+  const heroList=Object.keys(PStats.heroClears||{}).filter(k=>PStats.heroClears[k]);
+  const stackedAch = PStats.stackedCreations>=10 ? '✅' : `(${PStats.stackedCreations}/10)`;
+  box.innerHTML=
+    `<div><strong>Total run attempts:</strong> ${PStats.attempts}</div>`+
+    `<div><strong>Victories (Round 9):</strong> ${PStats.victories}</div>`+
+    `<div><strong>Weapons forged:</strong> ${PStats.weaponsForged}</div>`+
+    `<div><strong>Most powerful weapon:</strong> ${PStats.bestDamage} AP</div>`+
+    `<div><strong>Heroes cleared:</strong> ${heroList.length?heroList.join(', '):'None'}</div>`+
+    `<div><strong>Achievement – Fully stacked x10:</strong> ${stackedAch}</div>`;
+}
 
 // === AUDIO ===
 let audioCtx=null;
@@ -1174,13 +1185,6 @@ function init(){
   if(combatContinueBtn){
     combatContinueBtn.onclick = afterCombat;
     combatContinueBtn.onmouseenter = sfxHover;
-  }
-  // Bind the new-run button within the combat overlay.  It will be shown after
-  // combat resolves and allows starting a new run directly from the result screen.
-  const combatNewRunBtn = document.getElementById("combat-new-run");
-  if(combatNewRunBtn){
-    combatNewRunBtn.onclick = startNewRun;
-    combatNewRunBtn.onmouseenter = sfxHover;
   }
   const shopContinueBtn = document.getElementById("shop-continue");
   if(shopContinueBtn){
@@ -1352,6 +1356,7 @@ function startNewRun(){
   S.shadowBonusHP=0; // Reset talent state
   S.battleHardenedBonus=0; // Reset talent state
   S.quickStudyBonus=0; // Reset talent state
+  S.tempEffects={};
   S.consumables=[];
   // Reset hero selection flag so that a new hero must be chosen on each new run.
   S.heroSelected = false;
@@ -1368,6 +1373,7 @@ function startNewRun(){
   const desiredStart = Math.min(nonWeaponPool.length, Math.floor(INV_LIMIT / 2) - weaponPool.length);
   const startNon = shuffledNon.slice(0, Math.max(0, desiredStart)).map(w => ({ ...w }));
   S.inv = [...weaponPool.map(w => ({ ...w })), ...startNon];
+  PStats.attempts++;saveStats();clearRunSave();
   clrSel();
   showHeroSelect();
 }
@@ -1459,12 +1465,14 @@ function newEnc(){
     S.shadowBonusHP = 0; // Reset after applying
   }
 
+  saveRun();
   render();
 }
 
 // === RENDER ===
 function render(){
   const h=S.hero,e=S.enemy;
+  const effectiveRes=(S.tempEffects && S.tempEffects.polymorph)?[]:e.res;
 
   // Portrait names
   $("#hero-name").textContent=h.name;
@@ -1479,10 +1487,10 @@ function render(){
   const heroStrTags=h.str.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
   const heroWeakTags=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
   // Determine proficiency display: if Weapon Master is active, treat all weapons as good
-  const hasWM=(S.talents && S.talents.includes("weapon_master")) || (S.tempTalents && S.tempTalents.includes("weapon_master"));
+  const hasWM=!!(S.tempEffects && S.tempEffects.weaponMaster);
   let heroProfHtml="";
   if(hasWM){
-    heroProfHtml=`<span class="tag prof">All ×2.0</span>`;
+    heroProfHtml=`<span class="tag prof">All ×1.5</span>`;
   }else{
     heroProfHtml=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
   }
@@ -1490,7 +1498,8 @@ function render(){
 
   // Enemy portrait: show only weaknesses and resistances (AP removed)
   const enemyWeakTags=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
-  const enemyResTags=e.res.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+  const resList = (S.tempEffects && S.tempEffects.polymorph) ? [] : e.res;
+  const enemyResTags=resList.length?resList.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):'<span class="dim">None</span>';
   $("#enemy-elements").innerHTML=enemyWeakTags+enemyResTags;
 
   // Health bars with dynamic preview
@@ -1532,7 +1541,8 @@ function render(){
     }
   }
   $("#enemy-weak").innerHTML=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
-  $("#enemy-res").innerHTML=e.res.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+  const enemyDetailRes = (S.tempEffects && S.tempEffects.polymorph) ? [] : e.res;
+  $("#enemy-res").innerHTML=enemyDetailRes.length?enemyDetailRes.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):'<span class="dim">None</span>';
 
   // Header stats (wins and losses removed)
   if(document.getElementById('streak')) document.getElementById('streak').textContent = S.streak;
@@ -1724,7 +1734,7 @@ function updateSlotCalcs(){
   function showWordContribution(word, slotKey) {
     if(!word || word.isStick) return "";
 
-    // Check if this is a multiplier word (Lesser, Greater, Supreme, etc.)
+    // Check if this is a multiplier word (rarity-based adjectives like Common, Legendary)
     // When an adjective is placed in the gem slot it behaves like a noun: it
     // contributes base AP and does not simply show its multiplier.  In all
     // other slots, adjectives act purely as multipliers.
@@ -1743,7 +1753,9 @@ function updateSlotCalcs(){
 
     // Weapon proficiency for weapons.  Good doubles, poor halves.
     let proficiencyMultiplier = 1;
-    if(slotKey === 'item' && !word.isStick && word.category){
+    if(S.tempEffects && S.tempEffects.weaponMaster){
+      proficiencyMultiplier = 1.5;
+    } else if(slotKey === 'item' && !word.isStick && word.category){
       if(h.good === word.category){
         proficiencyMultiplier = 2.0;
       } else if(h.bad === word.category){
@@ -1759,7 +1771,7 @@ function updateSlotCalcs(){
     // Show calculation formula
     if(word.elem !== undefined) {
       const el = word.elem;
-      if(e.weak.includes(el)) {
+      if(weakTo(el)) {
         // Show formula: tierValue × 2 = result (WEAK)
         if(proficiencyMultiplier !== 1 && slotKey === 'item'){
           calc = `${baseTierValue}×${proficiencyMultiplier}×2 = ${profTierValue*2}`;
@@ -1768,7 +1780,7 @@ function updateSlotCalcs(){
         } else {
           calc = `${tierValue}×2 = ${tierValue*2}`;
         }
-      } else if(e.res.includes(el)) {
+      } else if(resists(el)) {
         // Show resistance negates AP
         calc = `${tierValue}×0 = 0`;
       } else {
@@ -1814,7 +1826,7 @@ function updateSlotCalcs(){
     const word = s[k];
     const calc = showWordContribution(word, k);
     const isPos = word && word.elem && e.weak.includes(word.elem);
-    const isNeg = word && word.elem && e.res.includes(word.elem);
+    const isNeg = word && word.elem && effectiveRes.includes(word.elem);
     el.textContent = calc;
     el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
   });
@@ -1826,7 +1838,7 @@ function updateSlotCalcs(){
     const word = s[k];
     const calc = showWordContribution(word, k);
     const isPos = word && word.elem && e.weak.includes(word.elem);
-    const isNeg = word && word.elem && e.res.includes(word.elem);
+    const isNeg = word && word.elem && effectiveRes.includes(word.elem);
     el.textContent = calc;
     el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
   });
@@ -2139,7 +2151,7 @@ function buildMultiplierTooltip(){
   if(weapon && weapon.isStick){
     lines.push("×0.25 from backup stick");
   }
-  // Adjective multipliers (e.g. Lesser ×0.75, Greater ×1.25, etc.) apply when used in adjective slots
+  // Adjective multipliers (rarity multipliers like Common ×1.1 up to Legendary ×2.0) apply when used in adjective slots
   allWords.forEach(word => {
     if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
       lines.push(`×${word.mult} from ${word.name}`);
@@ -2500,6 +2512,8 @@ function calc(){
   const e = S.enemy;
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
+  const weakTo=(el)=>e.weak.includes(el);
+  const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
   // Base AP starts at 0, only increased by talents
   let baseAP = 0;
@@ -2594,7 +2608,7 @@ function calc(){
       const heroStrong = h.str.includes(word.elem);
       const heroWeak  = h.weak.includes(word.elem);
       const enemyWeak  = e.weak.includes(word.elem);
-      const enemyStrong = e.res.includes(word.elem);
+      const enemyStrong = resists(word.elem);
       if(heroStrong && enemyWeak){
         elemMult = 3;
       } else if((heroStrong && !enemyWeak && !enemyStrong) || (!heroStrong && !heroWeak && enemyWeak)){
@@ -2657,7 +2671,7 @@ function calc(){
     if(!hasT2 && allWords.length > 0) totalMultiplier *= 1.75;
   }
 
-  // Apply multiplier words (Lesser, Greater, Superior, etc.).  Adjectives in
+  // Apply multiplier words (rarity multipliers such as Common through Legendary).  Adjectives in
   // adjective slots multiply the final total, but if an adjective is used as
   // the gem (noun1) it should behave like a noun and not apply its multiplier
   // again.  Check against the selected noun slot to avoid double dipping.
@@ -2729,6 +2743,10 @@ function updatePreviewStats(c) {
 function forge(){
   sfxForgeStart();
   const c=calc();
+  PStats.weaponsForged++;
+  PStats.bestDamage=Math.max(PStats.bestDamage,Math.round(c.heroDmg||0));
+  if(Object.values(S.sel).every(v=>v)) PStats.stackedCreations++;
+  saveStats();
   // No descriptive combat log: rely on slot calculation details for transparency
   renderWeapon("#combat-weapon-svg");
 
@@ -2760,7 +2778,7 @@ function forge(){
       displayName = (forms && forms.suffix) || word.name;
     }
 
-    // Check if this is a multiplier word (e.g. Lesser, Greater).  When placed in the
+    // Check if this is a multiplier word (rarity-based adjectives).  When placed in the
     // gem slot (noun1), adjectives should behave like nouns and contribute AP rather
     // than acting as multipliers.  Only treat adjectives as multipliers in
     // non‑gem slots.
@@ -2790,7 +2808,7 @@ function forge(){
         } else {
           displayValue = `+${weakVal} (WEAK!)`;
         }
-      } else if(e.res.includes(word.elem)){
+      } else if(resists(word.elem)){
         // Resistance negates AP
         displayValue = `×0 (RES)`;
       } else {
@@ -2833,7 +2851,7 @@ function forge(){
       color = EC[w.elem];
       if(e.weak.includes(w.elem)){
         displayValue = `+${baseValue * 2} (WEAK!)`;
-      } else if(e.res.includes(w.elem)){
+      } else if(resists(w.elem)){
         displayValue = `×0 (RES)`;
       }
     }
@@ -2938,12 +2956,18 @@ function forge(){
 function afterCombat(){
   const lastResult=window.lastCombatResult;
   $("#combat-overlay").classList.remove("show");
+  S.tempEffects={};
 
   const hasTalent=(id)=>S.talents.includes(id);
 
   if(lastResult.win){
     // Victory: level up, gain gold, proceed
     S.wins++;S.streak++;
+    if(S.roundIndex>=9){
+      PStats.victories++;
+      if(S.hero && S.hero.name) PStats.heroClears[S.hero.name]=true;
+      saveStats();
+    }
 
     // Base gold reward
     let reward=15+S.streak*5;
@@ -3022,8 +3046,17 @@ function afterCombat(){
     // Defeat: run ends
     S.losses++;S.streak=0;
     S.heroSelected=false;
-    alert("Defeat! Your run has ended. Starting a new run...");
-    startNewRun();
+    clearRunSave();
+    alert("Defeat! Your run has ended. Returning to the main menu.");
+    const shopOv=document.getElementById('shop-overlay');
+    if(shopOv) shopOv.classList.remove('show');
+    const pauseOv=document.getElementById('pause-menu');
+    if(pauseOv) pauseOv.classList.remove('show');
+    const heroSel=document.getElementById('hero-select-overlay');
+    if(heroSel) heroSel.classList.remove('show');
+    const mainMenu=document.getElementById('main-menu');
+    if(mainMenu) mainMenu.classList.add('show');
+    clrSel();
   }
 }
 
@@ -3099,9 +3132,6 @@ async function showCombat(r,words,rewards){
   total.textContent="";
   flames.style.opacity="0";
   weaponSvg.style.transform="";
-  // Hide the new-run button at the start of combat
-  const newRunBtnInit=document.getElementById("combat-new-run");
-  if(newRunBtnInit) newRunBtnInit.style.display="none";
   // Compute how many parts of the weapon need to be built based on selected words
   var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
   // Track progress of displayed parts
@@ -3240,10 +3270,10 @@ async function showCombat(r,words,rewards){
   render();
 
   // Reveal the continue button now that combat has resolved
-  if(continueBtn) continueBtn.style.display="block";
-  // Also reveal the new-run button when the fight concludes
-  const newRunBtnShow=document.getElementById('combat-new-run');
-  if(newRunBtnShow) newRunBtnShow.style.display='block';
+  if(continueBtn){
+    continueBtn.style.display="block";
+    continueBtn.focus();
+  }
 }
 
 function spawnFlames(count){
@@ -3265,6 +3295,7 @@ function showShop(){
   S.rerollCost=5;
   rollShop();
   renderShop();
+  saveRun();
   $("#shop-overlay").classList.add("show");
 }
 
@@ -3311,23 +3342,11 @@ function rollShop(){
     });
   });
 
-  // Select two consumables at random. Heal consumables have been removed.
-  // Consumables disabled for now
-  // shopConsumables = shuf([...CONSUMABLES]).slice(0,2);
-  shopConsumables = [];
+  // Select consumables at random.
+  shopConsumables = shuf([...CONSUMABLES]).slice(0,3);
 
-  // Create 1-2 buff options for purchase. Each buff costs gold and allows
-  // the player to select 1 of 3 random buffs (talents).
+  // Buff crates disabled while talents are removed.
   shopBuffCrates = [];
-  const numBuffCrates = Math.random() < 0.5 ? 1 : 2; // 50% chance of 1 or 2 buffs
-  for(let i = 0; i < numBuffCrates; i++){
-    const price = 30 + (i * 10); // First buff 30g, second 40g
-    shopBuffCrates.push({
-      name: 'Buff',
-      price: price,
-      tier: i + 1 // Used for visual variety
-    });
-  }
 }
 
 function renderShop(){
@@ -3347,7 +3366,7 @@ function renderShop(){
   if(heroInfo){
     if(!S.hero){
       heroInfo.textContent = '';
-    } else {
+  } else {
       const h = S.hero;
       // Build strings of elemental names for strengths and weaknesses
       const strongNames = h.str.map(i => EN[i]).join(', ') || 'None';
@@ -3371,8 +3390,7 @@ function renderShop(){
   renderShopBuffCrates();
   renderShopWordBank();
   renderShopTalents();
-  // Consumables disabled for now
-  // renderShopConsumables();
+  renderShopConsumables();
 }
 
 function renderNextEnemyPreview(){
@@ -3858,19 +3876,30 @@ function anim(el,f,t,d,fmt=v=>Math.round(v)){return new Promise(res=>{const st=p
 // handlers.  We also bind the start button here rather than in init() so
 // that the menu behaves reliably across reloads.
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialization is performed outside this event listener to ensure it runs even if
-  // DOMContentLoaded has already fired before this script executes.  No need to call init() here.
-  // Bind main menu start button: hide the menu overlay and begin a new run
+  loadStats();
+  loadRun();
+  const mm = document.getElementById('main-menu');
   const startBtn = document.getElementById('start-game-btn');
-  if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      const mm = document.getElementById('main-menu');
-      if (mm) mm.classList.remove('show');
-      startNewRun();
-    });
-    // Apply hover sound to start button for consistency
-    startBtn.onmouseenter = sfxHover;
+  const contBtn = document.getElementById('continue-btn');
+  const exitBtn = document.getElementById('exit-btn');
+  const achBtn = document.getElementById('achievements-btn');
+  updateContinueButtons();
+  if(contBtn){
+    contBtn.onclick = ()=>{if(mm)mm.classList.remove('show');render();};
   }
+  if(startBtn){
+    startBtn.onclick=()=>{if(mm)mm.classList.remove('show');startNewRun();};
+    startBtn.onmouseenter=sfxHover;
+  }
+  if(exitBtn){exitBtn.onclick=()=>{if(mm)mm.classList.remove('show');};}
+  if(achBtn){achBtn.onclick=()=>{document.getElementById('achievements-overlay').classList.add('show');renderStats();};}
+  const pauseBtn=document.getElementById('pause-btn');
+  if(pauseBtn){pauseBtn.onclick=()=>document.getElementById('pause-menu').classList.add('show');}
+  $("#pause-continue").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
+  $("#pause-new").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');startNewRun();};
+  $("#pause-achievements").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');document.getElementById('achievements-overlay').classList.add('show');renderStats();};
+  $("#pause-exit").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
+  $("#achievements-close").onclick=()=>document.getElementById('achievements-overlay').classList.remove('show');
 });
 
 // Call init immediately to ensure the game initializes even if DOMContentLoaded has already fired.
