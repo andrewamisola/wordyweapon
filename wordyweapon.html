@@ -1752,6 +1752,8 @@ function updSlots(){
 
 function updateSlotCalcs(){
   const h=S.hero,e=S.enemy,s=S.sel;
+  const weakTo=(el)=>e.weak.includes(el);
+  const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
 
   // Helper function to show tier value contribution. A slotKey is provided so that
   // nouns placed into the gem slot (noun1) can grant an extra point of AP to emphasize
@@ -1759,89 +1761,67 @@ function updateSlotCalcs(){
   // benefit from this bonus when they morph into a noun. For adjectives used in
   // adjective slots, no bonus is applied.
   function showWordContribution(word, slotKey) {
-    if(!word || word.isStick) return "";
-
-    // Check if this is a multiplier word (Lesser, Greater, Supreme, etc.)
-    // When an adjective is placed in the gem slot it behaves like a noun: it
-    // contributes base AP and does not simply show its multiplier.  In all
-    // other slots, adjectives act purely as multipliers.
-    if(word.mult !== undefined && word.type === 'adjective'){
-      if(slotKey !== 'noun1'){
-        return `×${word.mult}`;
-      }
-      // Fall through for gem‑slot adjectives: handle like a noun below
-    }
+    if(!word) return "";
 
     // Determine base AP.  Use explicit 'ap' when defined or derive from rarity.
-    let tierValue = getBaseAP(word);
-    const baseTierValue = tierValue; // Store original for display
-
-    // Gem slot bonus will be applied later (×2 to final value)
+    const baseValue = getBaseAP(word);
+    let multiplier = 1;
+    const parts = [];
 
     // Weapon proficiency for weapons.  Good doubles, poor halves.
-    let proficiencyMultiplier = 1;
     if(S.tempEffects && S.tempEffects.weaponMaster){
-      proficiencyMultiplier = 1.5;
-    } else if(slotKey === 'item' && !word.isStick && word.category){
+      multiplier *= 1.5;
+      parts.push("1.5");
+    } else if(slotKey === 'item' && word.category){
       if(h.good === word.category){
-        proficiencyMultiplier = 2.0;
+        multiplier *= 2.0;
+        parts.push("2");
       } else if(h.bad === word.category){
-        proficiencyMultiplier = 0.5;
+        multiplier *= 0.5;
+        parts.push("0.5");
       }
     }
 
-    // Apply proficiency to tier value
-    const profTierValue = Math.floor(tierValue * proficiencyMultiplier);
-
-    let calc = "";
-
-    // Show calculation formula
-    if(word.elem !== undefined) {
-      const el = word.elem;
-      if(weakTo(el)) {
-        // Show formula: tierValue × 2 = result (WEAK)
-        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-          calc = `${baseTierValue}×${proficiencyMultiplier}×2 = ${profTierValue*2}`;
-        } else if(slotKey === 'noun1'){
-          calc = `${tierValue}×2×2 = ${tierValue*4}`;
-        } else {
-          calc = `${tierValue}×2 = ${tierValue*2}`;
-        }
-      } else if(resists(el)) {
-        // Show resistance negates AP
-        calc = `${tierValue}×0 = 0`;
-      } else {
-        // Normal element, no weakness/resistance
-        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-          calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
-        } else if(slotKey === 'noun1'){
-          calc = `${tierValue}×2 = ${tierValue*2}`;
-        } else {
-          calc = `+${tierValue}`;
-        }
-      }
-    } else {
-      // No element
-      if(proficiencyMultiplier !== 1 && slotKey === 'item'){
-        calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
-      } else if(slotKey === 'noun1'){
-        calc = `${tierValue}×2 = ${tierValue*2}`;
-      } else {
-        calc = `+${tierValue}`;
+    // Elemental interaction
+    if(word.elem !== undefined){
+      if(weakTo(word.elem)){
+        multiplier *= 2;
+        parts.push("2");
+      } else if(resists(word.elem)){
+        multiplier *= 0;
+        parts.push("0");
       }
     }
 
-    return calc;
+    // Gem slot bonus doubles the AP contribution
+    if(slotKey === 'noun1'){
+      multiplier *= 2;
+      parts.push("2");
+    }
+
+    // Multiplier adjectives scale the total damage. Treat them as part of the
+    // per-slot equation so players see the full multiplier stack.
+    if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
+      multiplier *= word.mult;
+      parts.push(String(word.mult));
+    }
+
+    // Backup stick penalty
+    if(word.isStick){
+      multiplier *= 0.25;
+      parts.push("0.25");
+    }
+
+    // Ensure we always show at least one multiplier so the equation is explicit
+    const suffix = (parts.length ? parts.map(p=>`×${p}`).join('') : '×1');
+    const total = Math.floor(baseValue * multiplier);
+    return `${baseValue}${suffix} = ${total}`;
   }
 
   // WEAPON (shows tier contribution)
   let itemCalc = "";
   if(s.item){
-    if(s.item.isStick){
-      itemCalc = "×0.25";
-    } else {
-      itemCalc = showWordContribution(s.item, 'item');
-    }
+    itemCalc = showWordContribution(s.item, 'item');
   }
   $("#calc-item").textContent = itemCalc;
   $("#calc-item").className = "slot-calc" + (s.item && !s.item.isStick ? " positive" : "");
