@@ -11,6 +11,8 @@ TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
 // Maximum inventory size to prevent hoarding too many words
 // Increase inventory limit so players can hold more words
 const INV_LIMIT=30;
+// Cap how many consumables can be held at once to keep power in check
+const CONSUMABLE_LIMIT=2;
 // Talents are disabled for this build; keep the limit at zero to prevent acquisition.
 const BUFF_LIMIT=0;
 
@@ -1351,27 +1353,38 @@ function renderConsumables(){
   const cont=document.getElementById("consumables-bar");
   if(!cont) return;
   cont.innerHTML="";
-  // Show a message if none owned
-  if(!S.consumables || S.consumables.length===0){
-    return;
-  }
-  S.consumables.forEach((cid,idx)=>{
-    const cItem=CONSUMABLES.find(x=>x.id===cid);
-    if(!cItem) return;
+  const count=document.createElement("div");
+  count.className="consumable-capacity dim";
+  count.textContent=`${S.consumables.length}/${CONSUMABLE_LIMIT} consumables`;
+  cont.appendChild(count);
+  const owned=S.consumables||[];
+  const totalSlots=Math.max(CONSUMABLE_LIMIT, owned.length);
+  for(let i=0;i<totalSlots;i++){
+    const cid=owned[i];
+    const cItem=cid?CONSUMABLES.find(x=>x.id===cid):null;
     const div=document.createElement("div");
     div.className="consumable-item";
-    div.textContent=cItem.name;
-    div.title=cItem.desc;
-    div.onclick=()=>{
-      // Use consumable effect
-      const msg=cItem.use(S);
-      alert(msg||`${cItem.name} used`);
-      // Remove consumable from list
-      S.consumables.splice(idx,1);
-      render();
-    };
+    if(cItem){
+      div.textContent=cItem.name;
+      div.title=cItem.desc;
+      div.onclick=()=>{
+        // Use consumable effect
+        const msg=cItem.use(S);
+        alert(msg||`${cItem.name} used`);
+        // Remove consumable from list
+        S.consumables.splice(i,1);
+        render();
+      };
+    } else {
+      div.classList.add("empty");
+      div.textContent="Empty";
+      div.title="Consumable slot";
+    }
+    if(i>=CONSUMABLE_LIMIT){
+      div.classList.add("capacity-locked");
+    }
     cont.appendChild(div);
-  });
+  }
 }
 
 // Render active talents in the talent bar.  Each talent appears as a chip with a
@@ -2913,6 +2926,11 @@ function renderShop(){
     // Show just the count since the label is now part of the header
     invEl.textContent = `${S.inv.length}/${INV_LIMIT}`;
   }
+  const conEl = document.getElementById("shop-consumable-cap");
+  if(conEl){
+    conEl.textContent = `${S.consumables.length}/${CONSUMABLE_LIMIT}`;
+    conEl.classList.toggle("at-limit", S.consumables.length>=CONSUMABLE_LIMIT);
+  }
   $("#reroll-cost").textContent=S.rerollCost;
   $("#reroll-btn").disabled=S.gold<S.rerollCost;
 
@@ -3321,14 +3339,21 @@ function renderShopWordBank(){
 function renderShopConsumables(){
   const cont=$("#shop-consumables");cont.innerHTML="";
   shopConsumables.forEach((c,i)=>{
+    const atLimit = S.consumables.length>=CONSUMABLE_LIMIT;
+    const canAfford = S.gold>=c.cost;
     const d=document.createElement("div");d.className="shop-item";
     d.innerHTML=`
       <div class="chip-name rarity-magic">${c.name}</div>
       <div class="chip-info" style="font-size:9px;line-height:1.3;margin:4px 0">${c.desc}</div>
       <div class="shop-price gold">💰${c.cost}</div>
-      <button class="shop-btn" ${S.gold<c.cost?"disabled":""}>Buy</button>
+      <button class="shop-btn" ${(!canAfford||atLimit)?"disabled":""}>${atLimit?"Full" : "Buy"}</button>
     `;
-    d.querySelector("button").onclick=()=>{
+    const btn=d.querySelector("button");
+    btn.onclick=()=>{
+      if(S.consumables.length>=CONSUMABLE_LIMIT){
+        alert(`You can only carry ${CONSUMABLE_LIMIT} consumables.`);
+        return;
+      }
       if(S.gold>=c.cost){
         sfxBuy();
         S.gold-=c.cost;
