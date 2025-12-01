@@ -149,7 +149,7 @@ const CONSUMABLES=[
      }
      return "No Rare words available.";
    }},
-  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"All weapons ×2.0 proficiency for one battle.",
+  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"Activate to double weapon proficiency for one battle.",
    use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
   {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
    use:(S)=>{
@@ -162,7 +162,7 @@ const CONSUMABLES=[
      applyWordUpgrade(target,nextTierWord);
      return `${target.name} refined!`;
    }},
-  {id:"polymorph",name:"Polymorph",cost:12,desc:"Remove the enemy's resistances for the next battle.",
+  {id:"polymorph",name:"Polymorph",cost:12,desc:"Use to strip enemy resistances for your next battle.",
    use:(S)=>{S.tempEffects.polymorph=true;return "Enemy resistances nullified!"}}
 ];
 
@@ -3343,6 +3343,14 @@ function renderShopWordBank(){
 
 function renderShopConsumables(){
   const cont=$("#shop-consumables");cont.innerHTML="";
+  const shopHeader=document.createElement("div");
+  shopHeader.className="dim";
+  shopHeader.style.fontSize="11px";
+  shopHeader.style.textAlign="center";
+  shopHeader.style.marginBottom="6px";
+  shopHeader.textContent="Shop Stock";
+  cont.appendChild(shopHeader);
+
   shopConsumables.forEach((c,i)=>{
     const atLimit = S.consumables.length>=CONSUMABLE_LIMIT;
     const canAfford = S.gold>=c.cost;
@@ -3354,6 +3362,7 @@ function renderShopConsumables(){
       <button class="shop-btn" ${(!canAfford||atLimit)?"disabled":""}>${atLimit?"Full" : "Buy"}</button>
     `;
     const btn=d.querySelector("button");
+    btn.onmouseenter = sfxHover;
     btn.onclick=()=>{
       if(S.consumables.length>=CONSUMABLE_LIMIT){
         alert(`You can only carry ${CONSUMABLE_LIMIT} consumables.`);
@@ -3373,7 +3382,55 @@ function renderShopConsumables(){
     cont.appendChild(d);
   });
   if(shopConsumables.length===0){
-    cont.innerHTML='<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
+    const soldOut=document.createElement("div");
+    soldOut.className="dim";
+    soldOut.style.padding="10px";
+    soldOut.style.fontSize="11px";
+    soldOut.textContent="Sold out!";
+    cont.appendChild(soldOut);
+  }
+
+  const ownedHeader=document.createElement("div");
+  ownedHeader.className="dim";
+  ownedHeader.style.fontSize="11px";
+  ownedHeader.style.textAlign="center";
+  ownedHeader.style.margin="10px 0 6px";
+  ownedHeader.textContent="Your Consumables";
+  cont.appendChild(ownedHeader);
+
+  if(!S.consumables.length){
+    const none=document.createElement("div");
+    none.className="dim";
+    none.style.padding="10px";
+    none.style.fontSize="11px";
+    none.textContent="You have no consumables to sell.";
+    cont.appendChild(none);
+  } else {
+    S.consumables.forEach((cid)=>{
+      const cItem=CONSUMABLES.find(x=>x.id===cid);
+      const sellPrice=Math.max(1, Math.floor((cItem?.cost||0)/2));
+      const d=document.createElement("div");d.className="shop-item";
+      d.innerHTML=`
+        <div class="chip-name rarity-magic">${cItem?.name||cid}</div>
+        <div class="chip-info" style="font-size:9px;line-height:1.3;margin:4px 0">${cItem?.desc||"Consumable"}</div>
+        <div class="shop-price gold">Sell for 💰${sellPrice}</div>
+        <button class="shop-btn">Sell</button>
+      `;
+      const btn=d.querySelector("button");
+      btn.onmouseenter = sfxHover;
+      btn.onclick=()=>{
+        const idx=S.consumables.indexOf(cid);
+        if(idx>=0){
+          sfxRemove();
+          S.consumables.splice(idx,1);
+          S.gold+=sellPrice;
+          alert(`Sold ${cItem?.name||cid} for ${sellPrice} gold.`);
+          renderShop();
+          render();
+        }
+      };
+      cont.appendChild(d);
+    });
   }
 }
 
