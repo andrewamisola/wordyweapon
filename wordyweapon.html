@@ -1114,6 +1114,19 @@ function updateContinueButtons(){
   }
 }
 
+function showMainMenu(){
+  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay'];
+  overlays.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('show');
+  });
+  const mainMenu=document.getElementById('main-menu');
+  if(mainMenu){
+    mainMenu.classList.add('show');
+    mainMenu.focus?.();
+  }
+}
+
 function renderStats(){
   const box=document.getElementById('stats-container');
   if(!box) return;
@@ -3052,14 +3065,7 @@ function afterCombat(){
     S.heroSelected=false;
     clearRunSave();
     alert("Defeat! Your run has ended. Returning to the main menu.");
-    const shopOv=document.getElementById('shop-overlay');
-    if(shopOv) shopOv.classList.remove('show');
-    const pauseOv=document.getElementById('pause-menu');
-    if(pauseOv) pauseOv.classList.remove('show');
-    const heroSel=document.getElementById('hero-select-overlay');
-    if(heroSel) heroSel.classList.remove('show');
-    const mainMenu=document.getElementById('main-menu');
-    if(mainMenu) mainMenu.classList.add('show');
+    showMainMenu();
     clrSel();
   }
 }
@@ -3134,8 +3140,15 @@ async function showCombat(r,words,rewards){
   const resultTitle=$("#combat-result-title");
   const resultDetail=$("#combat-result-detail");
   const continueBtn=document.getElementById("combat-continue");
+  const strayNewRun=document.getElementById("combat-new-run");
 
-  if(continueBtn) continueBtn.style.display="none";
+  // Ensure only the Continue button is shown on the combat result modal.
+  if(strayNewRun) strayNewRun.remove();
+
+  if(continueBtn){
+    continueBtn.style.display="none";
+    continueBtn.disabled=true;
+  }
 
   try{
     cw.innerHTML="";
