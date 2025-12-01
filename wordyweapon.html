@@ -2539,9 +2539,19 @@ function buildWeaponName(){
 }
 
 // === CALCULATION WITH TALENT HOOKS ===
+function getCombatants(){
+  const defaultHero={hp:100,str:[],weak:[],good:null,bad:null,name:"Hero"};
+  const defaultEnemy={hp:50,ap:0,weak:[],res:[],name:"Enemy"};
+  if(!S.hero) console.warn("[combat] Missing hero data; using defaults");
+  if(!S.enemy) console.warn("[combat] Missing enemy data; using defaults");
+  return{
+    hero:{...defaultHero,...(S.hero||{})},
+    enemy:{...defaultEnemy,...(S.enemy||{})}
+  };
+}
+
 function calc(){
-  const h = S.hero;
-  const e = S.enemy;
+  const {hero:h,enemy:e}=getCombatants();
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
   const weakTo=(el)=>e.weak.includes(el);
@@ -2949,9 +2959,12 @@ function forge(){
     items: []
   };
 
-  if(c.heroDmg >= S.enemy.hp){
+  const {enemy:safeEnemy}=getCombatants();
+  const targetHp = safeEnemy.hp || 0;
+
+  if(c.heroDmg >= targetHp){
     // Victory - calculate gold
-    const overkill = Math.max(0, Math.round(c.heroDmg - S.enemy.hp));
+    const overkill = Math.max(0, Math.round(c.heroDmg - targetHp));
     let goldReward = 15 + S.streak * 5;
     goldReward += Math.floor(overkill / 10);
 
@@ -3141,14 +3154,40 @@ function showTalentSelect(){
 }
 
 async function showCombat(r,words,rewards){
-  window.lastCombatResult=r; // Store for afterCombat
-  window.lastCombatRewards=rewards; // Store rewards for display
+  const {hero:safeHero,enemy:safeEnemy}=getCombatants();
+  const safeResult={
+    heroDmg:0,
+    enemyDmg:0,
+    heroMax:safeHero.hp,
+    enemyMax:safeEnemy.hp,
+    heroFin:safeHero.hp,
+    enemyFin:safeEnemy.hp,
+    currentHP:S.currentHP ?? safeHero.hp,
+    win:false,
+    tie:false,
+    ...r
+  };
+  const safeRewards={
+    gold:(rewards&&typeof rewards.gold==='number')?rewards.gold:0,
+    items:Array.isArray(rewards?.items)?rewards.items:[]
+  };
+
+  window.lastCombatResult=safeResult; // Store for afterCombat
+  window.lastCombatRewards=safeRewards; // Store rewards for display
 
   const ov=$("#combat-overlay");
   const cw=$("#combat-words");
   const total=$("#combat-total");
   const flames=$("#combat-flames");
   const weaponSvg=$("#combat-weapon-svg");
+  const cbHero=$("#cb-hero"),cbEnemy=$("#cb-enemy");
+  const barHero=$("#bar-hero"),barEnemy=$("#bar-enemy");
+  const txtHero=$("#txt-hero"),txtEnemy=$("#txt-enemy");
+
+  if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
+    console.warn("[combat] Missing combat DOM; skipping animation");
+    return;
+  }
 
   cw.innerHTML="";
   total.classList.remove("show");
@@ -3165,13 +3204,13 @@ async function showCombat(r,words,rewards){
   // Begin with an empty weapon SVG
   renderWeaponProgress(weaponSvg,0);
 
-  $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
-  const heroStartHP=r.currentHP;
-  const heroPercent=(heroStartHP/r.heroMax)*100;
-  $("#bar-hero").style.width=`${heroPercent}%`;
-  $("#bar-enemy").style.width="100%";
-  $("#txt-hero").textContent=`${heroStartHP}/${r.heroMax}`;
-  $("#txt-enemy").textContent=`${r.enemyMax}/${r.enemyMax}`;
+  cbHero.textContent="0";cbEnemy.textContent="0";
+  const heroStartHP=safeResult.currentHP;
+  const heroPercent=(heroStartHP/safeResult.heroMax)*100;
+  barHero.style.width=`${heroPercent}%`;
+  barEnemy.style.width="100%";
+  txtHero.textContent=`${heroStartHP}/${safeResult.heroMax}`;
+  txtEnemy.textContent=`${safeResult.enemyMax}/${safeResult.enemyMax}`;
   $("#combat-result").style.display="none";
   ov.classList.add("show");
 
@@ -3232,7 +3271,7 @@ async function showCombat(r,words,rewards){
   document.body.classList.add("shake");
   setTimeout(()=>document.body.classList.remove("shake"),150);
 
-  total.textContent=`${Math.round(r.heroDmg)} DAMAGE!`;
+  total.textContent=`${Math.round(safeResult.heroDmg)} DAMAGE!`;
   total.classList.add("show");
 
   // Play a final note that continues the ascending arpeggio sequence rather than
@@ -3250,41 +3289,35 @@ async function showCombat(r,words,rewards){
   flames.style.opacity="0";
 
   await dly(300);
-  await anim($("#cb-hero"),0,r.heroDmg,500);
+  await anim(cbHero,0,safeResult.heroDmg,500);
   await dly(150);
-  await anim($("#cb-enemy"),0,r.enemyDmg,350);
+  await anim(cbEnemy,0,safeResult.enemyDmg,350);
   await dly(300);
 
-  $("#bar-hero").style.width=`${(r.heroFin/r.heroMax)*100}%`;
-  $("#bar-enemy").style.width=`${(r.enemyFin/r.enemyMax)*100}%`;
-  await anim($("#txt-hero"),heroStartHP,r.heroFin,400,v=>`${Math.round(v)}/${r.heroMax}`);
-  await anim($("#txt-enemy"),r.enemyMax,r.enemyFin,400,v=>`${Math.round(v)}/${r.enemyMax}`);
+  barHero.style.width=`${(safeResult.heroFin/safeResult.heroMax)*100}%`;
+  barEnemy.style.width=`${(safeResult.enemyFin/safeResult.enemyMax)*100}%`;
+  await anim(txtHero,heroStartHP,safeResult.heroFin,400,v=>`${Math.round(v)}/${safeResult.heroMax}`);
+  await anim(txtEnemy,safeResult.enemyMax,safeResult.enemyFin,400,v=>`${Math.round(v)}/${safeResult.enemyMax}`);
   await dly(250);
 
   const res=$("#combat-result"),title=$("#combat-result-title"),det=$("#combat-result-detail");
   res.className="";res.style.display="block";
-  if(r.win){
+  if(safeResult.win){
     res.classList.add("win");
     title.textContent="⚔️ VICTORY!";
     title.style.color="#4ade80";
 
     // Show rewards
     let detailText = "Enemy defeated!";
-    if(rewards && rewards.gold > 0){
-      detailText += `\n💰 +${rewards.gold} Gold`;
+    if(safeRewards.gold > 0){
+      detailText += `\n💰 +${safeRewards.gold} Gold`;
     }
-    if(rewards && rewards.items.length > 0){
-      detailText += `\n🎁 Boss Loot: ${rewards.items.join(", ")}`;
+    if(safeRewards.items.length > 0){
+      detailText += `\n🎁 Boss Loot: ${safeRewards.items.join(", ")}`;
     }
     det.textContent=detailText;
     det.style.whiteSpace="pre-line"; // Allow newlines
     sfxWin();
-  }else if(r.tie){
-    res.classList.add("lose");
-    title.textContent="💀 DRAW";
-    title.style.color="#f59e0b";
-    det.textContent="Both fell...";
-    sfxLose();
   }else{
     res.classList.add("lose");
     title.textContent="💀 DEFEAT";
