@@ -153,8 +153,12 @@ const CONSUMABLES=[
    use:(S)=>{
      const target=S.sel.item||S.sel.noun1||S.sel.adj1||S.sel.adj2||S.sel.adj3||S.sel.adj4||S.inv[0];
      if(!target) return "No word to upgrade.";
-     if(target.rarity<3){target.rarity+=1;return `${target.name} refined!`;}
-     return `${target.name} is already top tier.`;
+     const nextTierWord=findNextTierWord(target);
+     if(!nextTierWord){
+       return `${target.name} is already top tier.`;
+     }
+     applyWordUpgrade(target,nextTierWord);
+     return `${target.name} refined!`;
    }},
   {id:"polymorph",name:"Polymorph",cost:12,desc:"Remove the enemy's resistances for the next battle.",
    use:(S)=>{S.tempEffects.polymorph=true;return "Enemy resistances nullified!"}}
@@ -364,6 +368,38 @@ const STICK={id:"stick",name:"Stick",type:"weapon",rarity:R.RUSTY,isStick:true,d
 // Duplicate talent definition removed.  The primary TALENTS list is declared earlier in the file.
 
 // === HELPER FUNCTIONS ===
+function getTierRank(word){
+  if(!word) return 0;
+  const rank = RRANK[word.rarity];
+  return rank !== undefined ? rank : 0;
+}
+
+function findNextTierWord(word){
+  if(!word) return null;
+  const targetRank = getTierRank(word);
+  const candidates = WORDS
+    .filter(w => {
+      if(w.type !== word.type) return false;
+      if(word.type === 'weapon') return w.category === word.category;
+      if(word.elem !== undefined) return w.elem === word.elem;
+      return w.elem === undefined;
+    })
+    .sort((a,b) => {
+      const ra = getTierRank(a);
+      const rb = getTierRank(b);
+      if(ra !== rb) return ra - rb;
+      return WORDS.indexOf(a) - WORDS.indexOf(b);
+    });
+  return candidates.find(w => getTierRank(w) > targetRank) || null;
+}
+
+function applyWordUpgrade(target,template){
+  if(!target || !template) return;
+  const upgraded = {...template};
+  Object.keys(target).forEach(k => delete target[k]);
+  Object.assign(target, upgraded);
+}
+
 // Convert a rarity into a base AP value.  Tier 1 words grant 1 AP, Tier 2 words grant 2 AP,
 // and Tier 3 words grant 3 AP.  Ranks are determined via the RRANK array (0=T1, 2=T2, 3=T3).
 function rarityToAP(rarity){
