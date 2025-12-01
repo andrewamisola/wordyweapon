@@ -1,0 +1,242 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'EB Garamond', 'Segoe UI',system-ui,serif;background:#0a0a0f;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
+.gold{color:#f4d03f}.hero-c{color:#4ade80}.enemy-c{color:#f87171}.dim{color:#6b7280}
+button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
+button:hover:not(:disabled){background:#374151;border-color:#4b5563;transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;background:#1a1d24;border:1px solid}
+.tag.str{color:#4ade80;border-color:#4ade8055}.tag.weak{color:#f87171;border-color:#f8717155}.tag.prof{color:#60a5fa;border-color:#60a5fa55}
+#header{width:100%;max-width:950px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#title{font-size:24px;font-weight:bold}
+#stats{display:flex;gap:20px;font-size:14px}
+#battle-view{display:flex;gap:40px;width:100%;max-width:1000px;margin-bottom:20px;align-items:center;justify-content:center}
+.portrait-container{flex:0 0 280px}
+.portrait{background:#0d1117;border-radius:12px;padding:16px;border:2px solid #2a2f38}
+.hero-portrait{border-color:#4ade8044}.enemy-portrait{border-color:#f8717144}
+.portrait-frame{width:80px;height:80px;border-radius:50%;background:#1a1d24;border:3px solid;margin:0 auto 12px;position:relative}
+.hero-portrait .portrait-frame{border-color:#4ade80;background:linear-gradient(135deg,#22543d,#1a1d24)}
+.enemy-portrait .portrait-frame{border-color:#f87171;background:linear-gradient(135deg,#7f1d1d,#1a1d24)}
+.portrait-info{text-align:center}
+.portrait-name{font-size:16px;font-weight:bold;margin-bottom:8px}
+/* Hide the details toggle container as the panels are now triggered by hovering on the portraits */
+.portrait-details{display:none}
+.health-bar-container{margin-bottom:8px}
+.health-bar{height:24px;background:#1a1d24;border-radius:4px;overflow:hidden;position:relative;border:1px solid #374151}
+.health-fill{height:100%;transition:width .3s ease-out;position:absolute;top:0;left:0}
+.hero-fill{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.enemy-fill{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.health-preview{position:absolute;top:0;height:100%;opacity:0.5;transition:all .2s}
+.damage-preview{background:#dc2626;right:0}
+
+/* Blink animation for damage preview on the health bar */
+@keyframes blink {
+  /* Slow down the blink and make it linger longer at the low opacity. */
+  0%, 80%, 100% { opacity: 1; }
+  40% { opacity: 0.3; }
+}
+/*
+ * Apply an infinite blink animation to the damage preview bar so that
+ * predicted damage continues to pulse until the player forges the weapon.
+ */
+.blink {
+  animation: blink 1.2s ease-in-out infinite;
+}
+.element-badges{display:flex;gap:4px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+.elem-badge{font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid;opacity:0.9}
+.elem-badge.strong{background:#22543d33;color:#4ade80;border-color:#4ade8055}
+.elem-badge.weak{background:#7f1d1d33;color:#f87171;border-color:#f8717155}
+.health-text{font-size:12px;color:#9ca3af;margin-top:4px}
+.details-toggle{font-size:10px;padding:4px 12px;background:#1a1d24;border:1px solid #374151;border-radius:4px;cursor:pointer;color:#9ca3af}
+.details-toggle:hover{background:#374151;color:#e5e7eb}
+.details-panel{width:100%;max-width:950px;background:#0d1117;border-radius:8px;padding:16px;margin-bottom:16px;border:1px solid #2a2f38}
+.details-panel.hidden{display:none}
+.details-content{font-size:12px}
+#vs-center{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#weapon-display{text-align:center}
+#weapon-svg{width:120px;height:150px;transition:transform .3s,filter .3s}
+#weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
+#damage-preview-text{display:flex;align-items:center;gap:12px;background:#0d1117;border-radius:8px;padding:12px;border:1px solid #2a2f38}
+.damage-number{font-size:32px;font-weight:bold;min-width:60px;text-align:center}
+.damage-number.hero-damage{color:#4ade80}
+.damage-number.enemy-damage{color:#f87171}
+/* Smaller text for displaying the final AP (damage) under the calculation */
+.ap-number{font-size:14px;color:#f4d03f;margin-top:4px}
+/* Highlight preview panel when hero damage meets or exceeds enemy HP */
+#damage-preview-text.goal-achieved{border-color:#4ade80;box-shadow:0 0 6px #4ade8066}
+/* Highlight selected word in the bank */
+.chip.selected{border-color:#f4d03f;box-shadow:0 0 6px #f4d03f}
+/* Hide entire slot containers when the hidden class is applied. Without this rule
+   only the inner .slot element would be hidden, leaving spacing in place. */
+.slot-container.hidden{display:none}
+/* Hide hero health bar and preview elements since hero HP is not used */
+.health-bar.hero-bar{display:none}
+#hero-health-text{display:none}
+#hero-damage-preview{display:none}
+
+/* Hide hero-specific damage and HP in combat overlay since hero does not take damage */
+#combat-dmg .combat-block:first-child,
+#combat-bars .bar-block:first-child{
+  display:none;
+}
+#combat-dmg{
+  /* Hide the entire strikes display since enemy strikes are no longer relevant */
+  display:none !important;
+}
+.card{background:#0d1117;border-radius:12px;padding:16px;border:1px solid;flex:1}
+.card.hero{border-color:#4ade8044}.card.enemy{border-color:#f8717144}
+.card-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}
+.card-name{font-size:18px;margin-bottom:4px}
+.card-desc{font-size:11px;color:#9ca3af;margin-bottom:8px;font-style:italic;line-height:1.4}
+.card-dialogue{background:#1a1d24;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#d1d5db;border-left:3px solid #4ade80;line-height:1.4}
+.card.enemy .card-dialogue{border-left-color:#f87171}
+.card-stats{font-size:12px;margin-bottom:6px}
+.card-section{margin-bottom:6px}
+.card-section-title{font-size:10px;color:#6b7280;margin-bottom:2px}
+
+/* Dialogue line displayed directly under hero and enemy portraits */
+.portrait-dialogue{
+  font-size:12px;
+  color:#d1d5db;
+  font-style:italic;
+  margin-top:4px;
+  margin-bottom:4px;
+}
+#forge{background:#12151a;border-radius:12px;padding:20px;width:100%;max-width:950px;border:1px solid #2a2f38}
+#forge-title{text-align:center;font-size:16px;margin-bottom:14px}
+#sentence{display:flex;justify-content:center;align-items:flex-start;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.slot-container{display:flex;flex-direction:column;align-items:center}
+.slot{min-width:95px;height:50px;background:#1a1d24;border:2px dashed #374151;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7280;transition:all .15s;padding:0 10px;cursor:pointer}
+.slot{
+  /* Make slots relative containers so that tooltips can be positioned relative to them */
+  position:relative;
+}
+.slot:hover{border-color:#4b5563}.slot.over{border-color:#f4d03f;background:#1f2419}.slot.filled{border-style:solid;border-color:#4b5563}
+@keyframes wordPlaced{0%{transform:scale(1);box-shadow:0 0 0 rgba(74,222,128,0)}50%{transform:scale(1.1);box-shadow:0 0 20px rgba(74,222,128,0.6)}100%{transform:scale(1);box-shadow:0 0 0 rgba(74,222,128,0)}}
+.slot.word-placed{animation:wordPlaced 0.3s ease-out;border-color:#4ade80}
+.slot.hidden{display:none}
+.slot-calc{font-size:10px;color:#9ca3af;margin-top:4px;min-height:16px;font-family:monospace;text-align:center}
+.slot-calc.positive{color:#4ade80}.slot-calc.negative{color:#f87171}
+#of-label{font-size:16px;color:#6b7280;padding-top:14px}
+#of-label.hidden{display:none}
+#preview{display:flex;justify-content:center;align-items:center;gap:30px;background:#080a0d;border-radius:8px;padding:12px;margin-bottom:14px}
+.preview-block{text-align:center}
+.preview-label{font-size:9px;color:#6b7280;margin-bottom:2px}
+.preview-value{font-size:28px;font-weight:bold}
+#backup-weapon{text-align:center;font-size:10px;color:#f59e0b;margin-bottom:8px;display:none}
+#bank-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#bank-hint{font-size:11px;color:#6b7280}
+#sort-btns{display:flex;gap:4px}
+#sort-btns button{padding:4px 10px;font-size:10px}
+#sort-btns button.active{background:#374151;border-color:#4b5563}
+#sort-dir-btn-forge,#sort-dir-btn{
+  /* Ensure the sort direction arrow remains visible and aligned with other sort buttons.  
+     Increase the font size so the arrow character isn’t mistaken for other symbols. */
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 10px;
+  font-size:16px;
+  line-height:1;
+}
+#bank{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;background:#0d1017;border-radius:8px}
+.chip{background:#1a1d24;border:1px solid #2d333b;border-radius:6px;padding:6px 10px;cursor:pointer;text-align:center;min-width:75px;transition:all .1s;user-select:none;position:relative}
+.chip:hover:not(.disabled){border-color:#4b5563;transform:translateY(-2px);box-shadow:0 4px 12px #0005}
+.chip.disabled{opacity:.25;cursor:not-allowed;transform:none!important;filter:grayscale(0.8)}
+.chip.rusty{border-color:#92400e55;background:#1a1510}
+.chip-name{font-size:12px;margin-bottom:1px}
+.chip-info{font-size:8px;color:#6b7280}
+.chip-elem{font-size:8px;margin-top:2px}
+.rarity-common{color:#9ca3af}.rarity-magic{color:#60a5fa}.rarity-rare{color:#f4d03f}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f97316}.rarity-rusty{color:#b45309}
+.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:200px;text-align:left;z-index:50;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
+.chip:hover .tooltip{opacity:1}
+/* Allow tooltips on slots to appear when hovering */
+.slot:hover .tooltip{opacity:1}
+.tooltip-title{font-size:13px;font-weight:bold;margin-bottom:4px}
+.tooltip-type{font-size:10px;color:#6b7280;margin-bottom:6px}
+.tooltip-line{margin:4px 0;color:#d1d5db}
+.tooltip-line.positive{color:#4ade80}
+.tooltip-line.negative{color:#f87171}
+.tooltip-line.dim{color:#6b7280}
+.tooltip-elem{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;margin-top:4px}
+#buttons{display:flex;justify-content:center;gap:10px;margin-top:14px;align-items:center}
+#forge-btn{background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055;font-size:15px;padding:12px 28px;position:relative;overflow:hidden}
+#forge-btn:hover:not(:disabled){background:linear-gradient(180deg,#4d6a47,#3d5a37);transform:scale(1.02)}
+#forge-btn:active:not(:disabled){transform:scale(0.98)}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+#pause-menu{z-index:200}
+.overlay.show{opacity:1;pointer-events:auto}
+.modal{background:#0d1117;border-radius:16px;padding:24px;border:2px solid #f4d03f44;min-width:400px;max-width:90vw}
+.modal-title{text-align:center;font-size:18px;margin-bottom:16px}
+#combat-container{position:relative;overflow:hidden}
+#combat-flames{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;opacity:0;transition:opacity .3s}
+#combat-weapon-container{position:relative;width:140px;height:180px;margin:0 auto 16px}
+#combat-weapon-svg{width:100%;height:100%;transition:transform .1s}
+#combat-words{display:flex;justify-content:center;align-items:center;gap:8px;min-height:60px;margin-bottom:16px;flex-wrap:wrap}
+.combat-word{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;background:#1a1d24;font-size:15px;opacity:0;transform:scale(0.3) translateY(20px);transition:all .15s}
+.combat-word.show{opacity:1;transform:scale(1) translateY(0)}
+.combat-word.impact{animation:wordImpact .4s ease-out}
+.combat-word-name{font-weight:bold}
+.combat-word-value{font-size:20px;font-weight:bold;margin-top:4px}
+@keyframes wordImpact{0%{transform:scale(1)}20%{transform:scale(1.4)}40%{transform:scale(0.9)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes weaponShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.1)}75%{transform:rotate(5deg) scale(1.1)}}
+@keyframes screenShake{0%,100%{transform:translate(0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,4px)}}
+.shake{animation:screenShake .15s ease-out}
+@keyframes auraFlight{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.3)}}
+.aura-particle{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;z-index:1000;animation:auraFlight 0.8s ease-out forwards}
+#combat-total{text-align:center;font-size:48px;font-weight:bold;margin:16px 0;opacity:0;transform:scale(0.5)}
+#combat-total.show{opacity:1;transform:scale(1);transition:all .4s cubic-bezier(0.175,0.885,0.32,1.275)}
+#combat-dmg{display:flex;justify-content:center;gap:30px;margin-bottom:10px}
+.combat-block{text-align:center}
+.combat-label{font-size:10px;color:#6b7280}
+.combat-value{font-size:32px;font-weight:bold}
+#combat-bars{display:flex;gap:16px;margin-bottom:14px}
+.bar-block{flex:1}
+.bar-label{text-align:center;font-size:10px;color:#6b7280;margin-bottom:3px}
+.bar-outer{height:18px;background:#1a1d24;border-radius:4px;overflow:hidden}
+.bar-inner{height:100%;transition:width .5s ease-out}
+.bar-inner.hero{background:linear-gradient(90deg,#22c55e,#4ade80)}.bar-inner.enemy{background:linear-gradient(90deg,#dc2626,#f87171)}
+.bar-text{text-align:center;font-size:11px;margin-top:3px}
+#combat-result{text-align:center;padding:14px;border-radius:8px;margin-bottom:14px;display:none}
+#combat-result.win{background:#22543d44;border:1px solid #4ade8055}
+#combat-result.lose{background:#7f1d1d44;border:1px solid #f8717155}
+#combat-result-title{font-size:22px;margin-bottom:3px}
+#combat-result-detail{font-size:12px;color:#9ca3af}
+.shop-section{margin-bottom:16px}
+.shop-section-title{font-size:12px;color:#6b7280;margin-bottom:8px;text-align:center}
+#shop-items{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.shop-item{background:#1a1d24;border-radius:8px;padding:10px;text-align:center;min-width:85px}
+.shop-price{font-size:11px;margin:6px 0}
+.shop-btn{padding:5px 14px;font-size:11px}
+#shop-reroll{margin-bottom:16px;text-align:center}
+.modal-buttons{display:flex;justify-content:center;gap:10px;margin-top:14px}
+#inv-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:350px;overflow-y:auto;padding:8px}
+#audio-toggle{position:fixed;bottom:16px;right:16px;font-size:11px;padding:6px 12px;opacity:.7}
+.flame-particle{position:absolute;width:20px;height:20px;background:radial-gradient(circle,#ff6600,#ff3300,transparent);border-radius:50%;pointer-events:none;animation:flameRise 1s ease-out forwards}
+@keyframes flameRise{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-100px) scale(0)}}
+
+/* Talent tags displayed near the hero portrait */
+.hero-talents{margin-top:4px;display:flex;justify-content:center;flex-wrap:wrap;gap:4px;font-size:10px}
+.tag.talent{color:#a855f7;border-color:#a855f755}
+
+/* Dialogue lines beneath the portraits */
+.portrait-dialogue{
+  font-size:10px;
+  color:#9ca3af;
+  margin-top:4px;
+  font-style:italic;
+  text-align:center;
+}
+
+/* Consumables bar styling */
+#consumables-bar{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:8px}
+.consumable-item{display:inline-block;background:#1a1d24;border:1px solid #374151;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;margin:2px;color:#fbbf24;transition:background .1s}
+.consumable-item:hover{background:#374151}
+
+/* Responsive layout adjustments */
+@media (max-width:768px){
+  #battle-view{flex-direction:column;gap:20px}
+  .portrait-container{flex:1 1 auto;width:100%}
+  #vs-center{width:100%;margin-bottom:20px}
+  #forge{width:100%;max-width:100%;padding:10px}
+  #bank{justify-content:flex-start}
+}
