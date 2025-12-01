@@ -665,26 +665,12 @@ function init(){
   // math both before and after a fight.
   const previewPanel = document.getElementById('damage-preview-text');
   const previewTarget = document.getElementById('preview-hero-dmg') || previewPanel;
-  if(previewPanel && previewTarget && !previewPanel.__tooltipAttached){
-    previewPanel.__tooltipAttached = true;
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip';
-    tooltip.style.whiteSpace = 'normal';
-    tooltip.style.pointerEvents = 'none';
-    previewPanel.appendChild(tooltip);
-
-    const showPreviewBreakdown = () => {
+  if(previewTarget){
+    attachDamageTooltip(previewTarget);
+    previewTarget.__tooltipContent = () => {
       const precomputed = S.sel.item ? calc({ breakdown: true }) : null;
-      const content = buildMultiplierTooltip(precomputed);
-      tooltip.innerHTML = content;
-      tooltip.style.opacity = content ? '1' : '0';
+      return getSharedBreakdownContent(precomputed);
     };
-    const hidePreviewBreakdown = () => { tooltip.style.opacity = '0'; };
-
-    previewTarget.addEventListener('mouseenter', showPreviewBreakdown);
-    previewTarget.addEventListener('focus', showPreviewBreakdown);
-    previewTarget.addEventListener('mouseleave', hidePreviewBreakdown);
-    previewTarget.addEventListener('blur', hidePreviewBreakdown);
   }
   const combatTotalEl = document.getElementById('combat-total');
   const combatResultEl = document.getElementById('combat-result');
@@ -1172,18 +1158,9 @@ function updSlots(){
       } else if(k.startsWith('noun')){
         displayName = (forms && forms.suffix) || w.name;
       }
-      // Insert the display name and append a tooltip for this word.  The slot itself
-      // becomes the anchor for the tooltip.  Remove any existing tooltip to avoid
-      // duplicates when re-rendering.
+      // Insert the display name; the slot itself will host the breakdown tooltip.
       slot.innerHTML = `<span class="${rc}">${displayName}</span>`;
       slot.classList.add("filled");
-      // Remove any pre-existing tooltip within the slot
-      const oldTip = slot.querySelector('.tooltip');
-      if(oldTip) oldTip.remove();
-      // Generate a new tooltip using mkTooltip and append it
-      const ttHtml = mkTooltip(w);
-      // Insert the tooltip HTML into the slot
-      slot.insertAdjacentHTML('beforeend', ttHtml);
     } else {
       // Provide descriptive placeholders for empty slots so players know what to place
       const labels={
@@ -1197,6 +1174,11 @@ function updSlots(){
       slot.innerHTML = labels[k] || "";
       slot.classList.remove("filled");
     }
+
+    attachDamageTooltip(slot);
+    slot.__tooltipContent = () => getSharedBreakdownContent();
+    const tipEl = slot.querySelector('.tooltip.modal-tooltip, .tooltip');
+    if(tipEl) tipEl.innerHTML = slot.__tooltipContent();
   });
 }
 
@@ -1450,9 +1432,6 @@ function mkChip(w,disabled,isStickChip){
     elemHtml=`<div class="chip-elem" style="color:${EC[w.elem]}">${EN[w.elem]}</div>`;
   }
   
-  // Tooltip
-  const tooltip=mkTooltip(w);
-  
   // Use the suffix form for the chip name (base noun) for all non‑weapon words to present the most basic form
   // in the inventory.  Weapons retain their own name.
   const formsForChip = WORD_FORMS[w.id];
@@ -1465,8 +1444,12 @@ function mkChip(w,disabled,isStickChip){
     <div class="chip-name ${rc}">${displayName}</div>
     <div class="chip-info">${chipInfo}</div>
     ${elemHtml}
-    ${tooltip}
   `;
+
+  attachDamageTooltip(c);
+  c.__tooltipContent = () => getSharedBreakdownContent();
+  const chipTip = c.querySelector('.tooltip.modal-tooltip, .tooltip');
+  if(chipTip) chipTip.innerHTML = c.__tooltipContent();
   
   if(!disabled){
     c.onclick = () => {
@@ -1628,10 +1611,10 @@ function mkTooltip(w){
 }
 
 // Build a breakdown of all AP contributions and multipliers currently affecting the damage preview.
-function buildMultiplierTooltip(precomputed){
-  const source = precomputed || (S.sel.item ? calc({ breakdown: true }) : null);
-  if(!source || !source.breakdown) return '';
-  const c = source;
+function formatDamageBreakdown(source){
+  const calculated = source || (S.sel.item ? calc({ breakdown: true }) : null);
+  if(!calculated || !calculated.breakdown) return '';
+  const c = calculated;
   const fmtNum=(v)=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
   const lines = [];
 
@@ -1668,6 +1651,15 @@ function buildMultiplierTooltip(precomputed){
   return lines.join('');
 }
 
+// Legacy alias retained for existing callers; delegates to the shared formatter.
+function buildMultiplierTooltip(precomputed){
+  return formatDamageBreakdown(precomputed);
+}
+
+function getSharedBreakdownContent(precomputed){
+  return formatDamageBreakdown(precomputed) || '<div class="tooltip-line">Forge a weapon to see the breakdown.</div>';
+}
+
 function attachDamageTooltip(el){
   if(!el || el.__tooltipAttached) return;
   el.__tooltipAttached = true;
@@ -1679,7 +1671,9 @@ function attachDamageTooltip(el){
   tooltip.style.pointerEvents = 'none';
   el.appendChild(tooltip);
   const show = () => {
-    const content = el.__tooltipContent || '';
+    const content = typeof el.__tooltipContent === 'function'
+      ? (el.__tooltipContent() || '')
+      : (el.__tooltipContent || '');
     tooltip.innerHTML = content;
     tooltip.style.opacity = content ? '1' : '0';
   };
@@ -2654,7 +2648,7 @@ async function showCombat(r,words,rewards){
   if(resultBreakBtn && resultBreakTooltip && !resultBreakBtn.__tooltipAttached){
     resultBreakBtn.__tooltipAttached = true;
     const showTip = () => {
-      const content = buildMultiplierTooltip(window.lastCombatResult || safeResult);
+      const content = formatDamageBreakdown(window.lastCombatResult || safeResult);
       resultBreakTooltip.innerHTML = content;
       resultBreakTooltip.style.opacity = content ? '1' : '0';
       resultBreakBtn.style.display = content ? 'inline-flex' : 'none';
@@ -2665,13 +2659,12 @@ async function showCombat(r,words,rewards){
     resultBreakBtn.addEventListener('mouseleave', hideTip);
     resultBreakBtn.addEventListener('blur', hideTip);
   }
-  const breakdownHtml = buildMultiplierTooltip() || '<div class="tooltip-line">Forge a weapon to see the breakdown.</div>';
   [total, resultBox].forEach(el => {
     if(!el) return;
     attachDamageTooltip(el);
-    el.__tooltipContent = breakdownHtml;
+    el.__tooltipContent = () => getSharedBreakdownContent();
     const tip = el.querySelector('.tooltip.modal-tooltip, .tooltip');
-    if(tip) tip.innerHTML = breakdownHtml;
+    if(tip) tip.innerHTML = el.__tooltipContent();
   });
 
   if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
@@ -2823,7 +2816,7 @@ async function showCombat(r,words,rewards){
     await dly(250);
 
     if(resultBreakBtn && resultBreakTooltip){
-      const content = buildMultiplierTooltip(window.lastCombatResult || safeResult);
+      const content = formatDamageBreakdown(window.lastCombatResult || safeResult);
       resultBreakTooltip.innerHTML = content;
       resultBreakTooltip.style.opacity = '0';
       resultBreakBtn.style.display = content ? 'inline-flex' : 'none';
