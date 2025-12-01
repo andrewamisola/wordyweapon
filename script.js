@@ -1051,15 +1051,9 @@ function updateHealthBars(){
     const fmtVal = (v)=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
     const calcLine = `${fmtVal(c.baseAP)} AP × ${fmtVal(c.wordCount)}`;
 
-<<<<<<< HEAD
     // Show final damage as the main number with the calculation as muted subtext
     $("#preview-hero-dmg").textContent = `${heroDmg}`;
     $("#preview-base-ap").textContent = `${c.baseAP} [AP] x ${c.wordCount}`;
-=======
-    // Show AP × multiplier as the main line with the total centered beneath
-    $("#preview-hero-dmg").textContent = calcLine;
-    $("#preview-base-ap").textContent = `${heroDmg} total`;
->>>>>>> origin/codex/update-preview-text-and-styles-v99xps
 
     // Highlight preview panel when damage meets or exceeds enemy HP
     const previewPanel = document.getElementById("damage-preview-text");
@@ -1093,20 +1087,12 @@ function updateHealthBars(){
     }
   }else{
     // Show 0 damage when no weapon selected
-<<<<<<< HEAD
     $("#preview-hero-dmg").textContent="0";
-=======
-    $("#preview-hero-dmg").textContent="0 AP × 0";
->>>>>>> origin/codex/update-preview-text-and-styles-v99xps
     $("#enemy-damage-preview").style.display="none";
     $("#hero-damage-preview").style.display="none";
 
     // Clear calculation and remove highlight when no weapon
-<<<<<<< HEAD
     $("#preview-base-ap").textContent = "0 [AP] x 0";
-=======
-    $("#preview-base-ap").textContent = "0 total";
->>>>>>> origin/codex/update-preview-text-and-styles-v99xps
     const previewPanel = document.getElementById("damage-preview-text");
     if(previewPanel){
       previewPanel.classList.remove("goal-achieved");

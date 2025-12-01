@@ -60,11 +60,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .damage-number.hero-damage{color:#4ade80}
 .damage-number.enemy-damage{color:#f87171}
 /* Smaller, muted text for displaying calculations under the primary damage number */
-<<<<<<< HEAD
 .ap-number{font-size:14px;margin-top:4px}
-=======
-.ap-number{font-size:16px;font-weight:700;margin-top:2px;text-align:center}
->>>>>>> origin/codex/update-preview-text-and-styles-v99xps
 .math-subtext{font-size:12px;color:#9ca3af;font-style:italic;opacity:0.9}
 /* Highlight preview panel when hero damage meets or exceeds enemy HP */
 #damage-preview-text.goal-achieved{border-color:#4ade80;box-shadow:0 0 6px #4ade8066}
