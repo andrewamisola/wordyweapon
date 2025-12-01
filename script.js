@@ -147,7 +147,7 @@ const CONSUMABLES=[
      }
      return "No Rare words available.";
    }},
-  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"All weapons ×1.5 proficiency for one battle.",
+  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"All weapons ×2.0 proficiency for one battle.",
    use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
   {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
    use:(S)=>{
@@ -915,7 +915,7 @@ function render(){
   const hasWM=!!(S.tempEffects && S.tempEffects.weaponMaster);
   let heroProfHtml="";
   if(hasWM){
-    heroProfHtml=`<span class="tag prof">All ×1.5</span>`;
+    heroProfHtml=`<span class="tag prof">All weapons ×2.0 (affected by Weapon Master)</span>`;
   }else{
     heroProfHtml=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
   }
@@ -950,7 +950,7 @@ function render(){
   $("#hero-weak").innerHTML=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
   // Update proficiency display in details panel: reflect Weapon Master if active
   if(hasWM){
-    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×1.5 (Weapon Master)</span>`;
+    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×2.0 (affected by Weapon Master)</span>`;
   }else{
     $("#hero-prof").innerHTML=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
   }
@@ -1178,7 +1178,7 @@ function updateSlotCalcs(){
     // Weapon proficiency for weapons.  Good doubles, poor halves.
     let proficiencyMultiplier = 1;
     if(S.tempEffects && S.tempEffects.weaponMaster){
-      proficiencyMultiplier = 1.5;
+      proficiencyMultiplier = 2.0;
     } else if(slotKey === 'item' && word.category){
       if(h.good === word.category){
         proficiencyMultiplier = 2.0;
@@ -2017,7 +2017,7 @@ function calc(){
     // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
     if(slotKey === 'item' && !word.isStick && word.category){
       if(hasWeaponMaster){
-        tierValue = parseFloat((tierValue * 1.5).toFixed(2));
+        tierValue = parseFloat((tierValue * 2.0).toFixed(2));
       } else if(h.good === word.category){
         tierValue = parseFloat((tierValue * 2.0).toFixed(2));
       } else if(h.bad === word.category){
