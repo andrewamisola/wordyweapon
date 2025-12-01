@@ -962,7 +962,7 @@ function render(){
   // Enemy portrait: show only weaknesses and resistances (AP removed)
   const enemyWeakTags=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
   const resList = (S.tempEffects && S.tempEffects.polymorph) ? [] : e.res;
-  const enemyResTags=resList.length?resList.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):'<span class="dim">None</span>';
+  const enemyResTags=resList.length?resList.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):"";
   $("#enemy-elements").innerHTML=enemyWeakTags+enemyResTags;
 
   // Health bars with dynamic preview
@@ -1005,7 +1005,7 @@ function render(){
   }
   $("#enemy-weak").innerHTML=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
   const enemyDetailRes = (S.tempEffects && S.tempEffects.polymorph) ? [] : e.res;
-  $("#enemy-res").innerHTML=enemyDetailRes.length?enemyDetailRes.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):'<span class="dim">None</span>';
+  $("#enemy-res").innerHTML=enemyDetailRes.length?enemyDetailRes.map(el=>`<span class="tag weak">${EN[el]}</span>`).join(""):"";
 
   // Header stats (wins and losses removed)
   if(document.getElementById('streak')) document.getElementById('streak').textContent = S.streak;
@@ -1386,7 +1386,6 @@ function renderTalents(){
   if(!bar) return;
   bar.innerHTML = '';
   if(!S.talents || S.talents.length === 0){
-    bar.innerHTML = '<div class="dim" style="font-size:10px;padding:4px">No talents</div>';
     return;
   }
   S.talents.forEach(tid => {
@@ -1525,11 +1524,22 @@ function mkTooltip(w){
   if(w.desc)lines.push(`<div class="tooltip-line">${w.desc}</div>`);
   
   if(w.type==="weapon"&&!w.isStick){
-    // Show proficiency information (now uses category)
+    // Show proficiency information (now uses category), respecting Weapon Master which overrides category checks
+    const hasWM = !!(S.tempEffects && S.tempEffects.weaponMaster);
     const good=S.hero?.good===w.category,bad=S.hero?.bad===w.category;
-    if(good)lines.push(`<div class="tooltip-line positive">Good proficiency: ×2.0</div>`);
-    else if(bad)lines.push(`<div class="tooltip-line negative">Poor proficiency: ×0.5</div>`);
-    else lines.push(`<div class="tooltip-line dim">No proficiency: ×1.0</div>`);
+    let profText="No proficiency: ×1.0";
+    let profClass="dim";
+    if(hasWM){
+      profText="Weapon Master active: ×2.0";
+      profClass="positive";
+    } else if(good){
+      profText="Good proficiency: ×2.0";
+      profClass="positive";
+    } else if(bad){
+      profText="Poor proficiency: ×0.5";
+      profClass="negative";
+    }
+    lines.push(`<div class="tooltip-line ${profClass}">${profText}</div>`);
   }
   
   if(w.type==="affinity"||w.type==="noun"||(w.type==="adjective"&&w.elem!==undefined)){
@@ -1542,7 +1552,7 @@ function mkTooltip(w){
     const heroStrong = S.hero?.str.includes(el);
     const heroWeak  = S.hero?.weak.includes(el);
     const enemyWeak  = S.enemy?.weak.includes(el);
-    const enemyStrong = S.enemy?.res.includes(el);
+    const enemyStrong = !(S.tempEffects && S.tempEffects.polymorph) && S.enemy?.res.includes(el);
     let multi = 1;
     let note  = '';
     if(heroStrong && enemyWeak){
