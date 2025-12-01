@@ -1,0 +1,3882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordsmith</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+/* Import Garamond font family uploaded alongside this file */
+@font-face{
+  font-family:'EB Garamond';
+  src:url('EBGaramond-Regular.ttf') format('truetype');
+  font-weight:normal;
+  font-style:normal;
+}
+@font-face{
+  font-family:'EB Garamond';
+  src:url('EBGaramond-Bold.ttf') format('truetype');
+  font-weight:bold;
+  font-style:normal;
+}
+@font-face{
+  font-family:'EB Garamond';
+  src:url('EBGaramond-Italic.ttf') format('truetype');
+  font-weight:normal;
+  font-style:italic;
+}
+body{font-family:'EB Garamond', 'Segoe UI',system-ui,serif;background:#0a0a0f;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
+.gold{color:#f4d03f}.hero-c{color:#4ade80}.enemy-c{color:#f87171}.dim{color:#6b7280}
+button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
+button:hover:not(:disabled){background:#374151;border-color:#4b5563;transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;background:#1a1d24;border:1px solid}
+.tag.str{color:#4ade80;border-color:#4ade8055}.tag.weak{color:#f87171;border-color:#f8717155}.tag.prof{color:#60a5fa;border-color:#60a5fa55}
+#header{width:100%;max-width:950px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#title{font-size:24px;font-weight:bold}
+#stats{display:flex;gap:20px;font-size:14px}
+#battle-view{display:flex;gap:40px;width:100%;max-width:1000px;margin-bottom:20px;align-items:center;justify-content:center}
+.portrait-container{flex:0 0 280px}
+.portrait{background:#0d1117;border-radius:12px;padding:16px;border:2px solid #2a2f38}
+.hero-portrait{border-color:#4ade8044}.enemy-portrait{border-color:#f8717144}
+.portrait-frame{width:80px;height:80px;border-radius:50%;background:#1a1d24;border:3px solid;margin:0 auto 12px;position:relative}
+.hero-portrait .portrait-frame{border-color:#4ade80;background:linear-gradient(135deg,#22543d,#1a1d24)}
+.enemy-portrait .portrait-frame{border-color:#f87171;background:linear-gradient(135deg,#7f1d1d,#1a1d24)}
+.portrait-info{text-align:center}
+.portrait-name{font-size:16px;font-weight:bold;margin-bottom:8px}
+/* Hide the details toggle container as the panels are now triggered by hovering on the portraits */
+.portrait-details{display:none}
+.health-bar-container{margin-bottom:8px}
+.health-bar{height:24px;background:#1a1d24;border-radius:4px;overflow:hidden;position:relative;border:1px solid #374151}
+.health-fill{height:100%;transition:width .3s ease-out;position:absolute;top:0;left:0}
+.hero-fill{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.enemy-fill{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.health-preview{position:absolute;top:0;height:100%;opacity:0.5;transition:all .2s}
+.damage-preview{background:#dc2626;right:0}
+
+/* Blink animation for damage preview on the health bar */
+@keyframes blink {
+  /* Slow down the blink and make it linger longer at the low opacity. */
+  0%, 80%, 100% { opacity: 1; }
+  40% { opacity: 0.3; }
+}
+/*
+ * Apply an infinite blink animation to the damage preview bar so that
+ * predicted damage continues to pulse until the player forges the weapon.
+ */
+.blink {
+  animation: blink 1.2s ease-in-out infinite;
+}
+.element-badges{display:flex;gap:4px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+.elem-badge{font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid;opacity:0.9}
+.elem-badge.strong{background:#22543d33;color:#4ade80;border-color:#4ade8055}
+.elem-badge.weak{background:#7f1d1d33;color:#f87171;border-color:#f8717155}
+.health-text{font-size:12px;color:#9ca3af;margin-top:4px}
+.details-toggle{font-size:10px;padding:4px 12px;background:#1a1d24;border:1px solid #374151;border-radius:4px;cursor:pointer;color:#9ca3af}
+.details-toggle:hover{background:#374151;color:#e5e7eb}
+.details-panel{width:100%;max-width:950px;background:#0d1117;border-radius:8px;padding:16px;margin-bottom:16px;border:1px solid #2a2f38}
+.details-panel.hidden{display:none}
+.details-content{font-size:12px}
+#vs-center{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#weapon-display{text-align:center}
+#weapon-svg{width:120px;height:150px;transition:transform .3s,filter .3s}
+#weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
+#damage-preview-text{display:flex;align-items:center;gap:12px;background:#0d1117;border-radius:8px;padding:12px;border:1px solid #2a2f38}
+.damage-number{font-size:32px;font-weight:bold;min-width:60px;text-align:center}
+.damage-number.hero-damage{color:#4ade80}
+.damage-number.enemy-damage{color:#f87171}
+/* Smaller text for displaying the final AP (damage) under the calculation */
+.ap-number{font-size:14px;color:#f4d03f;margin-top:4px}
+/* Highlight preview panel when hero damage meets or exceeds enemy HP */
+#damage-preview-text.goal-achieved{border-color:#4ade80;box-shadow:0 0 6px #4ade8066}
+/* Highlight selected word in the bank */
+.chip.selected{border-color:#f4d03f;box-shadow:0 0 6px #f4d03f}
+/* Hide entire slot containers when the hidden class is applied. Without this rule
+   only the inner .slot element would be hidden, leaving spacing in place. */
+.slot-container.hidden{display:none}
+/* Hide hero health bar and preview elements since hero HP is not used */
+.health-bar.hero-bar{display:none}
+#hero-health-text{display:none}
+#hero-damage-preview{display:none}
+
+/* Hide hero-specific damage and HP in combat overlay since hero does not take damage */
+#combat-dmg .combat-block:first-child,
+#combat-bars .bar-block:first-child{
+  display:none;
+}
+#combat-dmg{
+  /* Hide the entire strikes display since enemy strikes are no longer relevant */
+  display:none !important;
+}
+.card{background:#0d1117;border-radius:12px;padding:16px;border:1px solid;flex:1}
+.card.hero{border-color:#4ade8044}.card.enemy{border-color:#f8717144}
+.card-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}
+.card-name{font-size:18px;margin-bottom:4px}
+.card-desc{font-size:11px;color:#9ca3af;margin-bottom:8px;font-style:italic;line-height:1.4}
+.card-dialogue{background:#1a1d24;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#d1d5db;border-left:3px solid #4ade80;line-height:1.4}
+.card.enemy .card-dialogue{border-left-color:#f87171}
+.card-stats{font-size:12px;margin-bottom:6px}
+.card-section{margin-bottom:6px}
+.card-section-title{font-size:10px;color:#6b7280;margin-bottom:2px}
+
+/* Dialogue line displayed directly under hero and enemy portraits */
+.portrait-dialogue{
+  font-size:12px;
+  color:#d1d5db;
+  font-style:italic;
+  margin-top:4px;
+  margin-bottom:4px;
+}
+#forge{background:#12151a;border-radius:12px;padding:20px;width:100%;max-width:950px;border:1px solid #2a2f38}
+#forge-title{text-align:center;font-size:16px;margin-bottom:14px}
+#sentence{display:flex;justify-content:center;align-items:flex-start;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.slot-container{display:flex;flex-direction:column;align-items:center}
+.slot{min-width:95px;height:50px;background:#1a1d24;border:2px dashed #374151;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7280;transition:all .15s;padding:0 10px;cursor:pointer}
+.slot{
+  /* Make slots relative containers so that tooltips can be positioned relative to them */
+  position:relative;
+}
+.slot:hover{border-color:#4b5563}.slot.over{border-color:#f4d03f;background:#1f2419}.slot.filled{border-style:solid;border-color:#4b5563}
+@keyframes wordPlaced{0%{transform:scale(1);box-shadow:0 0 0 rgba(74,222,128,0)}50%{transform:scale(1.1);box-shadow:0 0 20px rgba(74,222,128,0.6)}100%{transform:scale(1);box-shadow:0 0 0 rgba(74,222,128,0)}}
+.slot.word-placed{animation:wordPlaced 0.3s ease-out;border-color:#4ade80}
+.slot.hidden{display:none}
+.slot-calc{font-size:10px;color:#9ca3af;margin-top:4px;min-height:16px;font-family:monospace;text-align:center}
+.slot-calc.positive{color:#4ade80}.slot-calc.negative{color:#f87171}
+#of-label{font-size:16px;color:#6b7280;padding-top:14px}
+#of-label.hidden{display:none}
+#preview{display:flex;justify-content:center;align-items:center;gap:30px;background:#080a0d;border-radius:8px;padding:12px;margin-bottom:14px}
+.preview-block{text-align:center}
+.preview-label{font-size:9px;color:#6b7280;margin-bottom:2px}
+.preview-value{font-size:28px;font-weight:bold}
+#backup-weapon{text-align:center;font-size:10px;color:#f59e0b;margin-bottom:8px;display:none}
+#bank-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#bank-hint{font-size:11px;color:#6b7280}
+#sort-btns{display:flex;gap:4px}
+#sort-btns button{padding:4px 10px;font-size:10px}
+#sort-btns button.active{background:#374151;border-color:#4b5563}
+#sort-dir-btn-forge,#sort-dir-btn{
+  /* Ensure the sort direction arrow remains visible and aligned with other sort buttons.  
+     Increase the font size so the arrow character isn’t mistaken for other symbols. */
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 10px;
+  font-size:16px;
+  line-height:1;
+}
+#bank{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;background:#0d1017;border-radius:8px}
+.chip{background:#1a1d24;border:1px solid #2d333b;border-radius:6px;padding:6px 10px;cursor:pointer;text-align:center;min-width:75px;transition:all .1s;user-select:none;position:relative}
+.chip:hover:not(.disabled){border-color:#4b5563;transform:translateY(-2px);box-shadow:0 4px 12px #0005}
+.chip.disabled{opacity:.25;cursor:not-allowed;transform:none!important;filter:grayscale(0.8)}
+.chip.rusty{border-color:#92400e55;background:#1a1510}
+.chip-name{font-size:12px;margin-bottom:1px}
+.chip-info{font-size:8px;color:#6b7280}
+.chip-elem{font-size:8px;margin-top:2px}
+.rarity-common{color:#9ca3af}.rarity-magic{color:#60a5fa}.rarity-rare{color:#f4d03f}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f97316}.rarity-rusty{color:#b45309}
+.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:200px;text-align:left;z-index:50;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
+.chip:hover .tooltip{opacity:1}
+/* Allow tooltips on slots to appear when hovering */
+.slot:hover .tooltip{opacity:1}
+.tooltip-title{font-size:13px;font-weight:bold;margin-bottom:4px}
+.tooltip-type{font-size:10px;color:#6b7280;margin-bottom:6px}
+.tooltip-line{margin:4px 0;color:#d1d5db}
+.tooltip-line.positive{color:#4ade80}
+.tooltip-line.negative{color:#f87171}
+.tooltip-line.dim{color:#6b7280}
+.tooltip-elem{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;margin-top:4px}
+#buttons{display:flex;justify-content:center;gap:10px;margin-top:14px;align-items:center}
+#forge-btn{background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055;font-size:15px;padding:12px 28px;position:relative;overflow:hidden}
+#forge-btn:hover:not(:disabled){background:linear-gradient(180deg,#4d6a47,#3d5a37);transform:scale(1.02)}
+#forge-btn:active:not(:disabled){transform:scale(0.98)}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:auto}
+.modal{background:#0d1117;border-radius:16px;padding:24px;border:2px solid #f4d03f44;min-width:400px;max-width:90vw}
+.modal-title{text-align:center;font-size:18px;margin-bottom:16px}
+#combat-container{position:relative;overflow:hidden}
+#combat-flames{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;opacity:0;transition:opacity .3s}
+#combat-weapon-container{position:relative;width:140px;height:180px;margin:0 auto 16px}
+#combat-weapon-svg{width:100%;height:100%;transition:transform .1s}
+#combat-words{display:flex;justify-content:center;align-items:center;gap:8px;min-height:60px;margin-bottom:16px;flex-wrap:wrap}
+.combat-word{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;background:#1a1d24;font-size:15px;opacity:0;transform:scale(0.3) translateY(20px);transition:all .15s}
+.combat-word.show{opacity:1;transform:scale(1) translateY(0)}
+.combat-word.impact{animation:wordImpact .4s ease-out}
+.combat-word-name{font-weight:bold}
+.combat-word-value{font-size:20px;font-weight:bold;margin-top:4px}
+@keyframes wordImpact{0%{transform:scale(1)}20%{transform:scale(1.4)}40%{transform:scale(0.9)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes weaponShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.1)}75%{transform:rotate(5deg) scale(1.1)}}
+@keyframes screenShake{0%,100%{transform:translate(0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,4px)}}
+.shake{animation:screenShake .15s ease-out}
+@keyframes auraFlight{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.3)}}
+.aura-particle{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;z-index:1000;animation:auraFlight 0.8s ease-out forwards}
+#combat-total{text-align:center;font-size:48px;font-weight:bold;margin:16px 0;opacity:0;transform:scale(0.5)}
+#combat-total.show{opacity:1;transform:scale(1);transition:all .4s cubic-bezier(0.175,0.885,0.32,1.275)}
+#combat-dmg{display:flex;justify-content:center;gap:30px;margin-bottom:10px}
+.combat-block{text-align:center}
+.combat-label{font-size:10px;color:#6b7280}
+.combat-value{font-size:32px;font-weight:bold}
+#combat-bars{display:flex;gap:16px;margin-bottom:14px}
+.bar-block{flex:1}
+.bar-label{text-align:center;font-size:10px;color:#6b7280;margin-bottom:3px}
+.bar-outer{height:18px;background:#1a1d24;border-radius:4px;overflow:hidden}
+.bar-inner{height:100%;transition:width .5s ease-out}
+.bar-inner.hero{background:linear-gradient(90deg,#22c55e,#4ade80)}.bar-inner.enemy{background:linear-gradient(90deg,#dc2626,#f87171)}
+.bar-text{text-align:center;font-size:11px;margin-top:3px}
+#combat-result{text-align:center;padding:14px;border-radius:8px;margin-bottom:14px;display:none}
+#combat-result.win{background:#22543d44;border:1px solid #4ade8055}
+#combat-result.lose{background:#7f1d1d44;border:1px solid #f8717155}
+#combat-result-title{font-size:22px;margin-bottom:3px}
+#combat-result-detail{font-size:12px;color:#9ca3af}
+.shop-section{margin-bottom:16px}
+.shop-section-title{font-size:12px;color:#6b7280;margin-bottom:8px;text-align:center}
+#shop-items{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.shop-item{background:#1a1d24;border-radius:8px;padding:10px;text-align:center;min-width:85px}
+.shop-price{font-size:11px;margin:6px 0}
+.shop-btn{padding:5px 14px;font-size:11px}
+#shop-reroll{margin-bottom:16px;text-align:center}
+.modal-buttons{display:flex;justify-content:center;gap:10px;margin-top:14px}
+#inv-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:350px;overflow-y:auto;padding:8px}
+#audio-toggle{position:fixed;bottom:16px;right:16px;font-size:11px;padding:6px 12px;opacity:.7}
+.flame-particle{position:absolute;width:20px;height:20px;background:radial-gradient(circle,#ff6600,#ff3300,transparent);border-radius:50%;pointer-events:none;animation:flameRise 1s ease-out forwards}
+@keyframes flameRise{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-100px) scale(0)}}
+
+/* Talent tags displayed near the hero portrait */
+.hero-talents{margin-top:4px;display:flex;justify-content:center;flex-wrap:wrap;gap:4px;font-size:10px}
+.tag.talent{color:#a855f7;border-color:#a855f755}
+
+/* Dialogue lines beneath the portraits */
+.portrait-dialogue{
+  font-size:10px;
+  color:#9ca3af;
+  margin-top:4px;
+  font-style:italic;
+  text-align:center;
+}
+
+/* Consumables bar styling */
+#consumables-bar{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:8px}
+.consumable-item{display:inline-block;background:#1a1d24;border:1px solid #374151;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;margin:2px;color:#fbbf24;transition:background .1s}
+.consumable-item:hover{background:#374151}
+
+/* Responsive layout adjustments */
+@media (max-width:768px){
+  #battle-view{flex-direction:column;gap:20px}
+  .portrait-container{flex:1 1 auto;width:100%}
+  #vs-center{width:100%;margin-bottom:20px}
+  #forge{width:100%;max-width:100%;padding:10px}
+  #bank{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<div id="header">
+  <div id="title" class="gold">⚒️ WORDSMITH</div>
+  <div id="stats">
+    <!-- Wins and losses removed for a streamlined UI; only streak is shown -->
+    <span>🔥<span id="streak" class="gold">0</span></span>
+      <span>💰<span id="gold" class="gold">30</span></span>
+    <!-- Removed level tracker for simplicity; the streak already communicates progress -->
+    <span>Round <span id="round-num" class="gold">1</span></span>
+  </div>
+</div>
+
+<div id="battle-view">
+  <div class="portrait-container">
+    <div class="portrait hero-portrait">
+      <div class="portrait-frame"></div>
+      <div class="portrait-info">
+        <div class="portrait-name hero-c" id="hero-name">Hero</div>
+        <!-- Element strengths/weaknesses and weapon proficiency will be inserted here -->
+        <div class="portrait-elements" id="hero-elements"></div>
+        <!-- Acquired talents displayed here -->
+        <div class="hero-talents" id="hero-talents"></div>
+        <!-- Random dialogue line displayed below the hero portrait for extra flavour -->
+        <div class="portrait-dialogue" id="hero-inline-dialogue"></div>
+        <div class="health-bar-container">
+          <div class="health-bar hero-bar">
+            <div class="health-fill hero-fill" id="hero-health-fill"></div>
+            <div class="health-preview damage-preview" id="hero-damage-preview"></div>
+          </div>
+          <div class="health-text" id="hero-health-text">100 / 100</div>
+        </div>
+        <div class="portrait-details">
+          <!-- Details toggle removed; details now show on hover -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="vs-center">
+    <div id="weapon-display">
+      <svg id="weapon-svg" viewBox="0 0 100 130"></svg>
+      <div id="weapon-name"></div>
+    </div>
+    <div id="damage-preview-text">
+      <div class="damage-number hero-damage" id="preview-hero-dmg">0</div>
+      <!-- Final damage (AP) will be displayed below the calculation -->
+      <div class="ap-number" id="preview-base-ap">0</div>
+    </div>
+  </div>
+
+  <div class="portrait-container">
+    <div class="portrait enemy-portrait">
+      <div class="portrait-frame"></div>
+      <div class="portrait-info">
+        <div class="portrait-name enemy-c" id="enemy-name">Enemy</div>
+        <!-- Enemy elemental weaknesses/resistances will be inserted here -->
+        <div class="portrait-elements" id="enemy-elements"></div>
+        <!-- Random dialogue line displayed below the enemy portrait -->
+        <div class="portrait-dialogue" id="enemy-inline-dialogue"></div>
+        <div class="health-bar-container">
+          <div class="health-bar enemy-bar">
+            <div class="health-fill enemy-fill" id="enemy-health-fill"></div>
+            <div class="health-preview damage-preview" id="enemy-damage-preview"></div>
+          </div>
+          <div class="health-text" id="enemy-health-text">100 / 100</div>
+        </div>
+        <div class="portrait-details">
+          <!-- Details toggle removed; details now show on hover -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="details-panel hidden" id="hero-details-panel">
+  <div class="details-content">
+    <div class="card-desc" id="hero-desc">A brave warrior.</div>
+    <div class="card-dialogue" id="hero-dialogue">"Greetings, Wordsmith."</div>
+    <!-- Hero Base AP removed from portrait; it will be shown in the preview area -->
+    <div class="card-section"><div class="card-section-title">Strong using</div><div id="hero-str"></div></div>
+    <div class="card-section"><div class="card-section-title">Weak using</div><div id="hero-weak"></div></div>
+    <div class="card-section"><div class="card-section-title">PROFICIENCIES</div><div id="hero-prof"></div></div>
+  </div>
+</div>
+
+<div class="details-panel hidden" id="enemy-details-panel">
+  <div class="details-content">
+    <div class="card-desc" id="enemy-desc">A fearsome foe.</div>
+    <div class="card-dialogue" id="enemy-dialogue">"You dare challenge me?"</div>
+    <div class="card-section"><div class="card-section-title">Weak against</div><div id="enemy-weak"></div></div>
+    <div class="card-section"><div class="card-section-title">Strong against</div><div id="enemy-res"></div></div>
+  </div>
+</div>
+
+<div id="forge">
+  <!-- Updated title emphasises the combat objective -->
+  <div id="forge-title" class="gold">⚒️ Forge a "wordy" weapon to defeat the enemy</div>
+  <div id="sentence">
+    <div class="slot-container hidden" data-slot="adj1">
+      <!-- Show a hint for the type of word expected in this slot -->
+      <div class="slot" data-slot="adj1">Adjective</div>
+      <div class="slot-calc" id="calc-adj1"></div>
+    </div>
+    <div class="slot-container hidden" data-slot="adj2">
+      <div class="slot" data-slot="adj2">Adjective</div>
+      <div class="slot-calc" id="calc-adj2"></div>
+    </div>
+    <div class="slot-container" data-slot="item">
+      <div class="slot" data-slot="item">Weapon</div>
+      <div class="slot-calc" id="calc-item"></div>
+    </div>
+    <div id="of-label" class="hidden">of the</div>
+    <div class="slot-container hidden" data-slot="adj3">
+      <div class="slot" data-slot="adj3">Adjective</div>
+      <div class="slot-calc" id="calc-adj3"></div>
+    </div>
+    <div class="slot-container hidden" data-slot="adj4">
+      <div class="slot" data-slot="adj4">Adjective</div>
+      <div class="slot-calc" id="calc-adj4"></div>
+    </div>
+    <div class="slot-container hidden" data-slot="noun1">
+      <div class="slot" data-slot="noun1">Gem (2x AP)</div>
+      <div class="slot-calc" id="calc-noun1"></div>
+    </div>
+    <!-- Removed second gem (noun2) slot to enforce only one gem slot -->
+  </div>
+
+  <!-- Talent bar displays active run modifiers.  Talents are not interactive but
+       their effects apply automatically during damage calculation.  Up to 5
+       talents may be held at once. -->
+  <div id="talent-bar" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0"></div>
+  <div id="backup-weapon">⚠️ No weapons! Using backup Stick (×0.5 damage)</div>
+  <div id="bank-controls">
+    <div id="bank-hint">📜 Click words to fill slots • Click slots to remove</div>
+    <!-- Display current inventory count versus limit -->
+    <div id="inv-counter" style="font-size:11px;color:#6b7280">0/0</div>
+    <div id="sort-btns">
+      <button data-sort="type" class="active">Type</button>
+      <button data-sort="alpha">A-Z</button>
+      <button data-sort="rarity">Rarity</button>
+      <!-- Toggle sort direction for the forge inventory (ascending vs descending) -->
+      <button id="sort-dir-btn-forge" style="padding:4px 10px;font-size:10px">↓</button>
+    </div>
+  </div>
+  <div id="bank"></div>
+  <!-- Display available consumables during forging -->
+  <div id="consumables-bar"></div>
+  <div id="buttons">
+    <button id="forge-btn" disabled>⚔️ FORGE WEAPON</button>
+    <button id="new-btn">🎲 New Quest</button>
+    <!-- Inventory button removed -->
+  </div>
+</div>
+
+<div class="overlay" id="combat-overlay">
+  <div class="modal" style="min-width:500px">
+    <div id="combat-container">
+      <div id="combat-flames"></div>
+      <div id="combat-weapon-container">
+        <svg id="combat-weapon-svg" viewBox="0 0 100 130"></svg>
+      </div>
+      <div id="combat-words"></div>
+      <div id="combat-total" class="gold"></div>
+    </div>
+    <div id="combat-dmg">
+      <div class="combat-block"><div class="combat-label">HERO STRIKES</div><div class="combat-value hero-c" id="cb-hero">0</div></div>
+      <div style="font-size:24px" class="dim">⚔</div>
+      <div class="combat-block"><div class="combat-label">ENEMY STRIKES</div><div class="combat-value enemy-c" id="cb-enemy">0</div></div>
+    </div>
+    <div id="combat-bars">
+      <div class="bar-block"><div class="bar-label">Hero HP</div><div class="bar-outer"><div class="bar-inner hero" id="bar-hero"></div></div><div class="bar-text hero-c" id="txt-hero">100/100</div></div>
+      <div class="bar-block"><div class="bar-label">Enemy HP</div><div class="bar-outer"><div class="bar-inner enemy" id="bar-enemy"></div></div><div class="bar-text enemy-c" id="txt-enemy">100/100</div></div>
+    </div>
+    <div id="combat-result"><div id="combat-result-title"></div><div id="combat-result-detail"></div></div>
+    <div class="modal-buttons">
+      <button id="combat-continue">Continue</button>
+      <!-- New run button appears after combat resolves -->
+      <button id="combat-new-run" style="display:none">New Run</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="shop-overlay">
+  <div class="modal" style="min-width:600px">
+    <div class="modal-title gold">🛒 SHOP <span id="shop-gold"></span></div>
+
+    <!-- Inventory display moved inline with the inventory section header -->
+
+    <!-- Hero and Enemy Info Side-by-Side -->
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <!-- Current Hero info -->
+      <div class="shop-section" style="flex:1;background:#1a1a1a;padding:12px;border-radius:8px">
+        <div class="shop-section-title" style="margin-bottom:8px">HERO INFO</div>
+        <div id="shop-hero-info" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+      </div>
+      <!-- Next Enemy Preview -->
+      <div class="shop-section" style="flex:1;background:#1a1a1a;padding:12px;border-radius:8px">
+        <div class="shop-section-title" style="margin-bottom:8px">⚠️ NEXT ENEMY</div>
+        <div id="next-enemy-preview" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+      </div>
+    </div>
+
+    <!-- Crates and Buffs Side-by-Side -->
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div class="shop-section" style="flex:1">
+        <div class="shop-section-title">📦 WORD CRATES</div>
+        <div id="shop-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+      </div>
+      <div class="shop-section" style="flex:1; display:none">
+        <div class="shop-section-title">✨ BUFFS</div>
+        <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <!-- Consumables disabled for now -->
+    <!--
+    <div class="shop-section">
+      <div class="shop-section-title">🎴 CONSUMABLES</div>
+      <div id="shop-consumables" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+    </div>
+    -->
+    <!-- Word Bank for selling -->
+    <div class="shop-section">
+      <!-- Inventory header row includes title, capacity tracker, and sort controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="shop-section-title" style="margin:0">📜 YOUR INVENTORY</div>
+          <!-- Live inventory capacity is updated via renderShopWordBank() -->
+          <div id="shop-inventory" style="font-size:11px;color:#9ca3af"></div>
+        </div>
+        <div id="shop-sort-btns" style="display:flex;gap:4px;align-items:center">
+          <button data-sort="type" class="active" style="padding:4px 10px;font-size:10px">Type</button>
+          <button data-sort="alpha" style="padding:4px 10px;font-size:10px">A-Z</button>
+          <button data-sort="rarity" style="padding:4px 10px;font-size:10px">Rarity</button>
+          <button id="sort-dir-btn" style="padding:4px 10px;font-size:10px">↓</button>
+        </div>
+      </div>
+      <div id="shop-word-bank" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;background:#0d1017;border-radius:8px"></div>
+      <div style="text-align:center;margin-top:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+        <div id="sell-price-display" style="font-size:14px;color:#fbbf24;font-weight:bold;min-width:80px"></div>
+        <button id="sell-word-btn" disabled style="padding:6px 16px">💰 Sell Selected</button>
+        <button id="deselect-btn" style="padding:4px 12px">Deselect</button>
+      </div>
+    </div>
+
+    <!-- Active Buffs section disabled while buffs are removed from the game -->
+    <div class="shop-section" style="margin-top:12px; display:none">
+      <div id="shop-talent-bar"></div>
+    </div>
+
+    <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
+
+    <div class="modal-buttons"><button id="shop-continue">Continue</button></div>
+  </div>
+</div>
+
+<!-- Inventory overlay removed -->
+
+<div class="overlay" id="hero-select-overlay">
+  <div class="modal" style="min-width:700px;max-width:900px">
+    <div class="modal-title gold">⚒️ SELECT YOUR HERO</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <button id="hero-prev" style="font-size:24px;padding:8px 16px">◀</button>
+      <div id="hero-carousel" style="flex:1;overflow:hidden">
+        <div id="hero-card-container" style="display:flex;transition:transform 0.3s ease"></div>
+      </div>
+      <button id="hero-next" style="font-size:24px;padding:8px 16px">▶</button>
+    </div>
+    <div style="text-align:center">
+      <button id="hero-select-btn" style="padding:12px 32px;font-size:16px;background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055">SELECT HERO</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="talent-overlay">
+  <div class="modal" style="min-width:500px">
+    <div class="modal-title gold">🌟 LEVEL UP! Choose a Talent</div>
+    <div style="text-align:center;margin-bottom:16px;font-size:14px">
+      Level <span id="talent-level" class="gold">2</span>
+    </div>
+    <div id="talent-choices" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<div class="overlay" id="buff-select-overlay">
+  <div class="modal" style="min-width:500px">
+    <div class="modal-title" style="color:#a855f7">✨ Choose a Buff</div>
+    <div style="text-align:center;margin-bottom:16px;font-size:13px;color:#9ca3af">
+      Select 1 of 3 buffs to add to your run
+    </div>
+    <div id="buff-choices" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<button id="audio-toggle">🔊 Sound: ON</button>
+
+<!-- Main menu overlay displayed on initial load.  Provides a simple title screen with a start button.  -->
+<div class="overlay show" id="main-menu">
+  <div class="modal" style="text-align:center;min-width:400px">
+    <div style="font-size:32px;font-weight:bold;margin-bottom:10px" class="gold">WORDSMITH</div>
+    <div style="font-size:14px;color:#9ca3af;margin-bottom:20px">Forge a "wordy" weapon to defeat the enemy</div>
+    <button id="start-game-btn" style="padding:10px 30px;font-size:16px;background:linear-gradient(180deg,#3d5a37,#2d4a27);border:1px solid #4ade8055;border-radius:8px;cursor:pointer" onclick="document.getElementById('main-menu').classList.remove('show');startNewRun();">START</button>
+  </div>
+</div>
+
+<script>
+// === CONSTANTS ===
+const E={PHYS:0,POISON:1,FIRE:2,WATER:3,LIGHT:4,DARK:5,EARTH:6,LIGHTNING:7},
+EN=["Physical","Poison","Fire","Water","Light","Dark","Earth","Lightning"],
+EC=["#a0a0a0","#7ee04d","#ff6633","#4d99ff","#ffffa0","#9966cc","#996633","#ffff4d"],
+R={RUSTY:-1,COMMON:0,UNCOMMON:2,MAGIC:2,RARE:3,EPIC:3,LEGENDARY:3}, // T1=COMMON(0), T2=UNCOMMON/MAGIC(2), T3=RARE/EPIC/LEGENDARY(3)
+RN=["T1","T1","T2","T3"],
+RC=["rarity-common","rarity-common","rarity-magic","rarity-rare"],
+RRANK=[0,1,2,3,3,3], // Rarity ranks: 0=T1, 2=T2, 3=T3, EPIC=3, LEGENDARY=3
+TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
+
+// Maximum inventory size to prevent hoarding too many words
+// Increase inventory limit so players can hold more words
+const INV_LIMIT=30;
+// Maximum number of active buffs (talents) the player may hold at once.  Treat buffs like
+// their own inventory with a fixed capacity.  Additional buffs beyond this limit cannot be acquired.
+const BUFF_LIMIT=5;
+
+// === 8 HEROES ===
+const HEROES=[
+  {
+    id:"warrior",
+    name:"Alaric the Ironwill",
+    hp:100,
+    str:[E.PHYS,E.EARTH],
+    weak:[E.POISON,E.DARK],
+    good:"slash",
+    bad:"magic",
+    desc:"A stoic warrior forged in countless battles. His unwavering resolve makes him a formidable ally.",
+    dialogue:[
+      "Greetings, Wordsmith. I require a weapon worthy of this battle.",
+      "Forge me something strong. I shall not falter.",
+      "Another foe? Good. My blade grows restless."
+    ]
+  },
+  {
+    id:"ranger",
+    name:"Selene Swiftarrow",
+    hp:100,
+    str:[E.LIGHTNING,E.LIGHT],
+    weak:[E.EARTH,E.DARK],
+    good:"pierce",
+    bad:"blunt",
+    desc:"A nimble huntress who channels storm and starlight. Her arrows strike true.",
+    dialogue:[
+      "Swift greetings! Let's make something electrifying.",
+      "The wind whispers of danger. Arm me well!",
+      "Ooh, this one looks tough! I love a challenge."
+    ]
+  },
+  {
+    id:"mage",
+    name:"Lyra Emberheart",
+    hp:100,
+    str:[E.FIRE,E.LIGHT],
+    weak:[E.WATER,E.PHYS],
+    good:"magic",
+    bad:"slash",
+    desc:"A brilliant pyromancer whose flames dance with destruction and beauty.",
+    dialogue:[
+      "Wordsmith! Let us craft something that BURNS.",
+      "Fire cleanses all. Make me an instrument of purification.",
+      "Mmm, I sense powerful words nearby..."
+    ]
+  },
+  {
+    id:"paladin",
+    name:"Theron the Radiant",
+    hp:100,
+    str:[E.LIGHT,E.PHYS],
+    weak:[E.DARK,E.POISON],
+    good:"blunt",
+    bad:"pierce",
+    desc:"A holy knight blessed by divine light. His oaths shield the innocent.",
+    dialogue:[
+      "By the light! I need a holy weapon.",
+      "Evil approaches. Together, we shall vanquish it.",
+      "The darkness will fall before our might!"
+    ]
+  },
+  {
+    id:"assassin",
+    name:"Vex Shadowmend",
+    hp:100,
+    str:[E.DARK,E.POISON],
+    weak:[E.LIGHT,E.FIRE],
+    good:"pierce",
+    bad:"blunt",
+    desc:"A deadly shadow who strikes from darkness. Poisons are her companions.",
+    dialogue:[
+      "Shhh... they won't see it coming.",
+      "Craft me something subtle. And lethal.",
+      "The shadows hunger. Feed them."
+    ]
+  },
+  {
+    id:"druid",
+    name:"Oakheart the Ancient",
+    hp:100,
+    str:[E.EARTH,E.WATER],
+    weak:[E.FIRE,E.LIGHTNING],
+    good:"blunt",
+    bad:"magic",
+    desc:"An ancient guardian of the forest. Commands stone and tide.",
+    dialogue:[
+      "The earth speaks... it demands balance.",
+      "Nature provides. Now let us take.",
+      "Root and stone shall be our weapons."
+    ]
+  }
+];
+
+// === 8 ENEMIES ===
+const ENEMIES=[
+  {id:"frost",name:"Frostbone Colossus",hp:100,ap:24,weak:[E.FIRE,E.LIGHTNING],res:[E.WATER,E.DARK],atk:E.WATER,
+   desc:"An ancient undead giant encased in eternal ice.",dialogue:["CRRREAAAK... WARM BLOOD...","YOUR HEAT... WILL FADE..."]},
+  {id:"hydra",name:"Venomwilt Hydra",hp:80,ap:22,weak:[E.FIRE,E.LIGHT],res:[E.POISON,E.WATER],atk:E.POISON,
+   desc:"A writhing mass of serpentine heads dripping with toxins.",dialogue:["Hssss... another morsel...","Three headsss, three deathsss..."]},
+  {id:"shade",name:"Shadewoven Matriarch",hp:70,ap:28,weak:[E.LIGHT,E.FIRE],res:[E.DARK,E.POISON],atk:E.DARK,
+   desc:"A void-touched spider queen who weaves darkness itself.",dialogue:["Come, little fly... my web awaits...","The void hungers..."]},
+  {id:"golem",name:"Ironclad Golem",hp:120,ap:20,weak:[E.LIGHTNING,E.WATER],res:[E.EARTH,E.PHYS],atk:E.PHYS,
+   desc:"A mechanical titan of gears and ancient runes.",dialogue:["DIRECTIVE: ELIMINATE.","COMBAT: INITIATED."]},
+  {id:"phoenix",name:"Ashborn Phoenix",hp:75,ap:26,weak:[E.WATER,E.EARTH],res:[E.FIRE,E.LIGHT],atk:E.FIRE,
+   desc:"A blazing bird of eternal flame.",dialogue:["SCREEEEE! BURN!","From ash YOU fall!"]},
+  {id:"lich",name:"Vazreth the Undying",hp:85,ap:25,weak:[E.LIGHT,E.PHYS],res:[E.DARK,E.POISON],atk:E.DARK,
+   desc:"An ancient sorcerer who conquered death itself.",dialogue:["Death is merely... an inconvenience.","Your soul will join my collection."]},
+  {id:"elemental",name:"Stormcore Elemental",hp:90,ap:23,weak:[E.EARTH,E.DARK],res:[E.LIGHTNING,E.WATER],atk:E.LIGHTNING,
+   desc:"Pure elemental fury given form.",dialogue:["CRACKLE... OBLITERATE!","THE STORM CANNOT BE CONTAINED!"]},
+  {id:"treant",name:"Blightwood Treant",hp:130,ap:18,weak:[E.FIRE,E.POISON],res:[E.EARTH,E.WATER],atk:E.EARTH,
+   desc:"A corrupted forest guardian twisted by dark magic.",dialogue:["The forest... remembers...","You will feed... the roots..."]}
+];
+
+// === TALENTS/BUFFS (Diverse persistent modifiers) ===
+const TALENTS=[
+  // T1 Buffs - Individual Word AP & Basic Modifiers
+  {id:"wordsmith",name:"Wordsmith",tier:1,desc:"All words gain +2 AP"},
+  {id:"keen_edge",name:"Keen Edge",tier:1,desc:"Weapon words (sword, bow, etc.) gain +3 AP"},
+  {id:"elemental_spark",name:"Elemental Spark",tier:1,desc:"Words with elements gain +2 AP"},
+  {id:"descriptive",name:"Descriptive",tier:1,desc:"Each adjective word adds +1 AP"},
+  {id:"gem_polish",name:"Gem Polish",tier:1,desc:"Gem slot multiplier becomes ×2.5 (from ×2)"},
+
+  // T1 Buffs - Economy & Shop
+  {id:"bargain_hunter",name:"Bargain Hunter",tier:1,desc:"All shop items cost 20% less gold"},
+  {id:"golden_touch",name:"Golden Touch",tier:1,desc:"Gain +3 gold after each victory"},
+  {id:"ninja_loot",name:"Ninja Loot",tier:1,desc:"20% chance to get free item when buying"},
+
+  // T2 Buffs - Multipliers & Word Count
+  {id:"combo_master",name:"Combo Master",tier:2,desc:"Using 4+ words: ×1.3 total damage"},
+  {id:"minimalist",name:"Minimalist",tier:2,desc:"Using 2 or fewer words: ×1.5 total damage"},
+  {id:"word_weaver",name:"Word Weaver",tier:2,desc:"Each word used adds +5% to total multiplier"},
+  {id:"precise_strike",name:"Precise Strike",tier:2,desc:"Final damage ×1.25"},
+
+  // T2 Buffs - Element Modifiers
+  {id:"pyromancer",name:"Pyromancer",tier:2,desc:"Fire words gain +1 tier value and ×1.2 damage"},
+  {id:"frost_mage",name:"Frost Mage",tier:2,desc:"Water words gain +1 tier value and ×1.2 damage"},
+  {id:"stormcaller",name:"Stormcaller",tier:2,desc:"Lightning words gain +1 tier value and ×1.2 damage"},
+  {id:"void_scholar",name:"Void Scholar",tier:2,desc:"Dark words gain +1 tier value and ×1.2 damage"},
+
+  // T2 Buffs - Weapon Type Modifiers
+  {id:"blade_dancer",name:"Blade Dancer",tier:2,desc:"Slash weapons: ×1.4 damage"},
+  {id:"marksman",name:"Marksman",tier:2,desc:"Pierce weapons: ×1.4 damage"},
+  {id:"arcane_focus",name:"Arcane Focus",tier:2,desc:"Magic weapons: ×1.4 damage"},
+  {id:"crusher",name:"Crusher",tier:2,desc:"Blunt weapons: ×1.4 damage"},
+
+  // T2 Buffs - Strength/Weakness Modifiers
+  {id:"exploit_weakness",name:"Exploit Weakness",tier:2,desc:"Hitting enemy weakness: +50% damage"},
+  {id:"elemental_mastery",name:"Elemental Mastery",tier:2,desc:"Using hero's strong element: +30% damage"},
+
+  // T2 Buffs - Accumulative
+  {id:"battle_rhythm",name:"Battle Rhythm",tier:2,desc:"Each victory: +2 to all word AP (resets on shop)"},
+  {id:"momentum",name:"Momentum",tier:2,desc:"Each victory: +5% total damage (resets on shop)"},
+
+  // T3 Buffs - Advanced Multipliers
+  {id:"dual_spec",name:"Dual Spec",tier:3,desc:"Using 2+ different elements: ×1.8 total damage"},
+  {id:"trinity",name:"Trinity",tier:3,desc:"Using exactly 3 elements: ×2.2 total damage"},
+  {id:"rainbow_forge",name:"Rainbow Forge",tier:3,desc:"Using 4+ different elements: ×2.5 total damage"},
+  {id:"min_max",name:"Min-Max",tier:3,desc:"Only T1 or T3 words (no T2): +75% damage"},
+
+  // T3 Buffs - Tier Modifiers
+  {id:"quality_control",name:"Quality Control",tier:3,desc:"All T2 words become T3 in combat"},
+  {id:"budget_build",name:"Budget Build",tier:3,desc:"All T1 words gain ×1.8 damage"},
+  {id:"luxury_forge",name:"Luxury Forge",tier:3,desc:"All T3 words gain +8 AP and ×1.3 damage"},
+
+  // T3 Buffs - Shop & Economy
+  {id:"merchant_guild",name:"Merchant Guild",tier:3,desc:"Shop refresh costs -50%, start with +20g"},
+  {id:"treasure_hunter",name:"Treasure Hunter",tier:3,desc:"Gain gold equal to 20% of overkill damage"},
+  {id:"bulk_discount",name:"Bulk Discount",tier:3,desc:"Crates contain +1 extra item"},
+
+  // T3 Buffs - Complex Mechanics
+  {id:"sharpening_stone",name:"Sharpening Stone",tier:3,desc:"Each word: 35% chance to gain +1 tier in combat"},
+  {id:"word_hoarder",name:"Word Hoarder",tier:3,desc:"Each word in inventory over 15: +1 total AP"},
+  {id:"glass_cannon",name:"Glass Cannon",tier:3,desc:"×2.0 total damage, but lose on tie"},
+  {id:"battle_hardened",name:"Battle Hardened",tier:3,desc:"Each round survived: +3 base AP (permanent)"}
+];
+
+// === CONSUMABLES (one-time use) ===
+const CONSUMABLES=[
+  // Heal consumables have been removed in the simplified model where hero HP is not tracked
+  {id:"one_day_delivery",name:"One-Day Delivery",cost:20,desc:"Generate a random Rare word and add to inventory.",
+   use:(S)=>{
+     const pool=WORDS.filter(w=>w.rarity===R.RARE);
+     if(pool.length>0){
+       if(S.inv.length>=INV_LIMIT){
+         return "Inventory full! Cannot add new word.";
+       }
+       const w=pool[Math.random()*pool.length|0];
+       S.inv.push({...w});
+       return `Generated ${w.name}!`;
+     }
+     return "No Rare words available.";
+   }},
+  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"All weapons ×1.5 proficiency for one battle.",
+   use:(S)=>{S.tempTalents=S.tempTalents||[];S.tempTalents.push("weapon_master");return "Weapon Master active!"}}
+];
+
+// === WORDS ===
+const WORDS=[
+  // Affinities (Adj₁ for weapons) - ALL ELEMENTS
+  {id:"fiery",name:"Fiery",type:"affinity",elem:E.FIRE,rarity:R.COMMON,desc:"Fire element."},
+  {id:"frozen",name:"Frozen",type:"affinity",elem:E.WATER,rarity:R.COMMON,desc:"Water element."},
+  {id:"toxic",name:"Toxic",type:"affinity",elem:E.POISON,rarity:R.COMMON,desc:"Poison element."},
+  {id:"holy",name:"Holy",type:"affinity",elem:E.LIGHT,rarity:R.COMMON,desc:"Light element."},
+  {id:"shadowed",name:"Shadowed",type:"affinity",elem:E.DARK,rarity:R.COMMON,desc:"Dark element."},
+  {id:"earthen",name:"Earthen",type:"affinity",elem:E.EARTH,rarity:R.COMMON,desc:"Earth element."},
+  {id:"charged",name:"Charged",type:"affinity",elem:E.LIGHTNING,rarity:R.COMMON,desc:"Lightning element."},
+  {id:"brutal",name:"Brutal",type:"affinity",elem:E.PHYS,rarity:R.COMMON,desc:"Physical element."},
+  // Weapons organized by category: Slash, Pierce, Blunt, Magic (3 tiers each)
+  // Slash weapons (T1, T2, T3)
+  {id:"sword",name:"Sword",type:"weapon",category:"slash",rarity:R.COMMON,desc:"A balanced blade."},
+  {id:"greatsword",name:"Greatsword",type:"weapon",category:"slash",rarity:R.UNCOMMON,desc:"A powerful two-handed sword."},
+  {id:"claymore",name:"Claymore",type:"weapon",category:"slash",rarity:R.RARE,desc:"A legendary Highland blade."},
+  // Pierce weapons (T1, T2, T3)
+  {id:"bow",name:"Bow",type:"weapon",category:"pierce",rarity:R.COMMON,desc:"A ranged weapon."},
+  {id:"longbow",name:"Longbow",type:"weapon",category:"pierce",rarity:R.UNCOMMON,desc:"A powerful ranged weapon."},
+  {id:"warbow",name:"Warbow",type:"weapon",category:"pierce",rarity:R.RARE,desc:"A masterwork bow of immense power."},
+  // Magic weapons (T1, T2, T3)
+  {id:"wand",name:"Wand",type:"weapon",category:"magic",rarity:R.COMMON,desc:"A simple magical focus."},
+  {id:"staff",name:"Staff",type:"weapon",category:"magic",rarity:R.UNCOMMON,desc:"A powerful channeling staff."},
+  {id:"scepter",name:"Scepter",type:"weapon",category:"magic",rarity:R.RARE,desc:"A royal arcane artifact."},
+  // Blunt weapons (T1, T2, T3)
+  {id:"mace",name:"Mace",type:"weapon",category:"blunt",rarity:R.COMMON,desc:"A heavy bludgeon."},
+  {id:"warhammer",name:"Warhammer",type:"weapon",category:"blunt",rarity:R.UNCOMMON,desc:"A crushing war weapon."},
+  {id:"maul",name:"Maul",type:"weapon",category:"blunt",rarity:R.RARE,desc:"A massive two-handed hammer."},
+  // Adjectives - Pure multipliers (MORE VARIETY)
+  {id:"lesser",name:"Lesser",type:"adjective",mult:1.2,rarity:R.COMMON,desc:"×1.2 multiplier."},
+  // Updated pure multiplier adjectives and new progression sets
+  {id:"great",name:"Great",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
+  {id:"greater",name:"Greater",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
+  {id:"greatest",name:"Greatest",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
+
+  // Mighty now becomes the T3 form of the Strength/Resilient/Mighty progression
+
+  {id:"sturdy",name:"Sturdy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
+  {id:"stalwart",name:"Stalwart",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
+  {id:"unyielding",name:"Unyielding",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
+
+  {id:"supremacy",name:"Supremacy",type:"adjective",mult:1.3,rarity:R.COMMON,desc:"×1.3 multiplier."},
+  {id:"superior",name:"Superior",type:"adjective",mult:1.6,rarity:R.UNCOMMON,desc:"×1.6 multiplier."},
+  {id:"supreme",name:"Supreme",type:"adjective",mult:1.9,rarity:R.RARE,desc:"×1.9 multiplier."},
+  {id:"ultimate",name:"Ultimate",type:"adjective",mult:2.5,rarity:R.RARE,desc:"×2.5 multiplier."},
+  {id:"divine",name:"Divine",type:"adjective",mult:3.0,rarity:R.RARE,desc:"×3.0 multiplier."},
+  // Adjectives - Elemental (ALL ELEMENTS, 3 tiers each)
+  {id:"blazing",name:"Blazing",type:"adjective",mult:1.4,elem:E.FIRE,rarity:R.COMMON,desc:"Fire. ×1.4",hiddenInBank:true},
+  {id:"scorching",name:"Scorching",type:"adjective",mult:1.7,elem:E.FIRE,rarity:R.UNCOMMON,desc:"Fire. ×1.7",hiddenInBank:true},
+  {id:"infernal",name:"Infernal",type:"adjective",mult:2.1,elem:E.FIRE,rarity:R.MAGIC,desc:"Fire. ×2.1",hiddenInBank:true},
+  {id:"frigid",name:"Frigid",type:"adjective",mult:1.4,elem:E.WATER,rarity:R.COMMON,desc:"Water. ×1.4",hiddenInBank:true},
+  {id:"glacial",name:"Glacial",type:"adjective",mult:1.7,elem:E.WATER,rarity:R.UNCOMMON,desc:"Water. ×1.7",hiddenInBank:true},
+  {id:"oceanic",name:"Oceanic",type:"adjective",mult:2.1,elem:E.WATER,rarity:R.MAGIC,desc:"Water. ×2.1",hiddenInBank:true},
+  {id:"venomous",name:"Venomous",type:"adjective",mult:1.4,elem:E.POISON,rarity:R.COMMON,desc:"Poison. ×1.4",hiddenInBank:true},
+  {id:"noxious",name:"Noxious",type:"adjective",mult:1.7,elem:E.POISON,rarity:R.UNCOMMON,desc:"Poison. ×1.7",hiddenInBank:true},
+  {id:"virulent",name:"Virulent",type:"adjective",mult:2.1,elem:E.POISON,rarity:R.MAGIC,desc:"Poison. ×2.1",hiddenInBank:true},
+  {id:"radiant",name:"Radiant",type:"adjective",mult:1.4,elem:E.LIGHT,rarity:R.COMMON,desc:"Light. ×1.4",hiddenInBank:true},
+  {id:"luminous",name:"Luminous",type:"adjective",mult:1.7,elem:E.LIGHT,rarity:R.UNCOMMON,desc:"Light. ×1.7",hiddenInBank:true},
+  {id:"celestial",name:"Celestial",type:"adjective",mult:2.1,elem:E.LIGHT,rarity:R.MAGIC,desc:"Light. ×2.1",hiddenInBank:true},
+  {id:"cursed",name:"Cursed",type:"adjective",mult:1.4,elem:E.DARK,rarity:R.COMMON,desc:"Dark. ×1.4",hiddenInBank:true},
+  {id:"sinister",name:"Sinister",type:"adjective",mult:1.7,elem:E.DARK,rarity:R.UNCOMMON,desc:"Dark. ×1.7",hiddenInBank:true},
+  {id:"void",name:"Void",type:"adjective",mult:2.1,elem:E.DARK,rarity:R.MAGIC,desc:"Dark. ×2.1",hiddenInBank:true},
+  {id:"rugged",name:"Rugged",type:"adjective",mult:1.4,elem:E.EARTH,rarity:R.COMMON,desc:"Earth. ×1.4",hiddenInBank:true},
+  {id:"granite",name:"Granite",type:"adjective",mult:1.7,elem:E.EARTH,rarity:R.UNCOMMON,desc:"Earth. ×1.7",hiddenInBank:true},
+  {id:"seismic",name:"Seismic",type:"adjective",mult:2.1,elem:E.EARTH,rarity:R.MAGIC,desc:"Earth. ×2.1",hiddenInBank:true},
+  {id:"voltaic",name:"Voltaic",type:"adjective",mult:1.4,elem:E.LIGHTNING,rarity:R.COMMON,desc:"Lightning. ×1.4",hiddenInBank:true},
+  {id:"electric",name:"Electric",type:"adjective",mult:1.7,elem:E.LIGHTNING,rarity:R.UNCOMMON,desc:"Lightning. ×1.7",hiddenInBank:true},
+  {id:"thunderous",name:"Thunderous",type:"adjective",mult:2.1,elem:E.LIGHTNING,rarity:R.MAGIC,desc:"Lightning. ×2.1",hiddenInBank:true},
+  {id:"savage",name:"Savage",type:"adjective",mult:1.4,elem:E.PHYS,rarity:R.COMMON,desc:"Physical. ×1.4",hiddenInBank:true},
+  {id:"vicious",name:"Vicious",type:"adjective",mult:1.7,elem:E.PHYS,rarity:R.UNCOMMON,desc:"Physical. ×1.7",hiddenInBank:true},
+  {id:"devastating",name:"Devastating",type:"adjective",mult:2.1,elem:E.PHYS,rarity:R.MAGIC,desc:"Physical. ×2.1",hiddenInBank:true},
+  // Nouns (Gems) - ALL ELEMENTS, 3 tiers each
+  {id:"ember",name:"Ember",type:"noun",elem:E.FIRE,ap:1,rarity:R.COMMON,desc:"+1 AP Fire"},
+  {id:"flame",name:"Flame",type:"noun",elem:E.FIRE,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Fire"},
+  {id:"inferno",name:"Inferno",type:"noun",elem:E.FIRE,ap:3,rarity:R.RARE,desc:"+3 AP Fire"},
+  {id:"wave",name:"Wave",type:"noun",elem:E.WATER,ap:1,rarity:R.COMMON,desc:"+1 AP Water"},
+  {id:"torrent",name:"Torrent",type:"noun",elem:E.WATER,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Water"},
+  {id:"tsunami",name:"Tsunami",type:"noun",elem:E.WATER,ap:3,rarity:R.RARE,desc:"+3 AP Water"},
+  {id:"venom",name:"Venom",type:"noun",elem:E.POISON,ap:1,rarity:R.COMMON,desc:"+1 AP Poison"},
+  {id:"toxin",name:"Toxin",type:"noun",elem:E.POISON,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Poison"},
+  {id:"plague",name:"Plague",type:"noun",elem:E.POISON,ap:3,rarity:R.RARE,desc:"+3 AP Poison"},
+  {id:"radiance",name:"Radiance",type:"noun",elem:E.LIGHT,ap:1,rarity:R.COMMON,desc:"+1 AP Light"},
+  {id:"glory",name:"Glory",type:"noun",elem:E.LIGHT,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Light"},
+  {id:"divinity",name:"Divinity",type:"noun",elem:E.LIGHT,ap:3,rarity:R.RARE,desc:"+3 AP Light"},
+  {id:"darkness",name:"Darkness",type:"noun",elem:E.DARK,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Dark"},
+  {id:"oblivion",name:"Oblivion",type:"noun",elem:E.DARK,ap:3,rarity:R.RARE,desc:"+3 AP Dark"},
+  // Added T1 Dark noun so each element has 3 tiers
+  {id:"shade",name:"Shade",type:"noun",elem:E.DARK,ap:1,rarity:R.COMMON,desc:"+1 AP Dark"},
+  {id:"stone",name:"Stone",type:"noun",elem:E.EARTH,ap:1,rarity:R.COMMON,desc:"+1 AP Earth"},
+  {id:"boulder",name:"Boulder",type:"noun",elem:E.EARTH,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Earth"},
+  {id:"mountain",name:"Mountain",type:"noun",elem:E.EARTH,ap:3,rarity:R.RARE,desc:"+3 AP Earth"},
+  {id:"spark",name:"Spark",type:"noun",elem:E.LIGHTNING,ap:1,rarity:R.COMMON,desc:"+1 AP Lightning"},
+  {id:"bolt",name:"Bolt",type:"noun",elem:E.LIGHTNING,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Lightning"},
+  {id:"tempest",name:"Tempest",type:"noun",elem:E.LIGHTNING,ap:3,rarity:R.RARE,desc:"+3 AP Lightning"},
+  {id:"impact",name:"Impact",type:"noun",elem:E.PHYS,ap:1,rarity:R.COMMON,desc:"+1 AP Physical"},
+  {id:"force",name:"Force",type:"noun",elem:E.PHYS,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Physical"},
+  // Morphological nouns for high-tier adjectives (hidden in bank). These allow words like
+  // "Supreme" and "Mighty" to transform into noun forms when used in the gem slot.
+  {id:"superiority",name:"Superiority",type:"noun",ap:3,rarity:R.UNCOMMON,desc:"+3 AP",hiddenInBank:true},
+  {id:"supremacy_noun",name:"Supremacy",type:"noun",ap:3,rarity:R.RARE,desc:"+3 AP",hiddenInBank:true},
+  {id:"cataclysm",name:"Cataclysm",type:"noun",elem:E.PHYS,ap:3,rarity:R.RARE,desc:"+3 AP Physical"}];
+
+// === Morphological mapping ===
+// Some words can morph between noun and adjective forms depending on which slot they occupy. To
+// support this, define explicit mappings from nouns to adjectives and back again. Rather than
+// relying on rarity matching (which breaks for tier‑3 words), we manually pair each noun with
+// a suitable adjective of the same element. This gives players predictable transformations like
+// Flame → Scorching and Inferno → Infernal even when the rarities differ.
+const NOUN_TO_ADJ = {
+  // Fire nouns
+  ember: 'Blazing',
+  flame: 'Scorching',
+  inferno: 'Infernal',
+  // Water nouns
+  wave: 'Frigid',
+  torrent: 'Glacial',
+  tsunami: 'Oceanic',
+  // Poison nouns
+  venom: 'Venomous',
+  toxin: 'Noxious',
+  plague: 'Virulent',
+  // Light nouns
+  radiance: 'Radiant',
+  glory: 'Luminous',
+  divinity: 'Celestial',
+  // Dark nouns
+  darkness: 'Sinister',
+  oblivion: 'Void',
+  shade: 'Cursed',
+  // Earth nouns
+  stone: 'Rugged',
+  boulder: 'Granite',
+  mountain: 'Seismic',
+  // Lightning nouns
+  spark: 'Voltaic',
+  bolt: 'Electric',
+  tempest: 'Thunderous',
+  // Physical nouns
+  impact: 'Savage',
+  force: 'Vicious',
+  cataclysm: 'Devastating'
+  ,
+  // High-tier morph nouns mapping back to adjectives
+  superiority: 'Superior',
+  supremacy_noun: 'Supreme'
+};
+
+// Build the reverse mapping from adjectives back to nouns. This allows adjectives dropped into
+// gem slots to revert to their noun form. Only adjectives that have a corresponding noun are
+// included; other adjectives (e.g. Lesser, Mighty) remain unchanged when placed in noun slots.
+const ADJ_TO_NOUN = {};
+Object.entries(NOUN_TO_ADJ).forEach(([nounId, adjName]) => {
+  ADJ_TO_NOUN[adjName] = WORDS.find(w => w.type === 'noun' && w.id === nounId)?.name || nounId;
+});
+
+// === Word forms ===
+// Define prefix and suffix forms for every non-weapon word.  The prefix form is used
+// whenever a word occupies an adjective slot (before the weapon or after the gem), and
+// the suffix form is used when the word sits in the gem slot.  Weapons always use
+// their own name in any position.  Manual overrides provide clear transformations
+// for base affinities and general adjectives.  For nouns, prefix forms come from
+// NOUN_TO_ADJ; for adjectives, suffix forms come from ADJ_TO_NOUN or a matching
+// element/rarity noun when available.  If no special mapping exists, the word
+// retains its name for both positions.
+const WORD_FORMS = {};
+(() => {
+  // Manual overrides for affinities and basic adjectives.  Each entry maps a word ID
+  // to explicit prefix (adjective) and suffix (noun) forms.  These cover cases like
+  // Fiery→Fire, Frozen→Ice, Shadowed→Shadowy/Shadow, etc.  If a word ID appears here
+  // it will override any automatic mapping.
+  const MANUAL_MORPHS = {
+    fiery: { prefix: "Fiery", suffix: "Fire" },
+    frozen: { prefix: "Icy", suffix: "Ice" },
+    toxic: { prefix: "Toxic", suffix: "Poison" },
+    holy: { prefix: "Holy", suffix: "Light" },
+    shadowed: { prefix: "Shadowy", suffix: "Shade" },
+    earthen: { prefix: "Earthen", suffix: "Stone" },
+    charged: { prefix: "Charged", suffix: "Spark" },
+    brutal: { prefix: "Brutal", suffix: "Impact" },
+    lesser: { prefix: "Lesser", suffix: "Lesser" },
+    greater: { prefix: "Greater", suffix: "Greater" },
+    superior: { prefix: "Superior", suffix: "Superiority" },
+    supreme: { prefix: "Supreme", suffix: "Supremacy" },
+    ultimate: { prefix: "Ultimate", suffix: "Ultimate" },
+    divine: { prefix: "Divine", suffix: "Divinity" },
+    great: { prefix: "Great", suffix: "Greatness" },
+    greatest: { prefix: "Greatest", suffix: "Greatness" },
+    sturdy: { prefix: "Sturdy", suffix: "Sturdiness" },
+    stalwart: { prefix: "Stalwart", suffix: "Stalwart" },
+    unyielding: { prefix: "Unyielding", suffix: "Unyielding Resolve" },
+  };
+  WORDS.forEach(w => {
+    // Weapons retain their own name regardless of position
+    if(w.type === 'weapon'){
+      WORD_FORMS[w.id] = { prefix: w.name, suffix: w.name };
+      return;
+    }
+    // Manual override takes precedence
+    const override = MANUAL_MORPHS[w.id];
+    if(override){
+      WORD_FORMS[w.id] = { prefix: override.prefix, suffix: override.suffix };
+      return;
+    }
+    // Nouns: use the paired adjective for prefix and original name for suffix
+    if(w.type === 'noun'){
+      const adjName = NOUN_TO_ADJ[w.id];
+      WORD_FORMS[w.id] = { prefix: adjName || w.name, suffix: w.name };
+      return;
+    }
+    // Adjectives or affinities: prefix defaults to the word's own name
+    // Suffix uses the reverse mapping if available
+    let suffix = ADJ_TO_NOUN[w.name];
+    if(!suffix){
+      // Try to find a noun with the same element and rarity for a reasonable
+      // suffix when ADJ_TO_NOUN doesn't define one.  This helps map element
+      // adjectives like Radiant→Radiance or Electric→Bolt.  Only consider nouns
+      // with matching element and rarity.
+      const nounCandidate = WORDS.find(n =>
+        n.type === 'noun' && n.elem !== undefined && w.elem !== undefined &&
+        n.elem === w.elem && RRANK[n.rarity] === RRANK[w.rarity]
+      );
+      suffix = nounCandidate ? nounCandidate.name : w.name;
+    }
+    WORD_FORMS[w.id] = { prefix: w.name, suffix };
+  });
+})();
+
+
+const STICK={id:"stick",name:"Stick",type:"weapon",rarity:R.RUSTY,isStick:true,desc:"A pathetic twig. ×0.25 damage penalty."};
+
+// === TALENTS ===
+// Duplicate talent definition removed.  The primary TALENTS list is declared earlier in the file.
+
+// === HELPER FUNCTIONS ===
+// Convert a rarity into a base AP value.  Tier 1 words grant 1 AP, Tier 2 words grant 2 AP,
+// and Tier 3 words grant 3 AP.  Ranks are determined via the RRANK array (0=T1, 2=T2, 3=T3).
+function rarityToAP(rarity){
+  const rank = (rarity !== undefined && RRANK[rarity] !== undefined) ? RRANK[rarity] : 0;
+  if(rank === 0) return 1;
+  if(rank === 2) return 2;
+  if(rank >= 3) return 3;
+  // Fallback for unusual ranks
+  return rank + 1;
+}
+
+// Determine the base AP for a given word.  If the word defines an explicit 'ap' property
+// (e.g. gem nouns), use that value.  Otherwise, derive the AP from its rarity.
+function getBaseAP(word){
+  if(!word) return 0;
+  if(word.ap !== undefined) return word.ap;
+  return rarityToAP(word.rarity);
+}
+
+// === WEAPON SVG ===
+const WEAPON_SVG={
+  // SLASH CATEGORY
+  sword:{base:`<path d="M50 10 L55 15 L55 85 L60 90 L60 100 L55 100 L55 105 L60 110 L60 120 L40 120 L40 110 L45 105 L45 100 L40 100 L40 90 L45 85 L45 15 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M50 15 L52 20 L52 80 L50 82 L48 80 L48 20 Z" fill="#ffffff33"/>`,flair1:`<circle cx="50" cy="95" r="4" fill="FLAIR1COLOR"/>`,flair2:`<path d="M35 25 L30 20 M65 25 L70 20 M35 35 L28 33 M65 35 L72 33" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"/>`},
+  greatsword:{base:`<path d="M50 5 L58 12 L58 82 L62 88 L62 100 L58 100 L58 107 L62 112 L62 120 L38 120 L38 112 L42 107 L42 100 L38 100 L38 88 L42 82 L42 12 Z" fill="BASECOLOR" stroke="#333" stroke-width="2"/><path d="M50 10 L54 16 L54 78 L50 82 L46 78 L46 16 Z" fill="#ffffff33"/><rect x="36" y="88" width="28" height="5" fill="#333"/>`,flair1:`<circle cx="50" cy="96" r="5" fill="FLAIR1COLOR"/>`,flair2:`<path d="M32 22 L26 17 M68 22 L74 17 M32 38 L24 35 M68 38 L76 35" stroke="FLAIR2COLOR" stroke-width="2.5" stroke-linecap="round"/>`},
+  claymore:{base:`<path d="M50 3 L60 10 L60 80 L65 86 L65 98 L60 98 L60 106 L65 112 L65 122 L35 122 L35 112 L40 106 L40 98 L35 98 L35 86 L40 80 L40 10 Z" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><path d="M50 8 L56 14 L56 76 L50 82 L44 76 L44 14 Z" fill="#ffffff44"/><rect x="33" y="86" width="34" height="6" fill="#444"/><path d="M25 15 L35 10 M75 15 L65 10" stroke="BASECOLOR" stroke-width="4"/>`,flair1:`<circle cx="50" cy="96" r="6" fill="FLAIR1COLOR"/><circle cx="50" cy="108" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="20" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="20" r="5" fill="FLAIR2COLOR"/><circle cx="28" cy="40" r="4" fill="FLAIR2COLOR"/><circle cx="72" cy="40" r="4" fill="FLAIR2COLOR"/>`},
+
+  // PIERCE CATEGORY
+  bow:{base:`<path d="M50 10 Q20 65 50 120 Q80 65 50 10" fill="none" stroke="BASECOLOR" stroke-width="6" stroke-linecap="round"/><path d="M50 10 Q25 65 50 120" fill="none" stroke="#ffffff22" stroke-width="3"/><line x1="50" y1="15" x2="50" y2="115" stroke="#c9a227" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="65" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="50" cy="105" r="4" fill="FLAIR2COLOR"/>`},
+  longbow:{base:`<path d="M50 5 Q15 65 50 125 Q85 65 50 5" fill="none" stroke="BASECOLOR" stroke-width="7" stroke-linecap="round"/><path d="M50 5 Q20 65 50 125" fill="none" stroke="#ffffff22" stroke-width="4"/><line x1="50" y1="10" x2="50" y2="120" stroke="#c9a227" stroke-width="2"/><circle cx="50" cy="10" r="3" fill="#c9a227"/><circle cx="50" cy="120" r="3" fill="#c9a227"/>`,flair1:`<circle cx="50" cy="65" r="7" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="30" r="5" fill="FLAIR2COLOR"/><circle cx="50" cy="100" r="5" fill="FLAIR2COLOR"/>`},
+  warbow:{base:`<path d="M50 3 Q10 65 50 127 Q90 65 50 3" fill="none" stroke="BASECOLOR" stroke-width="8" stroke-linecap="round"/><path d="M50 3 Q15 65 50 127" fill="none" stroke="#ffffff33" stroke-width="5"/><line x1="50" y1="8" x2="50" y2="122" stroke="#d4a532" stroke-width="2.5"/><path d="M45 8 L50 3 L55 8" fill="#d4a532"/><path d="M45 122 L50 127 L55 122" fill="#d4a532"/><rect x="48" y="60" width="4" height="10" fill="#c9a227"/>`,flair1:`<circle cx="50" cy="65" r="8" fill="FLAIR1COLOR"/><circle cx="50" cy="50" r="4" fill="FLAIR1COLOR"/><circle cx="50" cy="80" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="20" r="6" fill="FLAIR2COLOR"/><circle cx="50" cy="110" r="6" fill="FLAIR2COLOR"/><circle cx="40" cy="65" r="4" fill="FLAIR2COLOR"/><circle cx="60" cy="65" r="4" fill="FLAIR2COLOR"/>`},
+
+  // MAGIC CATEGORY
+  wand:{base:`<rect x="48" y="60" width="4" height="60" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><circle cx="50" cy="25" r="18" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="25" r="10" fill="#ffffff22"/>`,flair1:`<circle cx="50" cy="25" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="35" cy="15" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="15" r="3" fill="FLAIR2COLOR"/><circle cx="35" cy="35" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="35" r="3" fill="FLAIR2COLOR"/>`},
+  staff:{base:`<rect x="47" y="40" width="6" height="80" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1.5"/><circle cx="50" cy="20" r="22" fill="BASECOLOR" stroke="#333" stroke-width="2"/><circle cx="50" cy="20" r="14" fill="#ffffff22"/><path d="M35 110 L50 105 L65 110 L50 120 Z" fill="#8B4513" stroke="#3a2a1a" stroke-width="1"/>`,flair1:`<circle cx="50" cy="20" r="8" fill="FLAIR1COLOR"/><circle cx="50" cy="10" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="10" r="4" fill="FLAIR2COLOR"/><circle cx="70" cy="10" r="4" fill="FLAIR2COLOR"/><circle cx="30" cy="30" r="4" fill="FLAIR2COLOR"/><circle cx="70" cy="30" r="4" fill="FLAIR2COLOR"/>`},
+  scepter:{base:`<rect x="46" y="45" width="8" height="75" fill="#8B6914" stroke="#5a4307" stroke-width="1.5"/><circle cx="50" cy="18" r="25" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><circle cx="50" cy="18" r="16" fill="#ffffff33"/><path d="M30 15 L50 8 L70 15" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M30 21 L50 28 L70 21" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><rect x="42" y="115" width="16" height="8" fill="#d4af37" stroke="#8B6914" stroke-width="1"/>`,flair1:`<circle cx="50" cy="18" r="10" fill="FLAIR1COLOR"/><circle cx="50" cy="8" r="5" fill="FLAIR1COLOR"/><circle cx="50" cy="28" r="5" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="28" cy="8" r="5" fill="FLAIR2COLOR"/><circle cx="72" cy="8" r="5" fill="FLAIR2COLOR"/><circle cx="25" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="75" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="35" cy="18" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="18" r="3" fill="FLAIR2COLOR"/>`},
+
+  // BLUNT CATEGORY
+  mace:{base:`<path d="M45 70 L45 120 L55 120 L55 70 Z" fill="#8B4513" stroke="#333" stroke-width="1"/><circle cx="50" cy="40" r="28" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="40" r="18" fill="#ffffff15"/>`,flair1:`<circle cx="50" cy="40" r="8" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="25" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="25" r="5" fill="FLAIR2COLOR"/><circle cx="30" cy="55" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="55" r="5" fill="FLAIR2COLOR"/>`},
+  warhammer:{base:`<path d="M44 75 L44 120 L56 120 L56 75 Z" fill="#8B4513" stroke="#333" stroke-width="1.5"/><rect x="30" y="35" width="40" height="35" fill="BASECOLOR" stroke="#333" stroke-width="2"/><rect x="34" y="40" width="32" height="25" fill="#ffffff15"/><path d="M25 40 L30 35 M25 65 L30 70 M75 40 L70 35 M75 65 L70 70" stroke="#333" stroke-width="2"/>`,flair1:`<circle cx="50" cy="52" r="9" fill="FLAIR1COLOR"/>`,flair2:`<rect x="35" y="45" width="6" height="6" fill="FLAIR2COLOR"/><rect x="59" y="45" width="6" height="6" fill="FLAIR2COLOR"/><rect x="35" y="57" width="6" height="6" fill="FLAIR2COLOR"/><rect x="59" y="57" width="6" height="6" fill="FLAIR2COLOR"/>`},
+  maul:{base:`<path d="M43 80 L43 122 L57 122 L57 80 Z" fill="#6d5b43" stroke="#3a2a1a" stroke-width="2"/><rect x="25" y="30" width="50" height="45" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><rect x="30" y="36" width="40" height="33" fill="#ffffff18"/><path d="M20 35 L25 30 M20 70 L25 75 M80 35 L75 30 M80 70 L75 75" stroke="#333" stroke-width="3"/><rect x="38" y="50" width="24" height="10" fill="#444"/>`,flair1:`<circle cx="50" cy="52" r="10" fill="FLAIR1COLOR"/><circle cx="50" cy="42" r="5" fill="FLAIR1COLOR"/><circle cx="50" cy="62" r="5" fill="FLAIR1COLOR"/>`,flair2:`<rect x="32" y="38" width="8" height="8" fill="FLAIR2COLOR"/><rect x="60" y="38" width="8" height="8" fill="FLAIR2COLOR"/><rect x="32" y="59" width="8" height="8" fill="FLAIR2COLOR"/><rect x="60" y="59" width="8" height="8" fill="FLAIR2COLOR"/><circle cx="50" cy="32" r="4" fill="FLAIR2COLOR"/><circle cx="50" cy="72" r="4" fill="FLAIR2COLOR"/>`},
+
+  // OLD WEAPONS (keeping for backwards compatibility)
+  stick:{base:`<path d="M48 15 Q45 60 48 120 L52 120 Q55 60 52 15 Z" fill="#5a4a3a" stroke="#3a2a1a" stroke-width="1"/><path d="M46 30 L44 28 M54 50 L57 48 M47 80 L44 82" stroke="#3a2a1a" stroke-width="1.5"/>`,flair1:``,flair2:``},
+  hammer:{base:`<rect x="45" y="80" width="10" height="40" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><rect x="35" y="40" width="30" height="30" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="55" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="40" cy="55" r="4" fill="FLAIR2COLOR"/><circle cx="60" cy="55" r="4" fill="FLAIR2COLOR"/>`},
+  dagger:{base:`<path d="M50 15 L55 20 L55 65 L58 70 L58 75 L50 75 L42 75 L42 70 L45 65 L45 20 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="75" r="4" fill="#8B4513"/>`,flair1:`<circle cx="50" cy="35" r="4" fill="FLAIR1COLOR"/>`,flair2:`<path d="M35 25 L32 23 M65 25 L68 23" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"/>`},
+  axe:{base:`<rect x="47" y="60" width="6" height="60" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><path d="M53 60 L80 50 L80 70 L53 60 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M47 60 L20 50 L20 70 L47 60 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="80" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="35" cy="55" r="4" fill="FLAIR2COLOR"/><circle cx="65" cy="55" r="4" fill="FLAIR2COLOR"/>`}
+};
+const BASE_COLORS={
+  // Slash
+  sword:"#7a8b99",
+  greatsword:"#8a9baa",
+  claymore:"#9aabbb",
+  // Pierce
+  bow:"#8B4513",
+  longbow:"#9B5523",
+  warbow:"#AB6533",
+  // Magic
+  wand:"#9966cc",
+  staff:"#aa77dd",
+  scepter:"#bb88ee",
+  // Blunt
+  mace:"#6a6a7a",
+  warhammer:"#7a7a8a",
+  maul:"#8a8a9a",
+  // Old weapons
+  stick:"#5a4a3a",
+  hammer:"#86654b",
+  dagger:"#7f7f7f",
+  axe:"#7a4c30"
+};
+
+// === STATE ===
+let S={
+  wins:0,losses:0,streak:0,gold:30,
+  hero:null,enemy:null,
+  currentHP:100, // Hero's current HP
+  level:1, // Hero level (increments each battle)
+  roundIndex:1, // Current round in the run
+  floor:1, // Current floor (3 rounds per floor)
+  talents:[], // Active talents for this run
+  consumables:[], // Owned consumables
+  inv:[], // Word inventory
+  sel:{item:null,adj1:null,adj2:null,adj3:null,adj4:null,noun1:null}, // Selected words: 1 weapon, 4 adjectives, 1 noun
+  // Word currently selected from the bank awaiting assignment to a slot
+  pendingWord:null,
+  rerollCost:5,
+  sortMode:"type",
+  // Sort direction for the forge inventory: true=ascending, false=descending
+  sortAsc:true,
+  shopSortMode:"type", // Sort mode for shop word bank
+  shopSortAsc:true, // Sort direction for shop word bank: true=ascending, false=descending
+  heroSelected:false, // Whether hero has been selected for this run
+  shadowBonusHP:0, // For Shadow Pact talent
+  battleHardenedBonus:0, // For Battle Hardened talent cap tracking
+  quickStudyBonus:0 // For Quick Study talent cap tracking
+},audioOn=true;
+
+// === AUDIO ===
+let audioCtx=null;
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)()}
+function playTone(freq,dur,type='sine',vol=0.15){
+  if(!audioOn||!audioCtx)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+  o.connect(g);g.connect(audioCtx.destination);
+  o.start();o.stop(audioCtx.currentTime+dur);
+}
+function sfxHover(){playTone(800,0.04,'sine',0.06)}
+function sfxClick(){playTone(600,0.08,'sine',0.12);setTimeout(()=>playTone(900,0.12,'sine',0.1),40)}
+function sfxRemove(){playTone(400,0.1,'sine',0.1)}
+function sfxImpact(intensity=1){
+  const base=150+intensity*100;
+  playTone(base,0.15,'sawtooth',0.2*intensity);
+  setTimeout(()=>playTone(base*1.5,0.1,'square',0.15*intensity),30);
+  setTimeout(()=>playTone(base*2,0.2,'sine',0.25*intensity),60);
+}
+function sfxForgeStart(){playTone(100,0.5,'sawtooth',0.1)}
+function sfxWin(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.4,'sine',0.25),i*120))}
+function sfxLose(){[400,300,200,150].forEach((f,i)=>setTimeout(()=>playTone(f,0.35,'sine',0.15),i*180))}
+
+function sfxBuy(){playTone(880,0.1,'sine',0.15);setTimeout(()=>playTone(1100,0.15,'sine',0.12),80)}
+
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+
+// === INIT ===
+function init(){
+  // Start with a curated subset of words. Provide all common weapons and a mix of Tier 1
+  // and Tier 2 words (excluding hidden words) to give players options without filling
+  // the entire inventory. This mirrors the starting inventory logic in startNewRun().
+  const weaponPool = WORDS.filter(w => w.type === 'weapon' && w.rarity === R.COMMON);
+  const nonWeaponPool = WORDS.filter(w => w.type !== 'weapon' && !w.hiddenInBank &&
+    (RRANK[w.rarity] === 0 || RRANK[w.rarity] === 2));
+  const shuffledNon = shuf([...nonWeaponPool]);
+  const desiredStart = Math.min(nonWeaponPool.length, Math.floor(INV_LIMIT / 2) - weaponPool.length);
+  const startNon = shuffledNon.slice(0, Math.max(0, desiredStart)).map(w => ({ ...w }));
+  S.inv = [...weaponPool.map(w => ({ ...w })), ...startNon];
+
+  setupEvents();
+  const forgeBtn = document.getElementById("forge-btn");
+  if(forgeBtn){
+    forgeBtn.onclick = forge;
+    forgeBtn.onmouseenter = sfxHover;
+  }
+  const newBtn = document.getElementById("new-btn");
+  if(newBtn){
+    newBtn.onclick = startNewRun;
+    newBtn.onmouseenter = sfxHover;
+  }
+  const combatContinueBtn = document.getElementById("combat-continue");
+  if(combatContinueBtn){
+    combatContinueBtn.onclick = afterCombat;
+    combatContinueBtn.onmouseenter = sfxHover;
+  }
+  // Bind the new-run button within the combat overlay.  It will be shown after
+  // combat resolves and allows starting a new run directly from the result screen.
+  const combatNewRunBtn = document.getElementById("combat-new-run");
+  if(combatNewRunBtn){
+    combatNewRunBtn.onclick = startNewRun;
+    combatNewRunBtn.onmouseenter = sfxHover;
+  }
+  const shopContinueBtn = document.getElementById("shop-continue");
+  if(shopContinueBtn){
+    shopContinueBtn.onclick = () => {
+      document.getElementById("shop-overlay").classList.remove("show");
+      S.rerollCost = 5;
+      clrSel();
+      newEnc();
+      render();
+    };
+    shopContinueBtn.onmouseenter = sfxHover;
+  }
+  const rerollBtn = document.getElementById("reroll-btn");
+  if(rerollBtn){
+    rerollBtn.onclick = rerollShop;
+    rerollBtn.onmouseenter = sfxHover;
+  }
+  // Attach multiplier breakdown tooltip to the damage preview panel on first init.
+  const previewPanel = document.getElementById('damage-preview-text');
+  if(previewPanel && !previewPanel.__tooltipAttached){
+    previewPanel.__tooltipAttached = true;
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.style.pointerEvents = 'none';
+    previewPanel.appendChild(tooltip);
+    previewPanel.addEventListener('mouseenter', () => {
+      const content = buildMultiplierTooltip();
+      tooltip.textContent = content;
+      tooltip.style.opacity = content ? '1' : '0';
+    });
+    previewPanel.addEventListener('mouseleave', () => {
+      tooltip.style.opacity = '0';
+    });
+  }
+  const sellWordBtn = document.getElementById("sell-word-btn");
+  if (sellWordBtn) {
+    sellWordBtn.onmouseenter = sfxHover;
+    sellWordBtn.onclick = () => {
+      if (selectedSellWords && selectedSellWords.length > 0) {
+        // Sort indices descending so splicing doesn't invalidate indices
+        const sortedIdx = selectedSellWords.map(({ idx }) => idx).sort((a, b) => b - a);
+        let total = 0;
+        selectedSellWords.forEach(({ word }) => {
+          const tier = RRANK[word.rarity] || 0;
+          const sellPrice = tier === 0 ? 2 : tier === 2 ? 5 : 10;
+          total += sellPrice;
+        });
+        S.gold += total;
+        sortedIdx.forEach(i => {
+          if (i >= 0) S.inv.splice(i, 1);
+        });
+        sfxBuy();
+        // Clear selection
+        selectedSellWords = [];
+        document.getElementById("sell-price-display").textContent = "";
+        document.getElementById("sell-word-btn").disabled = true;
+        // Remove selected class from any highlighted chips
+        document.querySelectorAll("#shop-word-bank .chip.selected").forEach(c => c.classList.remove("selected"));
+        renderShop();
+        render();
+      }
+    };
+  }
+
+  // Deselect button clears all selected words in the shop inventory
+  const deselectBtn = document.getElementById('deselect-btn');
+  if(deselectBtn){
+    deselectBtn.onclick = () => {
+      selectedSellWords = [];
+      document.getElementById('sell-price-display').textContent = "";
+      document.getElementById('sell-word-btn').disabled = true;
+      // Remove highlight from all chips
+      const bank = document.getElementById('shop-word-bank');
+      if(bank){
+        bank.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+      }
+    };
+    // Hover sound for deselect button
+    deselectBtn.onmouseenter = sfxHover;
+  }
+  // Inventory UI removed; no events needed
+  $("#audio-toggle").onclick=()=>{audioOn=!audioOn;$("#audio-toggle").textContent=`🔊 Sound: ${audioOn?'ON':'OFF'}`};
+  document.addEventListener("click",()=>initAudio(),{once:true});
+
+  // Sort buttons for forge
+  $$("#sort-btns button").forEach(btn=>{
+    btn.onclick=()=>{
+      S.sortMode=btn.dataset.sort;
+      $$("#sort-btns button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      renderBank();
+    };
+  });
+
+  // Sort direction toggle for forge inventory
+  const sortDirForgeBtn = document.getElementById('sort-dir-btn-forge');
+  if(sortDirForgeBtn){
+    sortDirForgeBtn.onclick = () => {
+      S.sortAsc = !S.sortAsc;
+      // Update arrow text (down = ascending, up = descending)
+      sortDirForgeBtn.textContent = S.sortAsc ? '↓' : '↑';
+      renderBank();
+    };
+    sortDirForgeBtn.onmouseenter = sfxHover;
+  }
+
+  // Sort buttons for shop word bank
+  $$("#shop-sort-btns button").forEach(btn=>{
+    btn.onclick = () => {
+      S.shopSortMode = btn.dataset.sort;
+      $$("#shop-sort-btns button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderShopWordBank();
+    };
+    // Play hover sound on shop sort buttons
+    btn.onmouseenter = sfxHover;
+  });
+  // Sort direction toggle for shop
+  const sortDirBtn = document.getElementById('sort-dir-btn');
+  if(sortDirBtn){
+    sortDirBtn.onclick = () => {
+      S.shopSortAsc = !S.shopSortAsc;
+      // Update arrow icon to indicate direction (down = ascending, up = descending)
+      sortDirBtn.textContent = S.shopSortAsc ? '↓' : '↑';
+      renderShopWordBank();
+    };
+    sortDirBtn.onmouseenter = sfxHover;
+  }
+
+  // Attach details panels to the portrait containers.  Hovering over a portrait
+  // shows its details panel; moving the pointer away hides it.  The panels
+  // remain visible when hovered over directly.
+  {
+    const heroPortrait = document.querySelector('.hero-portrait');
+    const heroPanel = document.getElementById('hero-details-panel');
+    if(heroPortrait && heroPanel){
+      heroPortrait.onmouseenter = () => {
+        heroPanel.classList.remove('hidden');
+        sfxHover();
+      };
+      heroPortrait.onmouseleave = () => heroPanel.classList.add('hidden');
+      heroPanel.onmouseenter = () => heroPanel.classList.remove('hidden');
+      heroPanel.onmouseleave = () => heroPanel.classList.add('hidden');
+    }
+    const enemyPortrait = document.querySelector('.enemy-portrait');
+    const enemyPanel = document.getElementById('enemy-details-panel');
+    if(enemyPortrait && enemyPanel){
+      enemyPortrait.onmouseenter = () => {
+        enemyPanel.classList.remove('hidden');
+        sfxHover();
+      };
+      enemyPortrait.onmouseleave = () => enemyPanel.classList.add('hidden');
+      enemyPanel.onmouseenter = () => enemyPanel.classList.remove('hidden');
+      enemyPanel.onmouseleave = () => enemyPanel.classList.add('hidden');
+    }
+  }
+
+  // Bind main menu start button.  When clicked, hide the menu and begin a new run.
+  // Note: The start button handler is now bound on DOMContentLoaded for reliability. See below.
+
+}
+
+function startNewRun(){
+  // Reset run state
+  S.wins=0;S.losses=0;S.streak=0;S.gold=30;
+  S.level=1;S.roundIndex=1;S.floor=1;
+  S.talents=[]; // Reset talents
+  S.shadowBonusHP=0; // Reset talent state
+  S.battleHardenedBonus=0; // Reset talent state
+  S.quickStudyBonus=0; // Reset talent state
+  S.consumables=[];
+  // Reset hero selection flag so that a new hero must be chosen on each new run.
+  S.heroSelected = false;
+  // Populate starting inventory: give all Tier 1 weapons (COMMON rarity) to the player
+  // up front, then fill the rest of the starting inventory with a mix of Tier 1 and Tier 2
+  // words (affinities, adjectives, nouns). Hidden words are excluded. This provides
+  // players with a broad vocabulary from the outset.
+  const weaponPool = WORDS.filter(w => w.type === 'weapon' && w.rarity === R.COMMON);
+  const nonWeaponPool = WORDS.filter(w => w.type !== 'weapon' && !w.hiddenInBank &&
+    (RRANK[w.rarity] === 0 || RRANK[w.rarity] === 2));
+  const shuffledNon = shuf([...nonWeaponPool]);
+  // Determine how many non-weapon words to include at start. Fill up to half the
+  // inventory limit minus the number of weapons to give players room to loot more.
+  const desiredStart = Math.min(nonWeaponPool.length, Math.floor(INV_LIMIT / 2) - weaponPool.length);
+  const startNon = shuffledNon.slice(0, Math.max(0, desiredStart)).map(w => ({ ...w }));
+  S.inv = [...weaponPool.map(w => ({ ...w })), ...startNon];
+  clrSel();
+  showHeroSelect();
+}
+
+let currentHeroIndex = 0;
+
+function showHeroSelect(){
+  currentHeroIndex = 0;
+  const container = $("#hero-card-container");
+  container.innerHTML = "";
+
+  HEROES.forEach((h, idx) => {
+    const card = document.createElement("div");
+    card.className = "card hero";
+    card.style.minWidth = "100%";
+    card.style.flex = "0 0 100%";
+    card.style.cursor = "pointer";
+    card.innerHTML = `
+      <div class="card-name">${h.name}</div>
+      <div class="card-desc">${h.desc}</div>
+      <div class="card-stats" style="margin:8px 0">HP: ${h.hp}</div>
+      <div class="card-section" style="margin-bottom:4px"><div class="card-section-title">Strong using</div><div>${h.str.map(el=>`<span class="tag str">${EN[el]}</span>`).join("")}</div></div>
+      <div class="card-section" style="margin-bottom:4px"><div class="card-section-title">Weak using</div><div>${h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("")}</div></div>
+      <div class="card-section"><div class="card-section-title">PROFICIENCIES</div><div><span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span></div></div>
+    `;
+    container.appendChild(card);
+  });
+
+  updateCarousel();
+
+  $("#hero-prev").onclick = () => {
+    currentHeroIndex = (currentHeroIndex - 1 + HEROES.length) % HEROES.length;
+    updateCarousel();
+  };
+
+  $("#hero-next").onclick = () => {
+    currentHeroIndex = (currentHeroIndex + 1) % HEROES.length;
+    updateCarousel();
+  };
+
+  $("#hero-select-btn").onclick = () => {
+    const h = HEROES[currentHeroIndex];
+    S.hero = {...h};
+    S.currentHP = h.hp;
+    S.heroSelected = true;
+    $("#hero-select-overlay").classList.remove("show");
+    newEnc();
+  };
+
+  $("#hero-select-overlay").classList.add("show");
+}
+
+function updateCarousel(){
+  const container = $("#hero-card-container");
+  container.style.transform = `translateX(-${currentHeroIndex * 100}%)`;
+}
+
+function newEnc(){
+  if(!S.heroSelected){showHeroSelect();return}
+
+  // Scale enemy based on roundIndex - Balatro-style exponential scaling
+  const baseEnemy=ENEMIES[Math.random()*ENEMIES.length|0];
+  S.enemy={...baseEnemy};
+
+  // Start at 4 HP for round 1, scale to ~115 for round 9 (becomes 150 after 1.3x boss multiplier)
+  // Gradual exponential scaling with boss spikes built in
+  // Start enemy HP at 5 instead of 4 and scale at roughly the same rate
+  // Adjust enemy HP scaling.  Round 1 starts at 5 HP and the final boss (round 9)
+  // has 300 HP.  Boss rounds (3, 6, 9) receive larger jumps for a slight
+  // difficulty spike.
+  const hpScaling=[5,15,30,55,85,130,180,240,300];
+  const roundIdx=Math.min(S.roundIndex-1,hpScaling.length-1);
+  S.enemy.hp=hpScaling[roundIdx];
+
+  // AP scales more gently - start at 15 and increase by 5 each round
+  S.enemy.ap=15+(S.roundIndex-1)*5;
+
+  // Boss on round 3, 6, 9, etc - moderate boost
+  const isBoss=S.roundIndex%3===0;
+  if(isBoss){
+    S.enemy.hp=Math.round(S.enemy.hp*1.3);
+    S.enemy.ap=Math.round(S.enemy.ap*1.2);
+    S.enemy.name="[BOSS] "+S.enemy.name;
+  }
+
+  // [T2] Shadow Pact: Apply HP steal from previous dark word use
+  if(S.shadowBonusHP > 0){
+    S.enemy.hp = Math.max(1, S.enemy.hp - S.shadowBonusHP);
+    S.shadowBonusHP = 0; // Reset after applying
+  }
+
+  render();
+}
+
+// === RENDER ===
+function render(){
+  const h=S.hero,e=S.enemy;
+
+  // Portrait names
+  $("#hero-name").textContent=h.name;
+  $("#enemy-name").textContent=e.name;
+
+  // Populate hero and enemy element tags on portraits
+  // Calculate total damage with multiplier for display
+  const c=calc();
+  const totalDmg = c.heroDmg || 0;
+  // Do not display hero AP on the portrait; AP is shown in the damage preview instead
+  const heroApTag = "";
+  const heroStrTags=h.str.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
+  const heroWeakTags=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+  // Determine proficiency display: if Weapon Master is active, treat all weapons as good
+  const hasWM=(S.talents && S.talents.includes("weapon_master")) || (S.tempTalents && S.tempTalents.includes("weapon_master"));
+  let heroProfHtml="";
+  if(hasWM){
+    heroProfHtml=`<span class="tag prof">All ×2.0</span>`;
+  }else{
+    heroProfHtml=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
+  }
+  $("#hero-elements").innerHTML=heroApTag+heroStrTags+heroWeakTags+heroProfHtml;
+
+  // Enemy portrait: show only weaknesses and resistances (AP removed)
+  const enemyWeakTags=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
+  const enemyResTags=e.res.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+  $("#enemy-elements").innerHTML=enemyWeakTags+enemyResTags;
+
+  // Health bars with dynamic preview
+  updateHealthBars();
+
+  // Details panels (hidden by default)
+  // Update HP in details panel (Base AP removed)
+  const heroApDiv = document.getElementById("hero-ap");
+  if(heroApDiv){
+    heroApDiv.textContent = `HP: ${h.hp}`;
+  }
+  $("#hero-desc").textContent=h.desc;
+  $("#hero-dialogue").textContent=`"${h.dialogue[Math.random()*h.dialogue.length|0]}"`;
+  // Also update the inline portrait dialogue (no quotes) for the hero
+  {
+    const inline = document.getElementById('hero-inline-dialogue');
+    if(inline){
+      const line = h.dialogue[Math.random()*h.dialogue.length|0];
+      inline.textContent = line;
+    }
+  }
+  $("#hero-str").innerHTML=h.str.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
+  $("#hero-weak").innerHTML=h.weak.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+  // Update proficiency display in details panel: reflect Weapon Master if active
+  if(hasWM){
+    $("#hero-prof").innerHTML=`<span class="tag prof">All weapons ×2.0 (Weapon Master)</span>`;
+  }else{
+    $("#hero-prof").innerHTML=`<span class="tag prof">${h.good} ×2.0</span><span class="tag weak">${h.bad} ×0.5</span>`;
+  }
+
+  $("#enemy-desc").textContent=e.desc;
+  $("#enemy-dialogue").textContent=`"${e.dialogue[Math.random()*e.dialogue.length|0]}"`;
+  // And update the inline dialogue beneath the enemy portrait
+  {
+    const inlineE = document.getElementById('enemy-inline-dialogue');
+    if(inlineE){
+      const line2 = e.dialogue[Math.random()*e.dialogue.length|0];
+      inlineE.textContent = line2;
+    }
+  }
+  $("#enemy-weak").innerHTML=e.weak.map(el=>`<span class="tag str">${EN[el]}</span>`).join("");
+  $("#enemy-res").innerHTML=e.res.map(el=>`<span class="tag weak">${EN[el]}</span>`).join("");
+
+  // Header stats (wins and losses removed)
+  if(document.getElementById('streak')) document.getElementById('streak').textContent = S.streak;
+  if(document.getElementById('gold')) document.getElementById('gold').textContent = S.gold;
+  if(document.getElementById('level')) document.getElementById('level').textContent = S.level;
+  if(document.getElementById('round-num')) document.getElementById('round-num').textContent = S.roundIndex;
+
+  // Do not list active buffs (talents) on the hero portrait.  Buffs now live
+  // exclusively in the talent bar and shop overlay.  Clear any existing
+  // children from the hero talents container so nothing is displayed here.
+  const talentsEl = document.getElementById("hero-talents");
+  if(talentsEl){
+    talentsEl.innerHTML = '';
+    // Optionally, we could show a brief summary like "Buffs: n/5", but
+    // leaving this blank keeps the portrait UI uncluttered.
+  }
+
+  // Update inventory counter (current count / limit)
+  const invEl=document.getElementById("inv-counter");
+  if(invEl){invEl.textContent=`${S.inv.length}/${INV_LIMIT}`;}
+
+  updSlots();renderBank();renderConsumables();renderTalents();renderWeapon();updateSlotCalcs();
+}
+
+function updateHealthBars(){
+  const h=S.hero,e=S.enemy;
+
+  // Hide hero health bar and text. Hero HP is no longer tracked.
+  const heroBar = document.getElementById('hero-health-fill');
+  const heroText = document.getElementById('hero-health-text');
+  if(heroBar) heroBar.style.width = '0%';
+  if(heroText) heroText.textContent = '';
+
+  // Enemy health always starts full for preview
+  $("#enemy-health-fill").style.width="100%";
+  $("#enemy-health-text").textContent=`${e.hp} / ${e.hp}`;
+
+  // Calculate and show damage preview
+  if(S.sel.item){
+    const c=calc();
+    const heroDmg=Math.round(c.heroDmg);
+    const enemyDmg=Math.round(c.enemyDmg);
+
+    // Update damage preview - show only "AP × Multiplier"
+    $("#preview-hero-dmg").textContent = `${c.baseAP}×${c.wordCount}`;
+
+    // Show final hero AP below the calculation
+    $("#preview-base-ap").textContent = `${heroDmg}`;
+
+    // Highlight preview panel when damage meets or exceeds enemy HP
+    const previewPanel = document.getElementById("damage-preview-text");
+    if(previewPanel){
+      previewPanel.classList.toggle("goal-achieved", heroDmg >= e.hp);
+    }
+
+    // Update enemy HP text to show remaining HP after preview damage
+    const remainingHP = Math.max(e.hp - heroDmg, 0);
+    document.getElementById('enemy-health-text').textContent = `${remainingHP} / ${e.hp}`;
+    // Show enemy damage preview (red bar showing how much HP will be lost)
+    const enemyDmgPercent = (heroDmg / e.hp) * 100;
+    const edp = document.getElementById('enemy-damage-preview');
+    edp.style.width = `${enemyDmgPercent}%`;
+    edp.style.display = "block";
+    // Trigger blink animation on the damage preview bar
+    edp.classList.remove('blink');
+    void edp.offsetWidth; // restart animation
+    edp.classList.add('blink');
+
+    // Hide hero damage preview since enemy no longer deals damage
+    $("#hero-damage-preview").style.display="none";
+
+    // Color code the damage number based on outcome
+    if(heroDmg >= e.hp){
+      $("#preview-hero-dmg").style.color = "#4ade80";
+      $("#preview-hero-dmg").style.fontWeight = "bold";
+    } else {
+      $("#preview-hero-dmg").style.color = "#fb923c";
+      $("#preview-hero-dmg").style.fontWeight = "";
+    }
+  }else{
+    // Show 0 damage when no weapon selected
+    $("#preview-hero-dmg").textContent="0×0";
+    $("#enemy-damage-preview").style.display="none";
+    $("#hero-damage-preview").style.display="none";
+
+    // Clear base AP and remove highlight when no weapon
+    $("#preview-base-ap").textContent = "0";
+    const previewPanel = document.getElementById("damage-preview-text");
+    if(previewPanel){
+      previewPanel.classList.remove("goal-achieved");
+    }
+  }
+}
+
+function updateEnemyCalc(){
+  const h=S.hero,e=S.enemy;
+  const defMult=h.str.includes(e.atk)?0.7:h.weak.includes(e.atk)?1.5:1;
+  const finalDmg=Math.round(e.ap*defMult);
+  const calc=$("#enemy-calc");
+  if(defMult<1){calc.className="enemy-atk-calc reduced";calc.textContent=`${e.ap}×0.7 = ${finalDmg} ✓`}
+  else if(defMult>1){calc.className="enemy-atk-calc amplified";calc.textContent=`${e.ap}×1.5 = ${finalDmg} ⚠`}
+  else{calc.className="enemy-atk-calc neutral";calc.textContent=`= ${finalDmg} dmg`}
+}
+
+function hasWeapons(){return S.inv.some(w=>w.type==="weapon")}
+
+function updSlots(){
+  const hasItem = !!S.sel.item;
+  const hasNoun = !!S.sel.noun1;
+
+  // Dynamic slot visibility: only weapon slot shown by default. When a weapon is selected,
+  // reveal the gem slot. Once the gem slot is filled, reveal adjective slots. The "of" label
+  // appears only when both a weapon and a gem are present.
+  // Determine visibility of slots. Show the gem slot as soon as a weapon is selected.
+  // Show the first two adjective slots (adj1, adj2) when a weapon is present. Show the
+  // remaining adjective slots (adj3, adj4) only after a gem has been selected. Always
+  // display the "of (the)" label once a weapon is chosen so players understand the
+  // construction of the phrase even before a gem is applied.
+  const showAdj12 = hasItem;
+  const showAdj34 = hasItem && hasNoun;
+  // Toggle visibility for the first two adjective slots
+  ['adj1','adj2'].forEach(k => {
+    const cont = document.querySelector(`[data-slot="${k}"].slot-container`);
+    if(cont) cont.classList.toggle('hidden', !showAdj12);
+  });
+  // Toggle visibility for the last two adjective slots
+  ['adj3','adj4'].forEach(k => {
+    const cont = document.querySelector(`[data-slot="${k}"].slot-container`);
+    if(cont) cont.classList.toggle('hidden', !showAdj34);
+  });
+  // Show the gem slot only if a weapon is selected
+  const nounCont = document.querySelector('[data-slot="noun1"].slot-container');
+  if(nounCont) nounCont.classList.toggle('hidden', !hasItem);
+  // Show "of (the)" label whenever a weapon is selected
+  $('#of-label').classList.toggle('hidden', !hasItem);
+
+  ["item","adj1","adj2","adj3","adj4","noun1"].forEach(k=>{
+    const slot=$(`[data-slot="${k}"].slot`);
+    if(!slot) return;
+    const w=S.sel[k];
+    if(w){
+      // Determine rarity class (stick uses rusty)
+      const rc = w.isStick ? "rarity-rusty" : RC[w.rarity];
+      // Convert nouns placed in adjective slots to their adjective form, and adjectives placed
+      // in gem slots to their noun form when available. Otherwise use the word's own name.
+      let displayName = w.name;
+      const forms = WORD_FORMS[w.id];
+      if(k.startsWith('adj')){
+        displayName = (forms && forms.prefix) || w.name;
+      } else if(k.startsWith('noun')){
+        displayName = (forms && forms.suffix) || w.name;
+      }
+      // Insert the display name and append a tooltip for this word.  The slot itself
+      // becomes the anchor for the tooltip.  Remove any existing tooltip to avoid
+      // duplicates when re-rendering.
+      slot.innerHTML = `<span class="${rc}">${displayName}</span>`;
+      slot.classList.add("filled");
+      // Remove any pre-existing tooltip within the slot
+      const oldTip = slot.querySelector('.tooltip');
+      if(oldTip) oldTip.remove();
+      // Generate a new tooltip using mkTooltip and append it
+      const ttHtml = mkTooltip(w);
+      // Insert the tooltip HTML into the slot
+      slot.insertAdjacentHTML('beforeend', ttHtml);
+    } else {
+      // Provide descriptive placeholders for empty slots so players know what to place
+      const labels={
+        item:"Weapon",
+        adj1:"Adjective",
+        adj2:"Adjective",
+        adj3:"Adjective",
+        adj4:"Adjective",
+        noun1:"Gem (2x AP)"
+      };
+      slot.innerHTML = labels[k] || "";
+      slot.classList.remove("filled");
+    }
+  });
+}
+
+function updateSlotCalcs(){
+  const h=S.hero,e=S.enemy,s=S.sel;
+
+  // Helper function to show tier value contribution. A slotKey is provided so that
+  // nouns placed into the gem slot (noun1) can grant an extra point of AP to emphasize
+  // the elemental suffix. Adjectives or affinities placed in the gem slot also
+  // benefit from this bonus when they morph into a noun. For adjectives used in
+  // adjective slots, no bonus is applied.
+  function showWordContribution(word, slotKey) {
+    if(!word || word.isStick) return "";
+
+    // Check if this is a multiplier word (Lesser, Greater, Supreme, etc.)
+    // When an adjective is placed in the gem slot it behaves like a noun: it
+    // contributes base AP and does not simply show its multiplier.  In all
+    // other slots, adjectives act purely as multipliers.
+    if(word.mult !== undefined && word.type === 'adjective'){
+      if(slotKey !== 'noun1'){
+        return `×${word.mult}`;
+      }
+      // Fall through for gem‑slot adjectives: handle like a noun below
+    }
+
+    // Determine base AP.  Use explicit 'ap' when defined or derive from rarity.
+    let tierValue = getBaseAP(word);
+    const baseTierValue = tierValue; // Store original for display
+
+    // Gem slot bonus will be applied later (×2 to final value)
+
+    // Weapon proficiency for weapons.  Good doubles, poor halves.
+    let proficiencyMultiplier = 1;
+    if(slotKey === 'item' && !word.isStick && word.category){
+      if(h.good === word.category){
+        proficiencyMultiplier = 2.0;
+      } else if(h.bad === word.category){
+        proficiencyMultiplier = 0.5;
+      }
+    }
+
+    // Apply proficiency to tier value
+    const profTierValue = Math.floor(tierValue * proficiencyMultiplier);
+
+    let calc = "";
+
+    // Show calculation formula
+    if(word.elem !== undefined) {
+      const el = word.elem;
+      if(e.weak.includes(el)) {
+        // Show formula: tierValue × 2 = result (WEAK)
+        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+          calc = `${baseTierValue}×${proficiencyMultiplier}×2 = ${profTierValue*2}`;
+        } else if(slotKey === 'noun1'){
+          calc = `${tierValue}×2×2 = ${tierValue*4}`;
+        } else {
+          calc = `${tierValue}×2 = ${tierValue*2}`;
+        }
+      } else if(e.res.includes(el)) {
+        // Show resistance negates AP
+        calc = `${tierValue}×0 = 0`;
+      } else {
+        // Normal element, no weakness/resistance
+        if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+          calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
+        } else if(slotKey === 'noun1'){
+          calc = `${tierValue}×2 = ${tierValue*2}`;
+        } else {
+          calc = `+${tierValue}`;
+        }
+      }
+    } else {
+      // No element
+      if(proficiencyMultiplier !== 1 && slotKey === 'item'){
+        calc = `${baseTierValue}×${proficiencyMultiplier} = ${profTierValue}`;
+      } else if(slotKey === 'noun1'){
+        calc = `${tierValue}×2 = ${tierValue*2}`;
+      } else {
+        calc = `+${tierValue}`;
+      }
+    }
+
+    return calc;
+  }
+
+  // WEAPON (shows tier contribution)
+  let itemCalc = "";
+  if(s.item){
+    if(s.item.isStick){
+      itemCalc = "×0.25";
+    } else {
+      itemCalc = showWordContribution(s.item, 'item');
+    }
+  }
+  $("#calc-item").textContent = itemCalc;
+  $("#calc-item").className = "slot-calc" + (s.item && !s.item.isStick ? " positive" : "");
+
+  // ADJECTIVES (all 4 slots)
+  ["adj1","adj2","adj3","adj4"].forEach(k=>{
+    const el = $("#calc-" + k);
+    if(!el) return;
+    const word = s[k];
+    const calc = showWordContribution(word, k);
+    const isPos = word && word.elem && e.weak.includes(word.elem);
+    const isNeg = word && word.elem && e.res.includes(word.elem);
+    el.textContent = calc;
+    el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
+  });
+
+  // NOUN (single gem slot)
+  ["noun1"].forEach(k=>{
+    const el = $("#calc-" + k);
+    if(!el) return;
+    const word = s[k];
+    const calc = showWordContribution(word, k);
+    const isPos = word && word.elem && e.weak.includes(word.elem);
+    const isNeg = word && word.elem && e.res.includes(word.elem);
+    el.textContent = calc;
+    el.className = "slot-calc" + (isPos ? " positive" : isNeg ? " negative" : "");
+  });
+
+  // Update forge button state
+  const forgeButton = document.getElementById("forge-btn");
+  if (forgeButton) forgeButton.disabled = !S.sel.item;
+}
+
+function sortInventory(inv, sortMode){
+  const list=[...inv];
+  const mode = sortMode || S.sortMode;
+  if(mode==="type"){
+    list.sort((a,b)=>(TYPE_ORDER[a.type]||99)-(TYPE_ORDER[b.type]||99)||a.name.localeCompare(b.name));
+  }else if(mode==="alpha"){
+    list.sort((a,b)=>a.name.localeCompare(b.name));
+  }else if(mode==="rarity"){
+    list.sort((a,b)=>b.rarity-a.rarity||a.name.localeCompare(b.name));
+  }
+  return list;
+}
+
+function renderBank(){
+  const bank=$("#bank"),used=Object.values(S.sel).filter(Boolean);
+  const hasItem=!!S.sel.item,hasNoun=!!S.sel.noun1;
+  const noWeapons=!hasWeapons();
+  
+  $("#backup-weapon").style.display=noWeapons?"block":"none";
+  bank.innerHTML="";
+  
+  if(noWeapons&&!S.sel.item){
+    const c=mkChip(STICK,false,true);
+    bank.appendChild(c);
+  }
+  
+  // Filter out hidden words so elemental adjectives don't appear in the bank
+  let sorted = sortInventory(S.inv.filter(w => !used.includes(w) && !w.hiddenInBank));
+  // Apply ascending/descending order based on the current forge sort direction
+  if(!S.sortAsc){
+    sorted = sorted.slice().reverse();
+  }
+  sorted.forEach(w=>{
+    const disabled=isWordDisabled(w,hasItem,hasNoun);
+    const c=mkChip(w,disabled,false);
+    bank.appendChild(c);
+  });
+}
+
+// Render owned consumables during forging
+function renderConsumables(){
+  const cont=document.getElementById("consumables-bar");
+  if(!cont) return;
+  cont.innerHTML="";
+  // Show a message if none owned
+  if(!S.consumables || S.consumables.length===0){
+    return;
+  }
+  S.consumables.forEach((cid,idx)=>{
+    const cItem=CONSUMABLES.find(x=>x.id===cid);
+    if(!cItem) return;
+    const div=document.createElement("div");
+    div.className="consumable-item";
+    div.textContent=cItem.name;
+    div.title=cItem.desc;
+    div.onclick=()=>{
+      // Use consumable effect
+      const msg=cItem.use(S);
+      alert(msg||`${cItem.name} used`);
+      // Remove consumable from list
+      S.consumables.splice(idx,1);
+      render();
+    };
+    cont.appendChild(div);
+  });
+}
+
+// Render active talents in the talent bar.  Each talent appears as a chip with a
+// tooltip describing its effect.  Talents are non-interactive.
+function renderTalents(){
+  const bar = document.getElementById('talent-bar');
+  if(!bar) return;
+  bar.innerHTML = '';
+  if(!S.talents || S.talents.length === 0){
+    bar.innerHTML = '<div class="dim" style="font-size:10px;padding:4px">No talents</div>';
+    return;
+  }
+  S.talents.forEach(tid => {
+    // Look up the talent object by ID.  S.talents only stores IDs, so we must
+    // retrieve the full data.  Fallback to an empty object if not found.
+    const t = TALENTS.find(x => x.id === tid) || {};
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    // Determine rarity class based on the talent's rarity; default to common.
+    const rc = t.rarity !== undefined ? (RC[t.rarity] || RC[0]) : RC[0];
+    // Build tooltip using the talent definition if available.  mkTooltip
+    // gracefully handles words and talents alike.
+    const tooltip = t.id ? mkTooltip(t) : '';
+    chip.innerHTML = `<div class="chip-name ${rc}">${t.name || tid}</div>`+
+      `<div class="chip-info">Buff</div>`+
+      `${tooltip}`;
+    // Buffs are not clickable; disable pointer events
+    chip.classList.add('disabled');
+    bar.appendChild(chip);
+  });
+}
+
+function mkChip(w,disabled,isStickChip){
+  const c=document.createElement("div");
+  c.className="chip"+(disabled?" disabled":"")+(isStickChip?" rusty":"");
+  // Assign dataset index only for words in the main inventory; talents and stick chips are excluded
+  if(!isStickChip && w.type !== 'talent') c.dataset.idx=S.inv.indexOf(w);
+  
+  const rc=w.isStick?"rarity-rusty":RC[w.rarity];
+  // Determine the label that appears underneath each chip.  For weapons, append
+  // their category (e.g. Slash, Blunt, Magic) to clarify how the hero interacts
+  // with them.  For all other words, omit the type label entirely and only
+  // show the tier (T1, T2, T3).  The backup stick retains its "Backup" tag.
+  const rn=w.isStick?"Backup":RN[w.rarity] || "T1";
+  let chipInfo = rn;
+  if(w.type === 'weapon'){
+    // Capitalise the category for display
+    const cat = w.category || '';
+    chipInfo += ` · ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+  } else if(w.type === 'talent'){
+    chipInfo = 'Talent';
+  }
+  
+  // Element display
+  let elemHtml="";
+  if(w.elem!==undefined){
+    elemHtml=`<div class="chip-elem" style="color:${EC[w.elem]}">${EN[w.elem]}</div>`;
+  }
+  
+  // Tooltip
+  const tooltip=mkTooltip(w);
+  
+  // Use the suffix form for the chip name (base noun) for all non‑weapon words to present the most basic form
+  // in the inventory.  Weapons retain their own name.
+  const formsForChip = WORD_FORMS[w.id];
+  let displayName = w.name;
+  if(w.type !== 'weapon' && !w.isStick && formsForChip){
+    // Display the suffix form (e.g. "Shadow" instead of "Shadowy" or "Shadowed")
+    displayName = formsForChip.suffix || w.name;
+  }
+  c.innerHTML=`
+    <div class="chip-name ${rc}">${displayName}</div>
+    <div class="chip-info">${chipInfo}</div>
+    ${elemHtml}
+    ${tooltip}
+  `;
+  
+  if(!disabled){
+    c.onclick = () => {
+      // If this chip represents the backup stick, immediately equip it and clear selection
+      if(isStickChip){
+        sfxClick();
+        clrSel();
+        S.sel.item = STICK;
+        S.pendingWord = null;
+        render();
+        return;
+      }
+      // Toggle selection on left click
+      sfxClick();
+      if(S.pendingWord === w){
+        // Deselect if already selected
+        S.pendingWord = null;
+      } else {
+        // Select this word
+        S.pendingWord = w;
+      }
+      // Re-render to update highlight and other UI
+      render();
+    };
+
+    // Right-click to sell word for half price
+    if(!isStickChip){
+      c.oncontextmenu = (e) => {
+        e.preventDefault();
+        const sellPrice = Math.floor(wPrice(w) / 2);
+        if(confirm(`Sell ${w.name} for ${sellPrice} gold?`)){
+          const idx = S.inv.indexOf(w);
+          if(idx >= 0){
+            S.inv.splice(idx, 1);
+            S.gold += sellPrice;
+            sfxBuy();
+            render();
+          }
+        }
+      };
+    }
+    c.onmouseenter = sfxHover;
+  }
+
+  // Highlight this chip if it is currently selected
+  if(S.pendingWord === w){
+    c.classList.add('selected');
+  }
+  return c;
+}
+
+function mkTooltip(w){
+  // Special handling for talents: display only their description and tier.  Talents do
+  // not have elemental interactions, multipliers or morphological forms.  The rarity
+  // colour is still used for the title bar.
+  if(w.type === 'talent'){
+    const rc = RC[w.rarity] || 'rarity-common';
+    let lines = [];
+    if(w.desc) lines.push(`<div class="tooltip-line">${w.desc}</div>`);
+    return `<div class="tooltip">
+      <div class="tooltip-title ${rc}">${w.name}</div>
+      ${lines.join('')}
+    </div>`;
+  }
+  const rc=w.isStick?"rarity-rusty":RC[w.rarity];
+  const tn=w.type==="weapon"?"Weapon":w.type.charAt(0).toUpperCase()+w.type.slice(1);
+  const rn=w.isStick?"Backup":RN[w.rarity];
+  
+  let lines=[];
+  if(w.desc)lines.push(`<div class="tooltip-line">${w.desc}</div>`);
+  
+  if(w.type==="weapon"&&!w.isStick){
+    // Show proficiency information (now uses category)
+    const good=S.hero?.good===w.category,bad=S.hero?.bad===w.category;
+    if(good)lines.push(`<div class="tooltip-line positive">Good proficiency: ×2.0</div>`);
+    else if(bad)lines.push(`<div class="tooltip-line negative">Poor proficiency: ×0.5</div>`);
+    else lines.push(`<div class="tooltip-line dim">No proficiency: ×1.0</div>`);
+  }
+  
+  if(w.type==="affinity"||w.type==="noun"||(w.type==="adjective"&&w.elem!==undefined)){
+    // Show combined hero vs enemy element interaction.  Determine the hero's stance (strong/neutral/weak)
+    // and the enemy's stance (weak/neutral/strong) based on their respective arrays.  Then map the pair
+    // to the correct multiplier following the simplified table:
+    // Strong vs Weak → 3×; Strong vs Neutral or Neutral vs Weak → 2×;
+    // Matching stances (both strong, both neutral, both weak) → 1×; otherwise → 0×.
+    const el = w.elem;
+    const heroStrong = S.hero?.str.includes(el);
+    const heroWeak  = S.hero?.weak.includes(el);
+    const enemyWeak  = S.enemy?.weak.includes(el);
+    const enemyStrong = S.enemy?.res.includes(el);
+    let multi = 1;
+    let note  = '';
+    if(heroStrong && enemyWeak){
+      multi = 3;
+      note  = 'Hero strong, enemy weak: ×3.0';
+    } else if((heroStrong && !enemyWeak && !enemyStrong) || (!heroStrong && !heroWeak && enemyWeak)){
+      multi = 2;
+      note  = heroStrong ? 'Hero strong, enemy neutral: ×2.0' : 'Hero neutral, enemy weak: ×2.0';
+    } else if((heroStrong && enemyStrong) || (!heroStrong && !heroWeak && !enemyWeak && !enemyStrong) || (heroWeak && enemyWeak)){
+      multi = 1;
+      // Provide context for stalemate
+      note  = 'No advantage: ×1.0';
+    } else {
+      multi = 0;
+      note  = 'No effect: ×0.0';
+    }
+    const cssClass = multi === 0 ? 'negative' : multi > 1 ? 'positive' : 'dim';
+    lines.push(`<div class="tooltip-line ${cssClass}">${note}</div>`);
+  }
+  
+  // Show multiplier line only for adjectives (affinity words no longer have inherent multipliers)
+  if(w.mult && w.type !== "affinity"){
+    lines.push(`<div class="tooltip-line">Multiplier: ×${w.mult}</div>`);
+  }
+  // Show baseline AP for all words.  Use explicit 'ap' if provided (e.g. gem nouns);
+  // otherwise derive from rarity via our helper.  This keeps tier values consistent
+  // with how AP is calculated in combat (T1=1, T2=2, T3=3).
+  const tierAP = (w.ap !== undefined ? w.ap : rarityToAP(w.rarity));
+  lines.push(`<div class="tooltip-line">Base AP: +${tierAP}</div>`);
+
+  // Show morphological variants based on the WORD_FORMS mapping.  If a word has
+  // prefix or suffix forms different from its own name, display them so the
+  // player understands how the word will change when placed in different slots.
+  const forms = WORD_FORMS[w.id];
+  if(forms){
+    const prefixVar = forms.prefix || w.name;
+    const suffixVar = forms.suffix || w.name;
+    // Only show if the prefix or suffix differ from the word's name to avoid clutter
+    if(prefixVar !== w.name || suffixVar !== w.name){
+      lines.push(`<div class="tooltip-line dim">Prefix form: ${prefixVar}</div>`);
+      lines.push(`<div class="tooltip-line dim">Suffix form: ${suffixVar}</div>`);
+    }
+  }
+  
+  let elemBadge="";
+  if(w.elem!==undefined){
+    elemBadge=`<span class="tooltip-elem" style="background:${EC[w.elem]}33;color:${EC[w.elem]}">${EN[w.elem]}</span>`;
+  }
+  
+  return `<div class="tooltip">
+    <div class="tooltip-title ${rc}">${w.name}</div>
+    <div class="tooltip-type">${rn} ${tn} ${elemBadge}</div>
+    ${lines.join("")}
+  </div>`;
+}
+
+// Build a breakdown of all multipliers currently affecting the AP × Multiplier display.
+// The returned string lists each factor on its own line with the multiplier value and its source.
+// This helps players understand how buffs and adjectives contribute to their total damage.
+function buildMultiplierTooltip(){
+  // Gather all words currently selected in the forge.  Only filled slots count.
+  const allWords = [S.sel.item, S.sel.adj1, S.sel.adj2, S.sel.adj3, S.sel.adj4, S.sel.noun1].filter(Boolean);
+  let lines = [];
+  // Track total elements and tiers for conditional buffs
+  const elems = new Set();
+  allWords.forEach(w => { if(w.elem !== undefined) elems.add(w.elem); });
+  const hasT2Word = allWords.some(w => !w.isStick && RRANK[w.rarity] === 2);
+  // Determine if using stick
+  const weapon = S.sel.item;
+  if(weapon && weapon.isStick){
+    lines.push("×0.25 from backup stick");
+  }
+  // Adjective multipliers (e.g. Lesser ×0.75, Greater ×1.25, etc.) apply when used in adjective slots
+  allWords.forEach(word => {
+    if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
+      lines.push(`×${word.mult} from ${word.name}`);
+    }
+  });
+  // Combo Master: ×1.3 total if 4+ words
+  if(S.talents.includes('combo_master')){
+    if(allWords.length >= 4){
+      lines.push('×1.3 from Combo Master');
+    }
+  }
+  // Minimalist: ×1.5 total if using 2 or fewer words
+  if(S.talents.includes('minimalist')){
+    if(allWords.length > 0 && allWords.length <= 2){
+      lines.push('×1.5 from Minimalist');
+    }
+  }
+  // Word Weaver: +5% per word to multiplier
+  if(S.talents.includes('word_weaver')){
+    const mult = 1 + 0.05 * allWords.length;
+    lines.push(`×${mult.toFixed(2)} from Word Weaver`);
+  }
+  // Precise Strike: ×1.25 final damage
+  if(S.talents.includes('precise_strike')){
+    lines.push('×1.25 from Precise Strike');
+  }
+  // Dual Spec: Using 2+ different elements multiplies final damage
+  if(S.talents.includes('dual_spec')){
+    if(elems.size >= 2){
+      lines.push('×2.0 from Dual Spec');
+    }
+  }
+  // Trinity: Exactly 3 elements
+  if(S.talents.includes('trinity')){
+    if(elems.size === 3){
+      lines.push('×2.2 from Trinity');
+    }
+  }
+  // Rainbow Forge: 4+ different elements
+  if(S.talents.includes('rainbow_forge')){
+    if(elems.size >= 4){
+      lines.push('×2.5 from Rainbow Forge');
+    }
+  }
+  // Min‑Max: only T1 or T3, no T2 words
+  if(S.talents.includes('min_max')){
+    if(!hasT2Word && allWords.length > 0){
+      lines.push('×1.75 from Min‑Max');
+    }
+  }
+  // Quality Control: Treat all T2 words as T3.  AP effect handled elsewhere; not a multiplier.
+  // Budget Build: All T1 words ×1.8
+  if(S.talents.includes('budget_build')){
+    const hasT1 = allWords.some(w => RRANK[w.rarity] === 0);
+    if(hasT1){
+      lines.push('×1.8 from Budget Build');
+    }
+  }
+  // Luxury Forge: All T3 words ×1.3
+  if(S.talents.includes('luxury_forge')){
+    const hasT3 = allWords.some(w => RRANK[w.rarity] >= 3);
+    if(hasT3){
+      lines.push('×1.3 from Luxury Forge');
+    }
+  }
+  // Blade Dancer / Marksman / Arcane Focus / Crusher: apply based on weapon category
+  const weaponCat = weapon && !weapon.isStick ? weapon.category : null;
+  if(weaponCat){
+    if(S.talents.includes('blade_dancer') && weaponCat === 'slash'){
+      lines.push('×1.4 from Blade Dancer (Slash weapon)');
+    }
+    if(S.talents.includes('marksman') && weaponCat === 'pierce'){
+      lines.push('×1.4 from Marksman (Pierce weapon)');
+    }
+    if(S.talents.includes('arcane_focus') && weaponCat === 'magic'){
+      lines.push('×1.4 from Arcane Focus (Magic weapon)');
+    }
+    if(S.talents.includes('crusher') && weaponCat === 'blunt'){
+      lines.push('×1.4 from Crusher (Blunt weapon)');
+    }
+  }
+  // Exploit Weakness: +50% if using enemy weakness element
+  if(S.talents.includes('exploit_weakness')){
+    if(allWords.some(w => w.elem !== undefined && S.enemy.weak.includes(w.elem))){
+      lines.push('×1.5 from Exploit Weakness');
+    }
+  }
+  // Elemental Mastery: +30% if using hero strong element
+  if(S.talents.includes('elemental_mastery')){
+    if(allWords.some(w => w.elem !== undefined && S.hero.str.includes(w.elem))){
+      lines.push('×1.3 from Elemental Mastery');
+    }
+  }
+  // Wordsmith's Fervor: +10% per word
+  if(S.talents.includes('wordsmiths_fervor')){
+    const mult = 1 + 0.1 * allWords.length;
+    lines.push(`×${mult.toFixed(2)} from Wordsmith's Fervor`);
+  }
+  // Return breakdown as a newline‑separated list.  If no modifiers, return empty string.
+  return lines.join('\n');
+}
+
+function isWordDisabled(w,hasItem,hasNoun){
+  // Basic rules:
+  // 1. Require selecting a weapon first; non‑weapons are disabled until a weapon is chosen.
+  if(w.type !== 'weapon' && !hasItem) return true;
+  // 2. Only one weapon can be selected at a time (except the backup stick).
+  if(w.type === 'weapon' && S.sel.item) return true;
+  // Determine if all modifier slots are full (four adjective slots and one gem)
+  const adjFull = !!(S.sel.adj1 && S.sel.adj2 && S.sel.adj3 && S.sel.adj4);
+  const nounFull = !!S.sel.noun1;
+  // 3. For all non‑weapons: disable only when no modifier slots are available.
+  if(w.type !== 'weapon'){
+    return adjFull && nounFull;
+  }
+  return false;
+}
+
+function clickWord(w){
+  sfxClick();
+  if(w.type === 'weapon'){
+    // Selecting a weapon resets all modifier slots
+    S.sel.item = w;
+  } else {
+    // For all non-weapons, fill the first available adjective slot, then the gem slot.
+    if(!S.sel.adj1) S.sel.adj1 = w;
+    else if(!S.sel.adj2) S.sel.adj2 = w;
+    else if(!S.sel.adj3) S.sel.adj3 = w;
+    else if(!S.sel.adj4) S.sel.adj4 = w;
+    else if(!S.sel.noun1) S.sel.noun1 = w;
+    else S.sel.adj1 = w;
+  }
+  render();
+}
+
+function createAuraAnimation(fromSlot, slotKey, word){
+  // Create multiple aura particles that fly from the slot to the center weapon
+  const weaponSvg = $("#weapon-svg");
+  if(!weaponSvg || !fromSlot) return;
+
+  // Get positions
+  const fromRect = fromSlot.getBoundingClientRect();
+  const toRect = weaponSvg.getBoundingClientRect();
+
+  // Calculate center points
+  const fromX = fromRect.left + fromRect.width / 2;
+  const fromY = fromRect.top + fromRect.height / 2;
+  const toX = toRect.left + toRect.width / 2;
+  const toY = toRect.top + toRect.height / 2;
+
+  // Calculate distance to travel
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+
+  // Determine color based on word type/element
+  let color = '#a855f7'; // Default purple
+  if(word.elem !== undefined){
+    const elemColors = {
+      [E.FIRE]: '#ef4444',
+      [E.WATER]: '#3b82f6',
+      [E.POISON]: '#22c55e',
+      [E.LIGHT]: '#fbbf24',
+      [E.DARK]: '#9333ea',
+      [E.EARTH]: '#a16207',
+      [E.LIGHTNING]: '#60a5fa',
+      [E.PHYS]: '#6b7280'
+    };
+    color = elemColors[word.elem] || color;
+  }
+
+  // Create 3-5 particles for a nice effect
+  const numParticles = 3 + Math.floor(Math.random() * 3);
+  for(let i = 0; i < numParticles; i++){
+    const particle = document.createElement('div');
+    particle.className = 'aura-particle';
+    particle.style.left = fromX + 'px';
+    particle.style.top = fromY + 'px';
+    particle.style.background = `radial-gradient(circle, ${color}, transparent)`;
+    particle.style.setProperty('--dx', dx + 'px');
+    particle.style.setProperty('--dy', dy + 'px');
+
+    // Slightly randomize timing for staggered effect
+    particle.style.animationDelay = (i * 0.05) + 's';
+
+    document.body.appendChild(particle);
+
+    // Remove particle after animation completes
+    setTimeout(() => {
+      particle.remove();
+    }, 800 + (i * 50));
+  }
+}
+
+function setupEvents(){
+  // Attach click handlers to each slot to support assigning selected words or removing existing ones.
+  ["item","adj1","adj2","adj3","adj4","noun1"].forEach(k=>{
+    const slot = document.querySelector(`[data-slot="${k}"].slot`);
+    if(!slot) return;
+    slot.onclick = () => {
+      const selected = S.pendingWord;
+      // If a word is selected from the bank, attempt to place it into this slot
+      if(selected){
+        // Only restrict weapons: they must occupy the weapon slot.  Non-weapons
+        // cannot be placed into the weapon slot, and weapons cannot occupy other
+        // slots.  Otherwise, allow placement freely; nouns, adjectives and
+        // affinities can occupy any modifier slot.
+        if(selected.type === 'weapon' && k !== 'item'){
+          return;
+        }
+        if(selected.type !== 'weapon' && k === 'item'){
+          return;
+        }
+        // If placing a weapon, clear all modifier slots
+        if(k === 'item'){
+          clrSel();
+          S.sel.item = selected;
+        } else {
+          // Place the selected word into the chosen slot
+          S.sel[k] = selected;
+        }
+        // Clear the selection and re-render UI
+        S.pendingWord = null;
+
+        // Add visual feedback when placing word
+        slot.classList.add('word-placed');
+        setTimeout(() => slot.classList.remove('word-placed'), 300);
+
+        // Play a pleasant tone based on word rarity
+        try{
+          const tierIndex = RRANK[selected.rarity] || 0;
+          const freq = 440 * Math.pow(2, tierIndex / 4);
+          playTone(freq, 0.15, 'sine', 0.2);
+        }catch(err){}
+
+        // Trigger aura animation from slot to center weapon
+        createAuraAnimation(slot, k, selected);
+
+        render();
+        return;
+      }
+      // If no word is selected, clicking a filled slot removes the word
+      if(S.sel[k]){
+        sfxRemove();
+        S.sel[k] = null;
+        // Removing the weapon clears all modifier slots and the noun
+        if(k === 'item'){
+          S.sel.adj1 = null; S.sel.adj2 = null; S.sel.adj3 = null; S.sel.adj4 = null;
+          S.sel.noun1 = null;
+        }
+        render();
+      }
+    };
+  });
+}
+
+function renderWeapon(target="#weapon-svg"){
+  const svg=$(target),s=S.sel;
+  if(!s.item){svg.innerHTML="";if(target==="#weapon-svg")$("#weapon-name").textContent="";return}
+  
+  const wt=s.item.isStick?"stick":s.item.id;
+  const tmpl=WEAPON_SVG[wt];
+  const baseCol=s.affinity?EC[s.affinity.elem]:BASE_COLORS[wt];
+  // Use noun1 for gem color; adjectives come from any adjective slot
+  const f1Col = s.noun1 ? EC[s.noun1.elem] : "transparent";
+  const f2Col = s.adj1 || s.adj2 || s.adj3 || s.adj4 ? ((s.adj1 || s.adj2 || s.adj3 || s.adj4).elem !== undefined ? EC[(s.adj1 || s.adj2 || s.adj3 || s.adj4).elem] : "#f4d03f") : "transparent";
+  
+  let html=tmpl.base.replace(/BASECOLOR/g,baseCol);
+  if(s.noun1 && tmpl.flair1) html += tmpl.flair1.replace(/FLAIR1COLOR/g, f1Col);
+  // Use the first available adjective slot for flair2
+  if((s.adj1 || s.adj2 || s.adj3 || s.adj4) && tmpl.flair2) html += tmpl.flair2.replace(/FLAIR2COLOR/g, f2Col);
+  svg.innerHTML=html;
+  
+  if(target==="#weapon-svg"){
+    const nm=buildWeaponName();
+    $("#weapon-name").textContent=nm;
+  }
+}
+
+// Render a partial weapon based on progress (0–1).  At 0, nothing is shown;
+// between 0 and 0.66, only the weapon's base appears; between 0.66 and 1, the
+// second flair (adjective flourish) is added; at 1.0, the gem flair is also
+// added.  Colours are derived from the currently selected words (affinity,
+// adjective, gem).  This helper is used during combat to visually build the
+// weapon as each word is tallied.
+function renderWeaponProgress(svgElem, progress){
+  const s = S.sel || {};
+  if(!svgElem) return;
+  // If no weapon is selected, clear the SVG and return early
+  if(!s.item){
+    svgElem.innerHTML = '';
+    return;
+  }
+  const wt = s.item.isStick ? 'stick' : s.item.id;
+  const tmpl = WEAPON_SVG[wt];
+  if(!tmpl){
+    svgElem.innerHTML = '';
+    return;
+  }
+  // Determine colours for base and flairs
+  const baseCol = (s.affinity && s.affinity.elem !== undefined) ? EC[s.affinity.elem] : (BASE_COLORS[wt] || '#888');
+  const f1Col = s.noun1 ? EC[s.noun1.elem] : 'transparent';
+  const adj = s.adj1 || s.adj2 || s.adj3 || s.adj4;
+  const f2Col = adj && adj.elem !== undefined ? EC[adj.elem] : (adj ? '#f4d03f' : 'transparent');
+  let html = '';
+  // Always show the base when any progress has been made
+  if(progress > 0){
+    html += tmpl.base.replace(/BASECOLOR/g, baseCol);
+  }
+  // Show the second flair once two‑thirds of progress has been reached
+  if(progress >= 0.66 && tmpl.flair2){
+    html += tmpl.flair2.replace(/FLAIR2COLOR/g, f2Col);
+  }
+  // Show the gem flair only when progress is complete
+  if(progress >= 1.0 && tmpl.flair1){
+    html += tmpl.flair1.replace(/FLAIR1COLOR/g, f1Col);
+  }
+  svgElem.innerHTML = html;
+}
+
+function buildWeaponName(){
+  const s=S.sel;
+  const parts=[];
+  // Helper to get the display name for a word based on the slot it occupies. If a noun is
+  // used in an adjective slot, convert it to its adjective form using the NOUN_TO_ADJ
+  // mapping. Otherwise return the word's original name.
+  function getDisplayName(word, slotKey){
+    if(!word) return "";
+    const forms = WORD_FORMS[word.id];
+    if(slotKey.startsWith('adj')){
+      return (forms && forms.prefix) || word.name;
+    }
+    if(slotKey.startsWith('noun')){
+      return (forms && forms.suffix) || word.name;
+    }
+    return word.name;
+  }
+
+  // Order: adj1 adj2 weapon of [the] adj3 adj4 noun1
+  if(s.adj1) parts.push(getDisplayName(s.adj1, 'adj1'));
+  if(s.adj2) parts.push(getDisplayName(s.adj2, 'adj2'));
+  if(s.item) parts.push(getDisplayName(s.item, 'item'));
+
+  // If a gem is present, always include "of the" and then any adjectives
+  // after the gem and the gem itself.  This removes ambiguity between
+  // "of" and "of the" and makes the sentence structure consistent.
+  if(s.noun1){
+    parts.push('of the');
+    if(s.adj3) parts.push(getDisplayName(s.adj3, 'adj3'));
+    if(s.adj4) parts.push(getDisplayName(s.adj4, 'adj4'));
+    parts.push(getDisplayName(s.noun1, 'noun1'));
+  }
+  return parts.join(' ');
+}
+
+// === CALCULATION WITH TALENT HOOKS ===
+function calc(){
+  const h = S.hero;
+  const e = S.enemy;
+  const s = S.sel;
+  const hasTalent=(id)=>S.talents.includes(id);
+
+  // Base AP starts at 0, only increased by talents
+  let baseAP = 0;
+
+  // [T3] Battle Hardened: +3 baseAP per round survived (permanent)
+  if(hasTalent("battle_hardened")){
+    baseAP += S.battleHardenedBonus;
+  }
+
+  // [T3] Word Hoarder: +1 AP for each word in inventory over 15
+  if(hasTalent("word_hoarder") && S.inv.length > 15){
+    baseAP += (S.inv.length - 15);
+  }
+
+  let wordCount = 0;
+  let heroBonus = 1.0;
+  let weaponWord = null;
+
+  // Collect all selected words from slots (single gem slot)
+  const allWords = [s.item, s.adj1, s.adj2, s.adj3, s.adj4, s.noun1].filter(Boolean);
+
+  // [T1] Descriptive: +1 baseAP per adjective
+  if(hasTalent("descriptive")){
+    const adjCount = allWords.filter(w=>w.type==='adjective').length;
+    baseAP += adjCount;
+  }
+
+  // [T3] Sharpening Stone: 25% chance to upgrade tier
+  const tempTierBoost = {};
+  if(hasTalent("sharpening_stone")){
+    allWords.forEach((w,idx)=>{
+      if(!w.isStick && Math.random() < 0.25){
+        tempTierBoost[idx] = 1;
+      }
+    });
+  }
+
+  let wordBaseAPTotal = 0;
+  // Reset weaponWord
+  weaponWord = null;
+
+  // We'll iterate over the fixed slot order to properly apply gem bonuses. This ensures
+  // that nouns placed in the gem slot contribute extra AP.
+  const slotKeys = ['item','adj1','adj2','adj3','adj4','noun1'];
+  slotKeys.forEach((slotKey) => {
+    const word = s[slotKey];
+    if(!word) return;
+    if(word.isStick){
+      weaponWord = word;
+      return;
+    }
+    // Determine tier value with possible temporary boost (Sharpening Stone) based on
+    // position in allWords array. To ensure deterministic boost assignment, map
+    // slotKey to an index into the allWords list that matches the previous
+    // implementation order. We'll find the index of this word in allWords.
+    let idx = allWords.indexOf(word);
+    // Determine base AP for this word.  Use explicit 'ap' when defined (e.g. gem nouns);
+    // otherwise derive from rarity via our helper.  Temporary boosts and talents will
+    // modify this base value below.
+    let tierValue = getBaseAP(word);
+    // Apply a temporary tier boost (Sharpening Stone) if flagged for this index
+    if(idx >= 0 && tempTierBoost[idx]) tierValue = Math.min(3, tierValue + 1);
+
+    // [T2] Pyromancer: fire words count as one tier higher (cap at 3 AP)
+    if(hasTalent('pyromancer') && word.elem === E.FIRE){
+      tierValue = Math.min(3, tierValue + 1);
+    }
+
+    // [Joker] Scribe's Sigil: every word gains +1 base AP.  This applies before any
+    // elemental or gem multipliers.  The effect stacks with other tier boosts.
+    if(hasTalent('scribe_sigil')){
+      tierValue += 1;
+    }
+
+    // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
+    if(slotKey === 'item' && !word.isStick && word.category){
+      if(h.good === word.category){
+        tierValue = Math.floor(tierValue * 2.0);
+      } else if(h.bad === word.category){
+        tierValue = Math.floor(tierValue * 0.5);
+      }
+    }
+
+    // Determine how this word contributes to base AP and the effective word count.
+    // Elemental interactions combine both hero and enemy affinities:
+    //  - If the hero is strong with the element and the enemy is weak to it, apply a 3× multiplier.
+    //  - If either the hero is strong against a neutral enemy or the hero is neutral against a weak enemy, apply a 2× multiplier.
+    //  - If both sides have the same stance (strong vs strong, neutral vs neutral, weak vs weak), apply a 1× multiplier.
+    //  - If the hero is neutral against an enemy that resists the element or the hero is weak against a neutral/strong enemy, apply a 0× multiplier.
+    let elemMult = 1;
+    if(word.elem !== undefined){
+      const heroStrong = h.str.includes(word.elem);
+      const heroWeak  = h.weak.includes(word.elem);
+      const enemyWeak  = e.weak.includes(word.elem);
+      const enemyStrong = e.res.includes(word.elem);
+      if(heroStrong && enemyWeak){
+        elemMult = 3;
+      } else if((heroStrong && !enemyWeak && !enemyStrong) || (!heroStrong && !heroWeak && enemyWeak)){
+        elemMult = 2;
+      } else if((heroStrong && enemyStrong) || (!heroStrong && !heroWeak && !enemyWeak && !enemyStrong) || (heroWeak && enemyWeak)){
+        elemMult = 1;
+      } else {
+        // Cases: neutral vs strong OR weak vs neutral/strong
+        elemMult = 0;
+      }
+    }
+
+    // [Joker] Ember Focus: fire words deal ×1.5 damage.  Multiply the element multiplier
+    // accordingly.  This does not override elemental immunity (0 multiplier remains 0).
+    if(hasTalent('ember_focus') && word.elem === E.FIRE){
+      elemMult *= 1.5;
+    }
+    // Base AP contribution is the tier value times the element multiplier
+    let apContribution = tierValue * elemMult;
+    let wCountDelta    = elemMult;
+    // Gem slot doubles AP contribution but does not affect word count
+    if(slotKey === 'noun1'){
+      apContribution *= 2;
+    }
+    wordBaseAPTotal += apContribution;
+    wordCount += wCountDelta;
+
+    // Track weapon for proficiency display
+    if(slotKey === 'item'){
+      weaponWord = word;
+    }
+  });
+
+  baseAP += wordBaseAPTotal;
+
+  // Hero preference (proficiency) is now applied inline to the weapon's tierValue above
+
+  // Calculate all multipliers for display purposes
+  let totalMultiplier = 1.0;
+
+  // Stick penalty: ×0.25 if using stick
+  if(weaponWord && weaponWord.isStick){
+    totalMultiplier *= 0.25;
+  }
+
+  // [T2] Forged in Flame: +25% if below 50% HP
+  // This talent depends on hero HP; since hero HP is no longer used, this
+  // multiplier only applies if HP mechanic is restored. We'll disable it by
+  // skipping this check.
+
+  // [T3] Dual Spec: ×2.0 if 2+ elements
+  if(hasTalent('dual_spec')){
+    const elems = new Set(allWords.filter(w=>w.elem!==undefined).map(w=>w.elem));
+    if(elems.size >= 2) totalMultiplier *= 2.0;
+  }
+
+  // [T3] Min-Max: +75% if only T1 or T3 (no T2)
+  if(hasTalent('min_max')){
+    const hasT2 = allWords.some(w=>!w.isStick && RRANK[w.rarity]===2);
+    if(!hasT2 && allWords.length > 0) totalMultiplier *= 1.75;
+  }
+
+  // Apply multiplier words (Lesser, Greater, Superior, etc.).  Adjectives in
+  // adjective slots multiply the final total, but if an adjective is used as
+  // the gem (noun1) it should behave like a noun and not apply its multiplier
+  // again.  Check against the selected noun slot to avoid double dipping.
+  allWords.forEach(word => {
+    if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
+      totalMultiplier *= word.mult;
+    }
+  });
+
+  // [Joker] Wordsmith's Fervor: final damage is multiplied by (1 + 0.1 per word used).  This
+  // effect applies after all other multipliers, and scales based on the number of words
+  // contributing damage (wordCount).  Only active when the talent is owned.
+  if(hasTalent('wordsmiths_fervor')){
+    totalMultiplier *= (1 + 0.1 * wordCount);
+  }
+
+  // Final damage = base AP × word count × all multipliers
+  let heroDmg = Math.floor(baseAP * wordCount * totalMultiplier);
+
+  // For display: effective word count including multipliers
+  let displayWordCount = Math.round(wordCount * totalMultiplier * 10) / 10;
+
+  // Enemy does no damage in this simplified model
+  let enemyDmg = 0;
+
+  // Final HP values: hero HP not tracked; enemy HP decreases by hero damage
+  const enemyMax = e.hp;
+  const enemyFin = Math.max(0, enemyMax - heroDmg);
+
+  return{
+    heroDmg,
+    enemyDmg,
+    heroMax: h.hp,
+    enemyMax,
+    heroFin: h.hp,
+    enemyFin,
+    currentHP: S.currentHP,
+    win: enemyFin <= 0,
+    tie: false,
+    baseAP,
+    wordCount: displayWordCount,
+    heroBonus,
+    weaponType: weaponWord?.id || 'stick',
+    allWords
+  };
+}
+
+function updPrev(){
+  const v=!!S.sel.item;$("#forge-btn").disabled=!v;
+  if(!v){
+    // Without a weapon selected, show 0 damage
+    const defMult=S.hero.str.includes(S.enemy.atk)?0.7:S.hero.weak.includes(S.enemy.atk)?1.5:1;
+    $("#pv-hero").textContent="0";
+    $("#pv-enemy").textContent=Math.round(S.enemy.ap*defMult);
+    return;
+  }
+  const c=calc();
+  $("#pv-hero").textContent=Math.round(c.heroDmg);
+  $("#pv-enemy").textContent=Math.round(c.enemyDmg);
+
+}
+
+function updatePreviewStats(c) {
+  // This can be expanded later to show detailed breakdown
+  // For now, the main preview numbers are handled in updPrev
+}
+
+// === COMBAT ===
+function forge(){
+  sfxForgeStart();
+  const c=calc();
+  // No descriptive combat log: rely on slot calculation details for transparency
+  renderWeapon("#combat-weapon-svg");
+
+  // Build words display for combat animation. Instead of showing the full weapon name,
+  // list each part of the phrase on its own line with its contribution. This improves
+  // clarity by matching the forging UI order: adjectives before the weapon, the weapon
+  // itself, the "of (the)" connector, the gem/suffix element, and adjectives after the
+  // gem. Even if a gem is not present, "of (the)" is still displayed to reinforce the
+  // expected structure.
+  const words = [];
+  const e = S.enemy;
+
+  // Helper to convert words for display based on slot.  All non-weapon words
+  // use their prefix form when occupying an adjective slot and suffix form when
+  // occupying the gem slot.  Weapons retain their own name.  If a slot is
+  // empty, return null so nothing is pushed.
+  function getDisplayForSlot(word, slotKey){
+    if(!word) return null;
+    // Stick: display separately with fixed multiplier text
+    if(word.isStick){
+      return { name: word.name, value: '×0.25', rarity: -1, color: null };
+    }
+    // Determine the display name based on slot (prefix vs suffix)
+    let displayName = word.name;
+    const forms = WORD_FORMS[word.id];
+    if(slotKey.startsWith('adj')){
+      displayName = (forms && forms.prefix) || word.name;
+    } else if(slotKey.startsWith('noun')){
+      displayName = (forms && forms.suffix) || word.name;
+    }
+
+    // Check if this is a multiplier word (e.g. Lesser, Greater).  When placed in the
+    // gem slot (noun1), adjectives should behave like nouns and contribute AP rather
+    // than acting as multipliers.  Only treat adjectives as multipliers in
+    // non‑gem slots.
+    if(word.mult !== undefined && word.type === 'adjective' && slotKey !== 'noun1'){
+      return {
+        name: displayName,
+        value: `×${word.mult}`,
+        rarity: word.rarity,
+        color: null
+      };
+    }
+
+    // Base AP for this word (respecting explicit 'ap' or derived from rarity)
+    let baseValue = getBaseAP(word);
+    let displayValue = `+${baseValue}`;
+    let color = null;
+
+    // Element interactions: weakness doubles AP, resistance nullifies AP
+    if(word.elem !== undefined){
+      color = EC[word.elem];
+      if(e.weak.includes(word.elem)){
+        // Weakness doubles AP
+        let weakVal = baseValue * 2;
+        // Apply gem bonus (×2) if in gem slot (total ×4)
+        if(slotKey === 'noun1'){
+          displayValue = `+${weakVal * 2} (GEM+WEAK!)`;
+        } else {
+          displayValue = `+${weakVal} (WEAK!)`;
+        }
+      } else if(e.res.includes(word.elem)){
+        // Resistance negates AP
+        displayValue = `×0 (RES)`;
+      } else {
+        // Normal element, check for gem bonus
+        if(slotKey === 'noun1'){
+          displayValue = `+${baseValue * 2} (GEM)`;
+        }
+      }
+    } else {
+      // No element: gem slot still doubles base AP
+      if(slotKey === 'noun1'){
+        displayValue = `+${baseValue * 2} (GEM)`;
+      }
+    }
+    return {
+      name: displayName,
+      value: displayValue,
+      rarity: word.rarity,
+      color
+    };
+  }
+
+  // Build phrase order: pre-adjectives, weapon, of (the), gem, post-adjectives
+  const preAdjs = ['adj1','adj2'];
+  const postAdjs = ['adj3','adj4'];
+  // Pre-adjectives
+  preAdjs.forEach(k=>{
+    const wordObj = S.sel[k];
+    const entry = getDisplayForSlot(wordObj, k);
+    if(entry) words.push({ ...entry, intensity: 1.0 });
+  });
+  // Weapon
+  if(S.sel.item){
+    const w = S.sel.item;
+    // Determine the weapon's base AP (respect explicit 'ap' if present) and build the display value
+    let baseValue = getBaseAP(w);
+    let displayValue = `+${baseValue}`;
+    let color = null;
+    if(w.elem !== undefined){
+      color = EC[w.elem];
+      if(e.weak.includes(w.elem)){
+        displayValue = `+${baseValue * 2} (WEAK!)`;
+      } else if(e.res.includes(w.elem)){
+        displayValue = `×0 (RES)`;
+      }
+    }
+    words.push({
+      name: w.name,
+      value: displayValue,
+      rarity: w.rarity,
+      intensity: 1.0,
+      color
+    });
+  }
+  // Only show "of the" if there's at least one gem or post-adjective
+  const hasGem = S.sel.noun1 !== null;
+  const hasPostAdj = S.sel.adj3 !== null || S.sel.adj4 !== null;
+
+  if(hasGem || hasPostAdj){
+    // Insert the "of the" connector line.  It has no AP value but helps
+    // the player visualize the expected placement of the gem.  The rarity is set
+    // to 3 for styling purposes.
+    words.push({
+      name: 'of the',
+      value: '',
+      rarity: 3,
+      intensity: 1.0,
+      color: null
+    });
+  }
+
+  // Post-adjectives appear immediately after the connector
+  postAdjs.forEach(k => {
+    const wordObj = S.sel[k];
+    const entry = getDisplayForSlot(wordObj, k);
+    if(entry) words.push({ ...entry, intensity: 1.0 });
+  });
+
+  // Gem / suffix element appears after post‑adjectives.  If a gem is present,
+  // display it; otherwise, if we inserted the connector because of a gem or post‑adj,
+  // show a placeholder for the gem slot.
+  const gemEntry = getDisplayForSlot(S.sel.noun1, 'noun1');
+  if(gemEntry) {
+    words.push({ ...gemEntry, intensity: 1.0 });
+  } else if(hasGem || hasPostAdj) {
+    words.push({
+      name: 'Gem',
+      value: '',
+      rarity: 0,
+      intensity: 1.0,
+      color: null
+    });
+  }
+
+  // Append summary line at the end: base AP × word count = hero damage
+  words.push({
+    name: `${c.baseAP} AP × ${c.wordCount} words`,
+    value: `= ${c.heroDmg} AP`,
+    rarity: 3,
+    intensity: 1.5
+  });
+
+  // Calculate rewards before combat for display purposes
+  const rewards = {
+    gold: 0,
+    items: []
+  };
+
+  if(c.heroDmg >= S.enemy.hp){
+    // Victory - calculate gold
+    const overkill = Math.max(0, Math.round(c.heroDmg - S.enemy.hp));
+    let goldReward = 15 + S.streak * 5;
+    goldReward += Math.floor(overkill / 10);
+
+    // [T2] Loot Goblin
+    rewards.gold = goldReward;
+
+    // Boss loot
+    const isBoss = (S.roundIndex % 3 === 0);
+    if(isBoss){
+      // Preview what loot will be granted (1 weapon + 3 random words)
+      const weapons = WORDS.filter(w => w.type === 'weapon');
+      const randWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+      rewards.items.push(randWeapon.name);
+
+      const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
+      for(let i = 0; i < 3; i++){
+        const randWord = nonWeapons[Math.floor(Math.random() * nonWeapons.length)];
+        rewards.items.push(randWord.name);
+      }
+    }
+  }
+
+  // Consume the used words from inventory (except stick)
+  Object.values(S.sel).filter(Boolean).forEach(w=>{
+    if(!w.isStick){
+      const i = S.inv.indexOf(w);
+      if(i >= 0) S.inv.splice(i,1);
+    }
+  });
+
+  showCombat(c, words, rewards);
+}
+
+function afterCombat(){
+  const lastResult=window.lastCombatResult;
+  $("#combat-overlay").classList.remove("show");
+
+  const hasTalent=(id)=>S.talents.includes(id);
+
+  if(lastResult.win){
+    // Victory: level up, gain gold, proceed
+    S.wins++;S.streak++;
+
+    // Base gold reward
+    let reward=15+S.streak*5;
+
+    // Overkill bonus: award 1 gold per 10 damage beyond enemy HP
+    const overkill=Math.max(0,Math.round(lastResult.heroDmg-lastResult.enemyMax));
+    reward+=Math.floor(overkill/10);
+
+    // [T1] Golden Touch: +3 gold after each victory
+    if(hasTalent("golden_touch")){
+      reward += 3;
+    }
+
+    // [T3] Treasure Hunter: gain gold equal to 20% of overkill damage
+    if(hasTalent("treasure_hunter")){
+      reward += Math.floor(overkill * 0.2);
+    }
+
+    S.gold += reward;
+
+    // [T3] Battle Hardened: Each round survived: +3 base AP (permanent)
+    if(hasTalent("battle_hardened")){
+      S.battleHardenedBonus += 3;
+    }
+
+    // Level up
+    S.level++;
+
+    // Delivery of goods: grant the player a free pack of 1 weapon and 3 random words ONLY after boss victories.
+    // Bosses occur at rounds 3, 6, 9, etc. (every 3rd round).
+    // Only add the items if there is enough inventory space.  Words are selected with
+    // a simple weighted rarity: common words are more likely than higher tiers.
+    const isBoss = (S.roundIndex % 3 === 0);
+    if(isBoss){
+      const deliveryCount = 4;
+      if(S.inv.length + deliveryCount <= INV_LIMIT){
+        // Select one random weapon with T1=60%, T2=30%, T3=10% distribution
+        const weapons = WORDS.filter(w => w.type === 'weapon');
+        const weaponWeighted = [];
+        weapons.forEach(w => {
+          const rank = RRANK[w.rarity] || 0;
+          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
+          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+          for(let i = 0; i < weight; i++) weaponWeighted.push(w);
+        });
+        const randWeapon = weaponWeighted[Math.floor(Math.random() * weaponWeighted.length)];
+        S.inv.push({ ...randWeapon });
+        // Build a weighted list of non‑weapon words.  Rarity weighting: T1=60%, T2=30%, T3=10%
+        // Using weights: T1 ×6, T2 ×3, T3 ×1 (6:3:1 ratio = 60%:30%:10%)
+        const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
+        const weighted = [];
+        nonWeapons.forEach(w => {
+          const rank = RRANK[w.rarity] || 0;
+          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
+          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+          for(let i = 0; i < weight; i++) weighted.push(w);
+        });
+        for(let i = 0; i < 3; i++){
+          const randWord = weighted[Math.floor(Math.random() * weighted.length)];
+          S.inv.push({ ...randWord });
+        }
+      }
+    }
+
+    // Proceed to the next round.  If roundIndex exceeds 9 (i.e. after defeating
+    // the round 9 boss), end the game to provide a clean vertical slice.  Otherwise
+    // continue on to the shop.  The talent selection overlay remains disabled.
+    S.roundIndex++;
+    if(S.roundIndex > 9){
+      alert("Congratulations! You have defeated the final boss and completed the game! Starting a new run...");
+      startNewRun();
+      return;
+    }
+    showShop();
+  }else{
+    // Defeat: run ends
+    S.losses++;S.streak=0;
+    S.heroSelected=false;
+    alert("Defeat! Your run has ended. Starting a new run...");
+    startNewRun();
+  }
+}
+
+function showTalentSelect(){
+  // Pick 3 random talents that the player doesn't already have
+  const availableTalents = TALENTS.filter(t => !S.talents.includes(t.id));
+
+  if(availableTalents.length === 0){
+    // No more talents to choose from, go to shop
+    showShop();
+    return;
+  }
+
+  const choices = shuf([...availableTalents]).slice(0, Math.min(3, availableTalents.length));
+
+  $("#talent-level").textContent = S.level;
+
+  const container = $("#talent-choices");
+  container.innerHTML = "";
+
+  choices.forEach(talent => {
+    const div = document.createElement("div");
+    div.className = "talent-choice";
+    div.style.cssText = "border:2px solid #666;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s";
+
+    // Tier colors
+    const tierColors = {1: "#4d99ff", 2: "#9966cc", 3: "#ff6633"};
+    const tierColor = tierColors[talent.tier] || "#666";
+
+    div.title = talent.desc; // Add tooltip
+
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:16px;font-weight:bold;color:${tierColor}">${talent.name}</div>
+        <div style="font-size:11px;padding:2px 6px;background:${tierColor};color:#000;border-radius:4px">T${talent.tier}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.4;color:#ccc">${talent.desc}</div>
+    `;
+
+    div.onmouseenter = () => {
+      div.style.borderColor = tierColor;
+      div.style.transform = "scale(1.02)";
+    };
+    div.onmouseleave = () => {
+      div.style.borderColor = "#666";
+      div.style.transform = "scale(1)";
+    };
+
+    div.onclick = () => {
+      S.talents.push(talent.id);
+      $("#talent-overlay").classList.remove("show");
+      showShop();
+    };
+
+    container.appendChild(div);
+  });
+
+  $("#talent-overlay").classList.add("show");
+}
+
+async function showCombat(r,words,rewards){
+  window.lastCombatResult=r; // Store for afterCombat
+  window.lastCombatRewards=rewards; // Store rewards for display
+
+  const ov=$("#combat-overlay");
+  const cw=$("#combat-words");
+  const total=$("#combat-total");
+  const flames=$("#combat-flames");
+  const weaponSvg=$("#combat-weapon-svg");
+
+  cw.innerHTML="";
+  total.classList.remove("show");
+  total.textContent="";
+  flames.style.opacity="0";
+  weaponSvg.style.transform="";
+  // Hide the new-run button at the start of combat
+  const newRunBtnInit=document.getElementById("combat-new-run");
+  if(newRunBtnInit) newRunBtnInit.style.display="none";
+  // Compute how many parts of the weapon need to be built based on selected words
+  var relevantCount=[S.sel.item,S.sel.adj1,S.sel.adj2,S.sel.adj3,S.sel.adj4,S.sel.noun1].filter(Boolean).length;
+  // Track progress of displayed parts
+  var progressSeen=0;
+  // Begin with an empty weapon SVG
+  renderWeaponProgress(weaponSvg,0);
+
+  $("#cb-hero").textContent="0";$("#cb-enemy").textContent="0";
+  const heroStartHP=r.currentHP;
+  const heroPercent=(heroStartHP/r.heroMax)*100;
+  $("#bar-hero").style.width=`${heroPercent}%`;
+  $("#bar-enemy").style.width="100%";
+  $("#txt-hero").textContent=`${heroStartHP}/${r.heroMax}`;
+  $("#txt-enemy").textContent=`${r.enemyMax}/${r.enemyMax}`;
+  $("#combat-result").style.display="none";
+  ov.classList.add("show");
+
+  // Hide the continue button at the start of the battle until the animation completes
+  const continueBtn=document.getElementById("combat-continue");
+  if(continueBtn) continueBtn.style.display="none";
+
+  await dly(300);
+
+  words.forEach(w=>{
+    const div=document.createElement("div");
+    div.className="combat-word";
+    const rc=w.rarity>=0?RC[w.rarity]:(w.rarity===-1?"rarity-rusty":"");
+    div.innerHTML=`<div class="combat-word-name ${rc}" ${w.color?`style="color:${w.color}"`:''}>${w.name}</div>${w.value?`<div class="combat-word-value">${w.value}</div>`:''}`;
+    cw.appendChild(div);
+  });
+
+  const wordEls=[...cw.querySelectorAll(".combat-word")];
+
+  for(let i=0;i<wordEls.length;i++){
+    const w=words[i],el=wordEls[i];
+    await dly(400);
+
+    el.classList.add("show");
+    // Play ascending tone sequence for each word (pleasant arpeggio)
+    try{
+      const freq=440*Math.pow(2,i/(wordEls.length*1.5));
+      playTone(freq,0.25,'sine',0.18);
+    }catch(err){}
+
+    if(w.intensity>0.3){
+      el.classList.add("impact");
+      // Removed sfxImpact to prevent dual sound effects - only keep the ascending tone
+      weaponSvg.style.animation="weaponShake .3s ease-out";
+      setTimeout(()=>weaponSvg.style.animation="",300);
+
+      if(w.intensity>1){
+        document.body.classList.add("shake");
+        setTimeout(()=>document.body.classList.remove("shake"),150);
+        spawnFlames(3+Math.floor(w.intensity*2));
+      }
+    }
+
+    await dly(200);
+    el.classList.remove("impact");
+    // Gradually build the weapon SVG as relevant words are processed.  Only the
+    // actual selected words (item, adjectives, gem) count towards the build.
+    if(progressSeen < relevantCount){
+      progressSeen++;
+      const progressRatio = progressSeen / Math.max(relevantCount, 1);
+      renderWeaponProgress(weaponSvg, progressRatio >= 1 ? 1.0 : progressRatio);
+    }
+  }
+
+  await dly(400);
+  flames.style.opacity="0.5";
+  spawnFlames(10);
+  document.body.classList.add("shake");
+  setTimeout(()=>document.body.classList.remove("shake"),150);
+
+  total.textContent=`${Math.round(r.heroDmg)} DAMAGE!`;
+  total.classList.add("show");
+
+  // Play a final note that continues the ascending arpeggio sequence rather than
+  // jumping to a fixed pitch.  Compute the next frequency based on the number
+  // of words displayed so the ending tone feels like a natural continuation.
+  try{
+    const totalWords = wordEls.length;
+    // Use the same exponent growth used in the ascending loop: freq = 440×2^(i/(n*1.5))
+    // For the final note, let i = n (next position).  This produces a gentle rise.
+    const nextFreq = 440 * Math.pow(2, totalWords / (totalWords * 1.5));
+    playTone(nextFreq, 0.4, 'sine', 0.3);
+  }catch(err){}
+
+  await dly(800);
+  flames.style.opacity="0";
+
+  await dly(300);
+  await anim($("#cb-hero"),0,r.heroDmg,500);
+  await dly(150);
+  await anim($("#cb-enemy"),0,r.enemyDmg,350);
+  await dly(300);
+
+  $("#bar-hero").style.width=`${(r.heroFin/r.heroMax)*100}%`;
+  $("#bar-enemy").style.width=`${(r.enemyFin/r.enemyMax)*100}%`;
+  await anim($("#txt-hero"),heroStartHP,r.heroFin,400,v=>`${Math.round(v)}/${r.heroMax}`);
+  await anim($("#txt-enemy"),r.enemyMax,r.enemyFin,400,v=>`${Math.round(v)}/${r.enemyMax}`);
+  await dly(250);
+
+  const res=$("#combat-result"),title=$("#combat-result-title"),det=$("#combat-result-detail");
+  res.className="";res.style.display="block";
+  if(r.win){
+    res.classList.add("win");
+    title.textContent="⚔️ VICTORY!";
+    title.style.color="#4ade80";
+
+    // Show rewards
+    let detailText = "Enemy defeated!";
+    if(rewards && rewards.gold > 0){
+      detailText += `\n💰 +${rewards.gold} Gold`;
+    }
+    if(rewards && rewards.items.length > 0){
+      detailText += `\n🎁 Boss Loot: ${rewards.items.join(", ")}`;
+    }
+    det.textContent=detailText;
+    det.style.whiteSpace="pre-line"; // Allow newlines
+    sfxWin();
+  }else if(r.tie){
+    res.classList.add("lose");
+    title.textContent="💀 DRAW";
+    title.style.color="#f59e0b";
+    det.textContent="Both fell...";
+    sfxLose();
+  }else{
+    res.classList.add("lose");
+    title.textContent="💀 DEFEAT";
+    title.style.color="#f87171";
+    det.textContent="The enemy won...";
+    sfxLose();
+  }
+  // No text log appended; calculation details are available via slot indicators
+  render();
+
+  // Reveal the continue button now that combat has resolved
+  if(continueBtn) continueBtn.style.display="block";
+  // Also reveal the new-run button when the fight concludes
+  const newRunBtnShow=document.getElementById('combat-new-run');
+  if(newRunBtnShow) newRunBtnShow.style.display='block';
+}
+
+function spawnFlames(count){
+  const container=$("#combat-flames");
+  for(let i=0;i<count;i++){
+    const f=document.createElement("div");
+    f.className="flame-particle";
+    f.style.left=Math.random()*100+"%";
+    f.style.bottom="0";
+    f.style.animationDuration=(0.6+Math.random()*0.6)+"s";
+    container.appendChild(f);
+    setTimeout(()=>f.remove(),1200);
+  }
+}
+
+// === SHOP ===
+let shopCrates=[],shopBuffCrates=[],shopConsumables=[];
+function showShop(){
+  S.rerollCost=5;
+  rollShop();
+  renderShop();
+  $("#shop-overlay").classList.add("show");
+}
+
+function rollShop(){
+  // Create 4 mystery crates with custom quantities and prices. Weapons crates
+  // contain 2 weapons for 15g. Affinity crates and adjective crates contain
+  // 3 words for 20-25g. Gem crates contain 3 nouns for 30g. Each crate defines
+  // a quantity of words (qty) to include. When purchased, the specified number
+  // of random words of that type will be added to the player's inventory.
+  shopCrates = [];
+
+  // Define two crate types: one for weapons and one for all other words.  The
+  // modifier crate includes affinities, adjectives, and nouns.  This reduces
+  // complexity and reflects the new unified word system.
+  const crateTypes = [
+    {type: 'weapon', name: 'Weapon Crate', price: 15, qty: 2, filter: w => w.type === 'weapon'},
+    {type: 'modifier', name: 'Word Crate', price: 25, qty: 3, filter: w => w.type !== 'weapon'}
+  ];
+
+  crateTypes.forEach(crateType => {
+    let availableWords = WORDS.filter(crateType.filter);
+    // Apply rarity weights: T1=60%, T2=30%, T3=10% (6:3:1 ratio)
+      const weightedPool = [];
+      availableWords.forEach(w => {
+        const rank = RRANK[w.rarity] || 0;
+        // T1 (rank 0) appears 6 times, T2 (rank 2) appears 3 times, T3 (rank ≥3) appears once
+        const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+        for(let i = 0; i < weight; i++) weightedPool.push(w);
+      });
+      availableWords = weightedPool;
+    // Determine quantity.  Bulk Discount talent adds +1 to all crate quantities.
+    let qty = crateType.qty;
+    if(S.talents && S.talents.includes('bulk_discount')){
+      qty += 1;
+    }
+    const crateWords = shuf([...availableWords]).slice(0, qty);
+    shopCrates.push({
+      type: crateType.type,
+      name: crateType.name,
+      words: crateWords,
+      price: crateType.price,
+      // Store the computed quantity so UI and purchase logic reflect the Bulk Discount talent
+      qty: qty
+    });
+  });
+
+  // Select two consumables at random. Heal consumables have been removed.
+  // Consumables disabled for now
+  // shopConsumables = shuf([...CONSUMABLES]).slice(0,2);
+  shopConsumables = [];
+
+  // Create 1-2 buff options for purchase. Each buff costs gold and allows
+  // the player to select 1 of 3 random buffs (talents).
+  shopBuffCrates = [];
+  const numBuffCrates = Math.random() < 0.5 ? 1 : 2; // 50% chance of 1 or 2 buffs
+  for(let i = 0; i < numBuffCrates; i++){
+    const price = 30 + (i * 10); // First buff 30g, second 40g
+    shopBuffCrates.push({
+      name: 'Buff',
+      price: price,
+      tier: i + 1 // Used for visual variety
+    });
+  }
+}
+
+function renderShop(){
+  // Update gold display and show current inventory count under the shop title
+  $("#shop-gold").textContent = `(💰${S.gold})`;
+  const invEl = document.getElementById("shop-inventory");
+  if(invEl){
+    // Show just the count since the label is now part of the header
+    invEl.textContent = `${S.inv.length}/${INV_LIMIT}`;
+  }
+  $("#reroll-cost").textContent=S.rerollCost;
+  $("#reroll-btn").disabled=S.gold<S.rerollCost;
+
+  // Populate hero info within the shop.  Display the hero's strengths, weaknesses
+  // and weapon proficiencies so players know what to keep or sell.
+  const heroInfo = document.getElementById("shop-hero-info");
+  if(heroInfo){
+    if(!S.hero){
+      heroInfo.textContent = '';
+    } else {
+      const h = S.hero;
+      // Build strings of elemental names for strengths and weaknesses
+      const strongNames = h.str.map(i => EN[i]).join(', ') || 'None';
+      const weakNames   = h.weak.map(i => EN[i]).join(', ') || 'None';
+      // Weapon proficiency: good vs bad categories (capitalized)
+      const goodProf = h.good ? (h.good.charAt(0).toUpperCase() + h.good.slice(1)) : 'None';
+      const badProf  = h.bad ? (h.bad.charAt(0).toUpperCase() + h.bad.slice(1)) : 'None';
+      heroInfo.innerHTML =
+        `<div><span class="dim">Name:</span> <span style="color:#fb923c;font-weight:bold">${h.name}</span></div>`+
+        `<div><span class="dim">Strong using:</span> <span style="color:#4ade80">${strongNames}</span></div>`+
+        `<div><span class="dim">Weak using:</span> <span style="color:#f87171">${weakNames}</span></div>`+
+        `<div><span class="dim">Good weapon:</span> <span style="color:#60a5fa">${goodProf}</span></div>`+
+        `<div><span class="dim">Poor weapon:</span> <span style="color:#9ca3af">${badProf}</span></div>`;
+    }
+  }
+
+  // Preview next enemy
+  renderNextEnemyPreview();
+
+  renderShopCrates();
+  renderShopBuffCrates();
+  renderShopWordBank();
+  renderShopTalents();
+  // Consumables disabled for now
+  // renderShopConsumables();
+}
+
+function renderNextEnemyPreview(){
+  // Calculate what the next enemy will be
+  const nextRound = S.roundIndex;
+  const baseEnemy = ENEMIES[Math.floor(Math.random() * ENEMIES.length)];
+  const previewEnemy = {...baseEnemy};
+
+  // Apply HP scaling
+  // Preview uses the same scaling as combat.  See hpScaling above for comments.
+  const hpScaling = [5,15,30,55,85,130,180,240,300];
+  const roundIdx = Math.min(nextRound - 1, hpScaling.length - 1);
+  previewEnemy.hp = hpScaling[roundIdx];
+
+  // Apply AP scaling
+  previewEnemy.ap = 15 + (nextRound - 1) * 5;
+
+  // Check if boss
+  const isBoss = nextRound % 3 === 0;
+  if(isBoss){
+    previewEnemy.hp = Math.round(previewEnemy.hp * 1.3);
+    previewEnemy.ap = Math.round(previewEnemy.ap * 1.2);
+    previewEnemy.name = "[BOSS] " + previewEnemy.name;
+  }
+
+  // Update UI - format same as HERO INFO with colors
+  const enemyPreview = $("#next-enemy-preview");
+  if(enemyPreview){
+    const weakNames = previewEnemy.weak && previewEnemy.weak.length > 0
+      ? previewEnemy.weak.map(e=>EN[e]).join(', ')
+      : 'None';
+    const resNames = previewEnemy.res && previewEnemy.res.length > 0
+      ? previewEnemy.res.map(e=>EN[e]).join(', ')
+      : 'None';
+
+    enemyPreview.innerHTML =
+      `<div><span class="dim">Name:</span> <span style="color:#fb923c;font-weight:bold">${previewEnemy.name}</span></div>`+
+      `<div><span class="dim">HP:</span> <span style="color:#fbbf24">${previewEnemy.hp}</span></div>`+
+      `<div><span class="dim">Weak to:</span> <span style="color:#4ade80">${weakNames}</span></div>`+
+      `<div><span class="dim">Resists:</span> <span style="color:#f87171">${resNames}</span></div>`;
+  }
+}
+
+function renderShopCrates(){
+  const cont = $("#shop-crates");
+  cont.innerHTML = "";
+
+  shopCrates.forEach((crate, i) => {
+    const d = document.createElement("div");
+    d.className = "shop-item";
+    d.style.cssText = "min-width:150px;max-width:180px";
+
+    // Crate type icons and colors.  Only two crate types remain: weapon and modifier.
+    const crateIcons = {
+      weapon: {icon: '⚔️', color: '#f87171'},
+      modifier: {icon: '📝', color: '#60a5fa'}
+    };
+
+    const crateInfo = crateIcons[crate.type] || {icon: '📦', color: '#9ca3af'};
+
+    // Determine effective price after any shop discount talents.  Bargain Hunter reduces cost by 20%,
+    // Merchant Guild reduces cost by 50%.  If both are present, their effects stack multiplicatively.
+    const hasTalent = (id) => S.talents.includes(id);
+    let effectivePrice = crate.price;
+    if(hasTalent('merchant_guild')){
+      effectivePrice = Math.ceil(effectivePrice * 0.5);
+    }
+    if(hasTalent('bargain_hunter')){
+      effectivePrice = Math.ceil(effectivePrice * 0.8);
+    }
+    d.innerHTML = `
+      <div style="font-size:32px;margin-bottom:8px">${crateInfo.icon}</div>
+      <div style="font-size:14px;font-weight:bold;color:${crateInfo.color};margin-bottom:6px">${crate.name}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Mystery Box<br>${crate.qty} Random ${crate.type === 'modifier' ? 'words' : crate.type + (crate.qty>1?'s':'')}</div>
+      <div class="shop-price gold">💰${effectivePrice}</div>
+      <button class="shop-btn" ${S.gold < effectivePrice ? "disabled" : ""}>Buy Crate</button>
+    `;
+
+    const buyBtn = d.querySelector("button");
+    // Play hover sound on crate buy button
+    buyBtn.onmouseenter = sfxHover;
+    buyBtn.onclick = () => {
+      // Compute effective price again inside the click handler to avoid closure issues
+      let priceToPay = crate.price;
+      if(hasTalent('merchant_guild')) priceToPay = Math.ceil(priceToPay * 0.5);
+      if(hasTalent('bargain_hunter')) priceToPay = Math.ceil(priceToPay * 0.8);
+      // Verify sufficient gold
+      if(S.gold >= priceToPay){
+        // Check if there's space for the crate's quantity of words
+        const needed = crate.qty;
+        if(S.inv.length + needed > INV_LIMIT){
+          alert(`Not enough inventory space! Need ${needed - (INV_LIMIT - S.inv.length)} more slot(s).`);
+          return;
+        }
+        sfxBuy();
+        // [T2] Ninja Loot: 20% chance for free crate
+        const isFree = hasTalent('ninja_loot') && Math.random() < 0.20;
+        if(!isFree){
+          S.gold -= priceToPay;
+        }
+        // Add the crate's words to inventory. If the crate's word list has fewer
+        // than qty items (due to filtering), select random additional words of
+        // the same type to fill the gap.
+        let wordsToAdd = crate.words;
+        if(wordsToAdd.length < crate.qty){
+          const availableWords = WORDS.filter(w => w.type === crate.type);
+          const neededExtras = crate.qty - wordsToAdd.length;
+          const extras = shuf([...availableWords]).slice(0, neededExtras);
+          wordsToAdd = [...wordsToAdd, ...extras];
+        }
+        wordsToAdd.forEach(w => {
+          S.inv.push({ ...w });
+        });
+        shopCrates.splice(i, 1);
+        renderShop();
+        render();
+      }
+    };
+
+    cont.appendChild(d);
+  });
+
+  if(shopCrates.length === 0){
+    cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
+  }
+}
+
+function renderShopBuffCrates(){
+  const cont = $("#shop-buff-crates");
+  cont.innerHTML = "";
+
+  shopBuffCrates.forEach((crate, i) => {
+    const d = document.createElement("div");
+    d.className = "shop-item";
+    d.style.cssText = "min-width:150px;max-width:180px";
+
+    // Determine effective price with shop discount talents
+    const hasTalent = (id) => S.talents.includes(id);
+    let effectivePrice = crate.price;
+    if(hasTalent('merchant_guild')){
+      effectivePrice = Math.ceil(effectivePrice * 0.5);
+    }
+    if(hasTalent('bargain_hunter')){
+      effectivePrice = Math.ceil(effectivePrice * 0.8);
+    }
+    d.innerHTML = `
+      <div style="font-size:32px;margin-bottom:8px">✨</div>
+      <div style="font-size:14px;font-weight:bold;color:#a855f7;margin-bottom:6px">${crate.name}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Choose 1 of 3<br>Buffs</div>
+      <div class="shop-price gold">💰${effectivePrice}</div>
+      <button class="shop-btn" ${S.gold < effectivePrice ? "disabled" : ""}>Buy Crate</button>
+    `;
+
+    const buyBtn = d.querySelector("button");
+    buyBtn.onmouseenter = sfxHover;
+    buyBtn.onclick = () => {
+      // Compute effective price again inside click handler
+      let priceToPay = crate.price;
+      if(hasTalent('merchant_guild')) priceToPay = Math.ceil(priceToPay * 0.5);
+      if(hasTalent('bargain_hunter')) priceToPay = Math.ceil(priceToPay * 0.8);
+      if(S.gold >= priceToPay){
+        sfxBuy();
+        S.gold -= priceToPay;
+        shopBuffCrates.splice(i, 1);
+        renderShop();
+        render();
+        showBuffSelect();
+      }
+    };
+
+    cont.appendChild(d);
+  });
+
+  if(shopBuffCrates.length === 0){
+    cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
+  }
+}
+
+function showBuffSelect(){
+  // Pick up to 3 random buffs that the player doesn't already have.  Apply a weighted
+  // distribution of 60% T1, 30% T2, 10% T3 when selecting each buff.  Do not allow
+  // acquisition if the buff inventory (talent bar) is full.
+  if(S.talents && S.talents.length >= BUFF_LIMIT){
+    alert(`Your buff inventory is full (${BUFF_LIMIT} buffs). Remove or use a buff before acquiring more.`);
+    return;
+  }
+  const availableBuffs = TALENTS.filter(t => !S.talents.includes(t.id));
+  if(availableBuffs.length === 0){
+    alert("No more buffs available!");
+    return;
+  }
+  // Separate available buffs by tier for weighting
+  const pool = {1:[],2:[],3:[]};
+  availableBuffs.forEach(t => {
+    pool[t.tier] = pool[t.tier] || [];
+    pool[t.tier].push(t);
+  });
+  const choices = [];
+  for(let i=0;i<3;i++){
+    // Determine desired tier based on weighted random
+    let tier = 1;
+    const r = Math.random();
+    if(r < 0.7){ tier = 1; }
+    else if(r < 0.95){ tier = 2; }
+    else { tier = 3; }
+    // If no buffs in desired tier, fallback to next available tier (1->2->3)
+    let pickPool = pool[tier] || [];
+    if(pickPool.length === 0){
+      // Flatten all remaining tiers into one list
+      const remaining = [...(pool[1]||[]),...(pool[2]||[]),...(pool[3]||[])];
+      if(remaining.length === 0) break;
+      pickPool = remaining;
+    }
+    // Choose a random buff from the pool
+    const idx = Math.floor(Math.random() * pickPool.length);
+    const chosen = pickPool.splice(idx,1)[0];
+    // Remove chosen from the overall pools to avoid duplicates
+    [1,2,3].forEach(ti=>{
+      const arr = pool[ti];
+      const j = arr ? arr.indexOf(chosen) : -1;
+      if(j >= 0) arr.splice(j,1);
+    });
+    choices.push(chosen);
+    // If we've exhausted all available buffs, stop early
+    if(Object.values(pool).every(arr => arr.length === 0)) break;
+  }
+  const container = $("#buff-choices");
+  container.innerHTML = "";
+  // Display horizontally rather than stacking vertically
+  container.style.flexDirection = "row";
+  container.style.justifyContent = "center";
+
+  choices.forEach(buff => {
+    const div = document.createElement("div");
+    div.className = "talent-choice";
+    div.style.cssText = "border:2px solid #666;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s";
+
+    // Tier colors
+    const tierColors = {1: "#4d99ff", 2: "#9966cc", 3: "#ff6633"};
+    const tierColor = tierColors[buff.tier] || "#666";
+
+    div.title = buff.desc; // Add tooltip
+
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:16px;font-weight:bold;color:${tierColor}">${buff.name}</div>
+        <div style="font-size:11px;padding:2px 6px;background:${tierColor};color:#000;border-radius:4px">T${buff.tier}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.4;color:#ccc">${buff.desc}</div>
+    `;
+
+    div.onmouseenter = () => {
+      div.style.borderColor = tierColor;
+      div.style.transform = "scale(1.02)";
+    };
+    div.onmouseleave = () => {
+      div.style.borderColor = "#666";
+      div.style.transform = "scale(1)";
+    };
+
+    div.onclick = () => {
+      // Do not add beyond buff capacity
+      if(S.talents.length >= BUFF_LIMIT){
+        alert(`Your buff inventory is full (${BUFF_LIMIT} buffs). Remove or use a buff before acquiring more.`);
+        return;
+      }
+      S.talents.push(buff.id);
+      $("#buff-select-overlay").classList.remove("show");
+      renderShop();
+      render();
+    };
+
+    container.appendChild(div);
+  });
+
+  $("#buff-select-overlay").classList.add("show");
+}
+
+// Track multiple selected words for selling
+let selectedSellWords = [];
+
+function renderShopWordBank(){
+  const cont = $("#shop-word-bank");
+  cont.innerHTML = "";
+  // Reset selection at the start of rendering
+  selectedSellWords = [];
+  document.getElementById("sell-word-btn").disabled = true;
+  document.getElementById("sell-price-display").textContent = "";
+
+  // Sort inventory using the same logic as forge bank and apply ascending/descending order
+  let sorted = sortInventory(S.inv, S.shopSortMode);
+  if(!S.shopSortAsc) sorted.reverse();
+
+  sorted.forEach((word) => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    if(word.rarity === R.RUSTY) chip.classList.add("rusty");
+
+    const rarityClass = RC[word.rarity] || RC[0];
+    const tierText = RN[word.rarity] || "T1";
+
+    // Add element display if word has an element
+    let elemHtml = "";
+    if(word.elem !== undefined){
+      elemHtml = `<div class="chip-elem" style="color:${EC[word.elem]}">${EN[word.elem]}</div>`;
+    }
+
+    // Generate tooltip using the same function as forge
+    const tooltip = mkTooltip(word);
+
+    // Determine display name using the base (suffix) form for non‑weapons to match forge naming.
+    const formsForChip = WORD_FORMS[word.id];
+    let displayName = word.name;
+    if(word.type !== 'weapon' && !word.isStick && formsForChip){
+      displayName = formsForChip.suffix || word.name;
+    }
+    // Determine the info label: show only the tier for non‑weapons; for weapons, append the capitalised category.
+    let infoLabel = tierText;
+    if(word.type === 'weapon' && word.category){
+      const cat = word.category;
+      infoLabel += ` · ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+    }
+    chip.innerHTML = `
+      <div class="chip-name ${rarityClass}">${displayName}</div>
+      <div class="chip-info">${infoLabel}</div>
+      ${elemHtml}
+      ${tooltip}
+    `;
+
+    chip.onclick = () => {
+      // Toggle selection for this chip
+      const idx = S.inv.indexOf(word);
+      const existingIndex = selectedSellWords.findIndex(x => x.idx === idx);
+      if(existingIndex >= 0){
+        // Remove from selection
+        selectedSellWords.splice(existingIndex, 1);
+        chip.classList.remove("selected");
+      } else {
+        // Add to selection
+        selectedSellWords.push({word, idx});
+        chip.classList.add("selected");
+      }
+      // Recalculate total sell price
+      let total = 0;
+      selectedSellWords.forEach(({word}) => {
+        const tier = RRANK[word.rarity] || 0;
+        const sellPrice = tier === 0 ? 2 : tier === 2 ? 5 : 10;
+        total += sellPrice;
+      });
+      if(total > 0){
+        document.getElementById("sell-price-display").textContent = `Sell for ${total} gold`;
+        document.getElementById("sell-word-btn").disabled = false;
+      } else {
+        document.getElementById("sell-price-display").textContent = "";
+        document.getElementById("sell-word-btn").disabled = true;
+      }
+    };
+    // Hover sfx for chips
+    chip.onmouseenter = sfxHover;
+
+    cont.appendChild(chip);
+  });
+
+  if(S.inv.length === 0){
+    cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">No words in inventory</div>';
+  }
+}
+
+function renderShopConsumables(){
+  const cont=$("#shop-consumables");cont.innerHTML="";
+  shopConsumables.forEach((c,i)=>{
+    const d=document.createElement("div");d.className="shop-item";
+    d.innerHTML=`
+      <div class="chip-name rarity-magic">${c.name}</div>
+      <div class="chip-info" style="font-size:9px;line-height:1.3;margin:4px 0">${c.desc}</div>
+      <div class="shop-price gold">💰${c.cost}</div>
+      <button class="shop-btn" ${S.gold<c.cost?"disabled":""}>Buy</button>
+    `;
+    d.querySelector("button").onclick=()=>{
+      if(S.gold>=c.cost){
+        sfxBuy();
+        S.gold-=c.cost;
+        // Always add consumable to inventory for later use
+        S.consumables.push(c.id);
+        alert(`Purchased ${c.name}!`);
+        shopConsumables.splice(i,1);
+        renderShop();
+        render();
+      }
+    };
+    cont.appendChild(d);
+  });
+  if(shopConsumables.length===0){
+    cont.innerHTML='<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
+  }
+}
+
+// Render active talents within the shop overlay.  Each talent is displayed as a chip with its
+// name and rarity colour.  Clicking a talent will sell it for gold based on its tier or rarity.
+function renderShopTalents(){
+  const bar = document.getElementById('shop-talent-bar');
+  if(!bar) return;
+  bar.innerHTML = '';
+  if(!S.talents || S.talents.length === 0){
+    bar.innerHTML = '<div class="dim" style="font-size:10px;padding:4px">No active buffs</div>';
+    return;
+  }
+  // Display current buff count versus capacity at the start of the bar
+  const countDiv = document.createElement('div');
+  countDiv.className = 'dim';
+  countDiv.style.fontSize = '10px';
+  countDiv.style.padding = '4px';
+  countDiv.textContent = `${S.talents.length}/${BUFF_LIMIT}`;
+  bar.appendChild(countDiv);
+  S.talents.forEach((tid, idx) => {
+    const t = TALENTS.find(x => x.id === tid);
+    if(!t) return;
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    // Determine rarity class using the existing RC mapping; fall back to Common if undefined
+    const rarityClass = RC[t.rarity] || 'rarity-common';
+    // Build tooltip for the talent using mkTooltip.  Talents behave similarly to words
+    const tooltip = mkTooltip(t);
+    chip.innerHTML = `<div class="chip-name ${rarityClass}">${t.name}</div><div class="chip-info">Buff</div>${tooltip}`;
+    chip.style.cursor = 'default';
+    chip.style.opacity = '0.9';
+    // Buffs are not clickable/sellable - just display only
+    bar.appendChild(chip);
+  });
+}
+
+function rerollShop(){
+  if(S.gold>=S.rerollCost){
+    S.gold-=S.rerollCost;S.rerollCost=Math.min(S.rerollCost+5,50);
+    rollShop();sfxClick();renderShop();render();
+  }
+}
+
+function wPrice(w){
+  let b=8;
+  if(w.type==="weapon")b=12;
+  else if(w.type==="adjective")b=Math.round((w.mult||1)*8);
+  else if(w.type==="noun")b=Math.round((w.ap||4)*2.5);
+  else if(w.type==="affinity")b=Math.round((w.mult||1.5)*6);
+  return Math.max(5,Math.round(b*(w.rarity>=0?1+w.rarity*0.5:1)));
+}
+
+// === INVENTORY ===
+function showInv(){
+  const cont=$("#inv-list");cont.innerHTML="";
+  $("#inv-count").textContent=`(${S.inv.length} words)`;
+  const sorted=sortInventory(S.inv);
+  sorted.forEach(w=>{
+    const c=document.createElement("div");c.className="chip";c.style.cursor="default";
+    // Use base (suffix) form for non‑weapons
+    const formsForChip = WORD_FORMS[w.id];
+    let displayName = w.name;
+    if(w.type !== 'weapon' && !w.isStick && formsForChip){
+      displayName = formsForChip.suffix || w.name;
+    }
+    // Determine info label: tier only for non‑weapons; tier + category for weapons
+    const tierLabel = RN[w.rarity] || 'T1';
+    let infoLabel = tierLabel;
+    if(w.type === 'weapon' && w.category){
+      const cat = w.category;
+      infoLabel += ` · ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+    }
+    let elemHtml=w.elem!==undefined?`<div class="chip-elem" style="color:${EC[w.elem]}">${EN[w.elem]}</div>`:"";
+    c.innerHTML=`<div class="chip-name ${RC[w.rarity]}">${displayName}</div><div class="chip-info">${infoLabel}</div>${elemHtml}`;
+    cont.appendChild(c);
+  });
+  $("#inv-overlay").classList.add("show");
+}
+
+// === UTILS ===
+function clrSel(){S.sel={item:null,adj1:null,adj2:null,adj3:null,adj4:null,noun1:null}}
+function shuf(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function dly(ms){return new Promise(r=>setTimeout(r,ms))}
+function anim(el,f,t,d,fmt=v=>Math.round(v)){return new Promise(res=>{const st=performance.now(),tick=n=>{const p=Math.min((n-st)/d,1);el.textContent=fmt(f+(t-f)*p);p<1?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
+
+// Defer initialization until the DOM has fully loaded.  This ensures that
+// elements like the main menu start button exist when we attach event
+// handlers.  We also bind the start button here rather than in init() so
+// that the menu behaves reliably across reloads.
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialization is performed outside this event listener to ensure it runs even if
+  // DOMContentLoaded has already fired before this script executes.  No need to call init() here.
+  // Bind main menu start button: hide the menu overlay and begin a new run
+  const startBtn = document.getElementById('start-game-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      const mm = document.getElementById('main-menu');
+      if (mm) mm.classList.remove('show');
+      startNewRun();
+    });
+    // Apply hover sound to start button for consistency
+    startBtn.onmouseenter = sfxHover;
+  }
+});
+
+// Call init immediately to ensure the game initializes even if DOMContentLoaded has already fired.
+// Without this call, the inventory and event handlers may not set up if this script loads after
+// the DOM has already completed parsing.
+init();
+</script>
+</body>
+</html>
