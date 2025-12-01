@@ -202,76 +202,75 @@
 
 <div class="overlay" id="shop-overlay">
   <div class="modal" style="min-width:600px">
-    <div class="modal-title gold">🛒 SHOP <span id="shop-gold"></span></div>
-
-    <!-- Inventory display moved inline with the inventory section header -->
-
-    <!-- Hero and Enemy Info Side-by-Side -->
-    <div style="display:flex;gap:12px;margin-bottom:12px">
-      <!-- Current Hero info -->
-      <div class="shop-section" style="flex:1;background:#1a1a1a;padding:12px;border-radius:8px">
-        <div class="shop-section-title" style="margin-bottom:8px">HERO INFO</div>
-        <div id="shop-hero-info" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+    <div class="modal-topbar shop-topbar">
+      <div class="shop-top-left">
+        <div class="shop-pill">💰 <span id="shop-gold"></span></div>
+        <div class="shop-pill">📦 <span id="shop-inventory"></span></div>
       </div>
-      <!-- Next Enemy Preview -->
-      <div class="shop-section" style="flex:1;background:#1a1a1a;padding:12px;border-radius:8px">
-        <div class="shop-section-title" style="margin-bottom:8px">⚠️ NEXT ENEMY</div>
-        <div id="next-enemy-preview" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+      <div class="modal-title gold" style="margin:0">🛒 SHOP</div>
+      <div class="shop-top-right">
+        <button id="shop-menu" class="topbar-btn">Menu</button>
       </div>
     </div>
 
-    <!-- Crates and Buffs Side-by-Side -->
-    <div style="display:flex;gap:12px;margin-bottom:12px">
-      <div class="shop-section" style="flex:1">
-        <div class="shop-section-title">📦 WORD CRATES</div>
-        <div id="shop-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+    <div class="shop-content">
+      <div class="shop-columns">
+        <div class="shop-section card-surface" style="flex:1">
+          <div class="shop-section-title" style="margin-bottom:8px">HERO INFO</div>
+          <div id="shop-hero-info" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+        </div>
+        <div class="shop-section card-surface" style="flex:1">
+          <div class="shop-section-title" style="margin-bottom:8px">⚠️ NEXT ENEMY</div>
+          <div id="next-enemy-preview" style="font-size:11px;color:#d1d5db;line-height:1.4"></div>
+        </div>
       </div>
-      <div class="shop-section" style="flex:1; display:none">
-        <div class="shop-section-title">✨ BUFFS</div>
-        <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+
+      <div class="shop-columns">
+        <div class="shop-section" style="flex:1">
+          <div class="shop-section-title">📦 WORD CRATES</div>
+          <div id="shop-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+        </div>
+        <div class="shop-section" style="flex:1; display:none">
+          <div class="shop-section-title">✨ BUFFS</div>
+          <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+        </div>
       </div>
-    </div>
-    <div class="shop-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="shop-section-title" style="margin:0">🎴 CONSUMABLES</div>
-        <div id="shop-consumable-cap" class="dim" style="font-size:11px"></div>
+      <div class="shop-section">
+        <div class="shop-section-header">
+          <div class="shop-section-title" style="margin:0">🎴 CONSUMABLES</div>
+          <div id="shop-consumable-cap" class="dim" style="font-size:11px"></div>
+        </div>
+        <div id="shop-consumables" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
       </div>
-      <div id="shop-consumables" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
-    </div>
-    <!-- Word Bank for selling -->
-    <div class="shop-section">
-      <!-- Inventory header row includes title, capacity tracker, and sort controls -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:8px">
+      <div class="shop-section">
+        <div class="shop-section-header">
           <div class="shop-section-title" style="margin:0">📜 YOUR INVENTORY</div>
-          <!-- Live inventory capacity is updated via renderShopWordBank() -->
-          <div id="shop-inventory" style="font-size:11px;color:#9ca3af"></div>
+          <div id="shop-sort-btns" style="display:flex;gap:4px;align-items:center">
+            <button data-sort="type" class="active" style="padding:4px 10px;font-size:10px">Type</button>
+            <button data-sort="alpha" style="padding:4px 10px;font-size:10px">A-Z</button>
+            <button data-sort="rarity" style="padding:4px 10px;font-size:10px">Rarity</button>
+            <button id="sort-dir-btn" style="padding:4px 10px;font-size:10px">↓</button>
+          </div>
         </div>
-        <div id="shop-sort-btns" style="display:flex;gap:4px;align-items:center">
-          <button data-sort="type" class="active" style="padding:4px 10px;font-size:10px">Type</button>
-          <button data-sort="alpha" style="padding:4px 10px;font-size:10px">A-Z</button>
-          <button data-sort="rarity" style="padding:4px 10px;font-size:10px">Rarity</button>
-          <button id="sort-dir-btn" style="padding:4px 10px;font-size:10px">↓</button>
+        <div id="shop-word-bank" class="card-surface" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;"></div>
+        <div class="shop-sell-actions">
+          <div id="sell-price-display" style="font-size:14px;color:#fbbf24;font-weight:bold;min-width:80px"></div>
+          <div class="shop-sell-buttons">
+            <button id="sell-word-btn" disabled style="padding:6px 16px">💰 Sell Selected</button>
+            <button id="deselect-btn" style="padding:4px 12px">Deselect</button>
+          </div>
         </div>
       </div>
-      <div id="shop-word-bank" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:60px;padding:8px;background:#0d1017;border-radius:8px"></div>
-      <div style="text-align:center;margin-top:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-        <div id="sell-price-display" style="font-size:14px;color:#fbbf24;font-weight:bold;min-width:80px"></div>
-        <button id="sell-word-btn" disabled style="padding:6px 16px">💰 Sell Selected</button>
-        <button id="deselect-btn" style="padding:4px 12px">Deselect</button>
+
+      <div class="shop-section" style="margin-top:12px; display:none">
+        <div id="shop-talent-bar"></div>
       </div>
-    </div>
 
-    <!-- Active Buffs section disabled while buffs are removed from the game -->
-    <div class="shop-section" style="margin-top:12px; display:none">
-      <div id="shop-talent-bar"></div>
-    </div>
+      <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
 
-    <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
-
-    <div class="modal-buttons" style="display:flex;justify-content:center;gap:8px">
-      <button id="shop-menu">Menu</button>
-      <button id="shop-continue">Continue</button>
+      <div class="modal-buttons" style="display:flex;justify-content:center;gap:8px">
+        <button id="shop-continue">Continue</button>
+      </div>
     </div>
   </div>
 </div>
