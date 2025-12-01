@@ -664,12 +664,12 @@ function init(){
     previewPanel.__tooltipAttached = true;
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip';
-    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.style.whiteSpace = 'normal';
     tooltip.style.pointerEvents = 'none';
     previewPanel.appendChild(tooltip);
     previewPanel.addEventListener('mouseenter', () => {
       const content = buildMultiplierTooltip();
-      tooltip.textContent = content;
+      tooltip.innerHTML = content;
       tooltip.style.opacity = content ? '1' : '0';
     });
     previewPanel.addEventListener('mouseleave', () => {
@@ -1612,123 +1612,44 @@ function mkTooltip(w){
   </div>`;
 }
 
-// Build a breakdown of all multipliers currently affecting the AP × Multiplier display.
-// The returned string lists each factor on its own line with the multiplier value and its source.
-// This helps players understand how buffs and adjectives contribute to their total damage.
+// Build a breakdown of all AP contributions and multipliers currently affecting the damage preview.
 function buildMultiplierTooltip(){
-  // Gather all words currently selected in the forge.  Only filled slots count.
-  const allWords = [S.sel.item, S.sel.adj1, S.sel.adj2, S.sel.adj3, S.sel.adj4, S.sel.noun1].filter(Boolean);
-  let lines = [];
-  // Track total elements and tiers for conditional buffs
-  const elems = new Set();
-  allWords.forEach(w => { if(w.elem !== undefined) elems.add(w.elem); });
-  const hasT2Word = allWords.some(w => !w.isStick && RRANK[w.rarity] === 2);
-  // Determine if using stick
-  const weapon = S.sel.item;
-  if(weapon && weapon.isStick){
-    lines.push("×0.25 from backup stick");
-  }
-  // Adjective multipliers (rarity multipliers like Common ×1.1 up to Legendary ×2.0) apply when used in adjective slots
-  allWords.forEach(word => {
-    if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
-      lines.push(`×${word.mult} from ${word.name}`);
-    }
+  if(!S.sel.item) return '';
+  const c = calc({ breakdown: true });
+  const fmtNum=(v)=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
+  const lines = [];
+
+  lines.push('<div class="tooltip-title">Damage Breakdown</div>');
+  lines.push('<div class="tooltip-line dim">AP Sources</div>');
+  c.breakdown.base.forEach(line=>{
+    lines.push(`<div class="tooltip-line">${line}</div>`);
   });
-  // Combo Master: ×1.3 total if 4+ words
-  if(S.talents.includes('combo_master')){
-    if(allWords.length >= 4){
-      lines.push('×1.3 from Combo Master');
-    }
+  if(c.breakdown.words.length){
+    lines.push('<div class="tooltip-line dim">Word Modifiers</div>');
+    c.breakdown.words.forEach(line=>{
+      lines.push(`<div class="tooltip-line">${line}</div>`);
+    });
   }
-  // Minimalist: ×1.5 total if using 2 or fewer words
-  if(S.talents.includes('minimalist')){
-    if(allWords.length > 0 && allWords.length <= 2){
-      lines.push('×1.5 from Minimalist');
-    }
+  lines.push(`<div class="tooltip-line"><strong>Total AP:</strong> ${fmtNum(c.baseAP)}</div>`);
+
+  lines.push('<div class="tooltip-line dim">Word Count Factor</div>');
+  lines.push(`<div class="tooltip-line">×${fmtNum(c.breakdown.wordCount)} effective words</div>`);
+
+  lines.push('<div class="tooltip-line dim">Multipliers</div>');
+  if(c.breakdown.multipliers.length){
+    c.breakdown.multipliers.forEach(line=>{
+      lines.push(`<div class="tooltip-line">${line}</div>`);
+    });
+  } else {
+    lines.push('<div class="tooltip-line">×1.0 (none)</div>');
   }
-  // Word Weaver: +5% per word to multiplier
-  if(S.talents.includes('word_weaver')){
-    const mult = 1 + 0.05 * allWords.length;
-    lines.push(`×${mult.toFixed(2)} from Word Weaver`);
-  }
-  // Precise Strike: ×1.25 final damage
-  if(S.talents.includes('precise_strike')){
-    lines.push('×1.25 from Precise Strike');
-  }
-  // Dual Spec: Using 2+ different elements multiplies final damage
-  if(S.talents.includes('dual_spec')){
-    if(elems.size >= 2){
-      lines.push('×2.0 from Dual Spec');
-    }
-  }
-  // Trinity: Exactly 3 elements
-  if(S.talents.includes('trinity')){
-    if(elems.size === 3){
-      lines.push('×2.2 from Trinity');
-    }
-  }
-  // Rainbow Forge: 4+ different elements
-  if(S.talents.includes('rainbow_forge')){
-    if(elems.size >= 4){
-      lines.push('×2.5 from Rainbow Forge');
-    }
-  }
-  // Min‑Max: only T1 or T3, no T2 words
-  if(S.talents.includes('min_max')){
-    if(!hasT2Word && allWords.length > 0){
-      lines.push('×1.75 from Min‑Max');
-    }
-  }
-  // Quality Control: Treat all T2 words as T3.  AP effect handled elsewhere; not a multiplier.
-  // Budget Build: All T1 words ×1.8
-  if(S.talents.includes('budget_build')){
-    const hasT1 = allWords.some(w => RRANK[w.rarity] === 0);
-    if(hasT1){
-      lines.push('×1.8 from Budget Build');
-    }
-  }
-  // Luxury Forge: All T3 words ×1.3
-  if(S.talents.includes('luxury_forge')){
-    const hasT3 = allWords.some(w => RRANK[w.rarity] >= 3);
-    if(hasT3){
-      lines.push('×1.3 from Luxury Forge');
-    }
-  }
-  // Blade Dancer / Marksman / Arcane Focus / Crusher: apply based on weapon category
-  const weaponCat = weapon && !weapon.isStick ? weapon.category : null;
-  if(weaponCat){
-    if(S.talents.includes('blade_dancer') && weaponCat === 'slash'){
-      lines.push('×1.4 from Blade Dancer (Slash weapon)');
-    }
-    if(S.talents.includes('marksman') && weaponCat === 'pierce'){
-      lines.push('×1.4 from Marksman (Pierce weapon)');
-    }
-    if(S.talents.includes('arcane_focus') && weaponCat === 'magic'){
-      lines.push('×1.4 from Arcane Focus (Magic weapon)');
-    }
-    if(S.talents.includes('crusher') && weaponCat === 'blunt'){
-      lines.push('×1.4 from Crusher (Blunt weapon)');
-    }
-  }
-  // Exploit Weakness: +50% if using enemy weakness element
-  if(S.talents.includes('exploit_weakness')){
-    if(allWords.some(w => w.elem !== undefined && S.enemy.weak.includes(w.elem))){
-      lines.push('×1.5 from Exploit Weakness');
-    }
-  }
-  // Elemental Mastery: +30% if using hero strong element
-  if(S.talents.includes('elemental_mastery')){
-    if(allWords.some(w => w.elem !== undefined && S.hero.str.includes(w.elem))){
-      lines.push('×1.3 from Elemental Mastery');
-    }
-  }
-  // Wordsmith's Fervor: +10% per word
-  if(S.talents.includes('wordsmiths_fervor')){
-    const mult = 1 + 0.1 * allWords.length;
-    lines.push(`×${mult.toFixed(2)} from Wordsmith's Fervor`);
-  }
-  // Return breakdown as a newline‑separated list.  If no modifiers, return empty string.
-  return lines.join('\n');
+  lines.push(`<div class="tooltip-line"><strong>Total Multiplier:</strong> ×${fmtNum(c.totalMultiplier)}</div>`);
+
+  const finalDmg = c.heroDmg;
+  lines.push('<div class="tooltip-line dim">Final</div>');
+  lines.push(`<div class="tooltip-line"><strong>${finalDmg} damage</strong> = ${fmtNum(c.baseAP)} AP × ${fmtNum(c.breakdown.wordCount)} × ${fmtNum(c.totalMultiplier)}</div>`);
+
+  return lines.join('');
 }
 
 function isWordDisabled(w,hasItem,hasNoun){
@@ -1995,13 +1916,16 @@ function getCombatants(){
   };
 }
 
-function calc(){
+function calc(opts={}){
+  const wantBreakdown = !!opts.breakdown;
+  const breakdown = wantBreakdown ? { base: [], words: [], multipliers: [], wordCount: 0 } : null;
   const {hero:h,enemy:e}=getCombatants();
   const s = S.sel;
   const hasTalent=(id)=>S.talents.includes(id);
   const hasWeaponMaster=!!(S.tempEffects && S.tempEffects.weaponMaster);
   const weakTo=(el)=>e.weak.includes(el);
   const resists=(el)=>!(S.tempEffects && S.tempEffects.polymorph) && e.res.includes(el);
+  const fmtNum=(v)=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
 
   // Base AP starts at 0, only increased by talents
   let baseAP = 0;
@@ -2009,11 +1933,17 @@ function calc(){
   // [T3] Battle Hardened: +3 baseAP per round survived (permanent)
   if(hasTalent("battle_hardened")){
     baseAP += S.battleHardenedBonus;
+    if(wantBreakdown && S.battleHardenedBonus){
+      breakdown.base.push(`+${S.battleHardenedBonus} Battle Hardened`);
+    }
   }
 
   // [T3] Word Hoarder: +1 AP for each word in inventory over 15
   if(hasTalent("word_hoarder") && S.inv.length > 15){
     baseAP += (S.inv.length - 15);
+    if(wantBreakdown){
+      breakdown.base.push(`+${S.inv.length - 15} Word Hoarder`);
+    }
   }
 
   let wordCount = 0;
@@ -2027,6 +1957,9 @@ function calc(){
   if(hasTalent("descriptive")){
     const adjCount = allWords.filter(w=>w.type==='adjective').length;
     baseAP += adjCount;
+    if(wantBreakdown && adjCount){
+      breakdown.base.push(`+${adjCount} Descriptive`);
+    }
   }
 
   // [T3] Sharpening Stone: 25% chance to upgrade tier
@@ -2068,22 +2001,27 @@ function calc(){
     // [T2] Pyromancer: fire words count as one tier higher (cap at 3 AP)
     if(hasTalent('pyromancer') && word.elem === E.FIRE){
       tierValue = Math.min(3, tierValue + 1);
+      if(wantBreakdown) breakdown.words.push(`+1 tier from Pyromancer (${word.name})`);
     }
 
     // [Joker] Scribe's Sigil: every word gains +1 base AP.  This applies before any
     // elemental or gem multipliers.  The effect stacks with other tier boosts.
     if(hasTalent('scribe_sigil')){
       tierValue += 1;
+      if(wantBreakdown) breakdown.words.push(`+1 Scribe's Sigil (${word.name})`);
     }
 
     // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
     if(slotKey === 'item' && !word.isStick && word.category){
       if(hasWeaponMaster){
         tierValue = parseFloat((tierValue * 2.0).toFixed(2));
+        if(wantBreakdown) breakdown.words.push(`×2.0 Weapon Master (${word.name})`);
       } else if(h.good === word.category){
         tierValue = parseFloat((tierValue * 2.0).toFixed(2));
+        if(wantBreakdown) breakdown.words.push(`×2.0 Proficiency (${word.name})`);
       } else if(h.bad === word.category){
         tierValue = parseFloat((tierValue * 0.5).toFixed(2));
+        if(wantBreakdown) breakdown.words.push(`×0.5 Poor Proficiency (${word.name})`);
       }
     }
 
@@ -2115,6 +2053,7 @@ function calc(){
     // accordingly.  This does not override elemental immunity (0 multiplier remains 0).
     if(hasTalent('ember_focus') && word.elem === E.FIRE){
       elemMult *= 1.5;
+      if(wantBreakdown) breakdown.words.push(`×1.5 Ember Focus (${word.name})`);
     }
     // Base AP contribution is the tier value times the element multiplier
     let apContribution = tierValue * elemMult;
@@ -2122,9 +2061,19 @@ function calc(){
     // Gem slot doubles AP contribution but does not affect word count
     if(slotKey === 'noun1'){
       apContribution *= 2;
+      if(wantBreakdown) breakdown.words.push(`×2.0 Gem Bonus (${word.name})`);
     }
     wordBaseAPTotal += apContribution;
     wordCount += wCountDelta;
+
+    if(wantBreakdown){
+      const labels = [];
+      if(word.elem !== undefined) labels.push(EN[word.elem]);
+      if(slotKey === 'noun1') labels.push('Gem');
+      if(word.category) labels.push(word.category);
+      const suffix = labels.length ? ` (${labels.join(', ')})` : '';
+      breakdown.base.push(`+${fmtNum(apContribution)} ${word.name}${suffix}`);
+    }
 
     // Track weapon for proficiency display
     if(slotKey === 'item'){
@@ -2142,6 +2091,7 @@ function calc(){
   // Stick penalty: ×0.25 if using stick
   if(weaponWord && weaponWord.isStick){
     totalMultiplier *= 0.25;
+    if(wantBreakdown) breakdown.multipliers.push('×0.25 Backup Stick');
   }
 
   // [T2] Forged in Flame: +25% if below 50% HP
@@ -2152,13 +2102,19 @@ function calc(){
   // [T3] Dual Spec: ×2.0 if 2+ elements
   if(hasTalent('dual_spec')){
     const elems = new Set(allWords.filter(w=>w.elem!==undefined).map(w=>w.elem));
-    if(elems.size >= 2) totalMultiplier *= 2.0;
+    if(elems.size >= 2){
+      totalMultiplier *= 2.0;
+      if(wantBreakdown) breakdown.multipliers.push('×2.0 Dual Spec');
+    }
   }
 
   // [T3] Min-Max: +75% if only T1 or T3 (no T2)
   if(hasTalent('min_max')){
     const hasT2 = allWords.some(w=>!w.isStick && RRANK[w.rarity]===2);
-    if(!hasT2 && allWords.length > 0) totalMultiplier *= 1.75;
+    if(!hasT2 && allWords.length > 0){
+      totalMultiplier *= 1.75;
+      if(wantBreakdown) breakdown.multipliers.push('×1.75 Min‑Max');
+    }
   }
 
   // Apply multiplier words (rarity multipliers such as Common through Legendary).  Adjectives in
@@ -2168,6 +2124,7 @@ function calc(){
   allWords.forEach(word => {
     if(word.mult !== undefined && word.type === 'adjective' && word !== S.sel.noun1){
       totalMultiplier *= word.mult;
+      if(wantBreakdown) breakdown.multipliers.push(`×${word.mult} ${word.name}`);
     }
   });
 
@@ -2175,7 +2132,9 @@ function calc(){
   // effect applies after all other multipliers, and scales based on the number of words
   // contributing damage (wordCount).  Only active when the talent is owned.
   if(hasTalent('wordsmiths_fervor')){
-    totalMultiplier *= (1 + 0.1 * wordCount);
+    const fervorMult = (1 + 0.1 * wordCount);
+    totalMultiplier *= fervorMult;
+    if(wantBreakdown) breakdown.multipliers.push(`×${fervorMult.toFixed(2)} Wordsmith's Fervor`);
   }
 
   // Final damage = base AP × word count × all multipliers
@@ -2190,6 +2149,10 @@ function calc(){
   // Final HP values: hero HP not tracked; enemy HP decreases by hero damage
   const enemyMax = e.hp;
   const enemyFin = Math.max(0, enemyMax - heroDmg);
+
+  if(wantBreakdown){
+    breakdown.wordCount = wordCount;
+  }
 
   return{
     heroDmg,
@@ -2206,7 +2169,8 @@ function calc(){
     heroBonus,
     weaponType: weaponWord?.id || 'stick',
     allWords,
-    totalMultiplier
+    totalMultiplier,
+    breakdown
   };
 }
 
