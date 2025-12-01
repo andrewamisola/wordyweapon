@@ -4,27 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wordy Weapon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-/* Import Garamond font family uploaded alongside this file */
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Regular.ttf') format('truetype');
-  font-weight:normal;
-  font-style:normal;
-}
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Bold.ttf') format('truetype');
-  font-weight:bold;
-  font-style:normal;
-}
-@font-face{
-  font-family:'EB Garamond';
-  src:url('EBGaramond-Italic.ttf') format('truetype');
-  font-weight:normal;
-  font-style:italic;
-}
 body{font-family:'EB Garamond', 'Segoe UI',system-ui,serif;background:#0a0a0f;color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
 .gold{color:#f4d03f}.hero-c{color:#4ade80}.enemy-c{color:#f87171}.dim{color:#6b7280}
 button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
@@ -417,8 +401,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div id="consumables-bar"></div>
   <div id="buttons">
     <button id="forge-btn" disabled>⚔️ FORGE WEAPON</button>
-    <button id="new-btn">🎲 New Quest</button>
-    <!-- Inventory button removed -->
   </div>
 </div>
 
@@ -514,7 +496,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
     <div id="shop-reroll"><button id="reroll-btn">🎲 Reroll (<span id="reroll-cost">5</span>💰)</button></div>
 
-    <div class="modal-buttons"><button id="shop-continue">Continue</button></div>
+    <div class="modal-buttons" style="display:flex;justify-content:center;gap:8px">
+      <button id="shop-menu">Menu</button>
+      <button id="shop-continue">Continue</button>
+    </div>
   </div>
 </div>
 
@@ -590,7 +575,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="modal" style="min-width:420px">
     <div class="modal-title gold" style="text-align:center">📜 Achievements & Stats</div>
     <div id="stats-container" style="font-size:12px;color:#d1d5db;line-height:1.5"></div>
-    <div style="text-align:center;margin-top:12px">
+    <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:8px">
+      <button id="stats-reset">Reset Data</button>
       <button id="achievements-close">Close</button>
     </div>
   </div>
@@ -1056,6 +1042,7 @@ let S={
   level:1, // Hero level (increments each battle)
   roundIndex:1, // Current round in the run
   floor:1, // Current floor (3 rounds per floor)
+  nextEnemy:null, // Cached preview enemy for next round
   talents:[], // Active talents for this run
   consumables:[], // Owned consumables
   inv:[], // Word inventory
@@ -1189,11 +1176,6 @@ function init(){
     forgeBtn.onclick = forge;
     forgeBtn.onmouseenter = sfxHover;
   }
-  const newBtn = document.getElementById("new-btn");
-  if(newBtn){
-    newBtn.onclick = startNewRun;
-    newBtn.onmouseenter = sfxHover;
-  }
   const combatContinueBtn = document.getElementById("combat-continue");
   if(combatContinueBtn){
     combatContinueBtn.onclick = afterCombat;
@@ -1209,6 +1191,14 @@ function init(){
       render();
     };
     shopContinueBtn.onmouseenter = sfxHover;
+  }
+  const shopMenuBtn = document.getElementById("shop-menu");
+  if(shopMenuBtn){
+    shopMenuBtn.onclick = () => {
+      document.getElementById("shop-overlay").classList.remove("show");
+      document.getElementById('pause-menu').classList.add('show');
+    };
+    shopMenuBtn.onmouseenter = sfxHover;
   }
   const rerollBtn = document.getElementById("reroll-btn");
   if(rerollBtn){
@@ -1447,8 +1437,12 @@ function updateCarousel(){
 function newEnc(){
   if(!S.heroSelected){showHeroSelect();return}
 
-  // Scale enemy based on roundIndex - Balatro-style exponential scaling
-  const baseEnemy=ENEMIES[Math.random()*ENEMIES.length|0];
+  // Scale enemy based on roundIndex - Balatro-style exponential scaling.
+  // Use the cached preview enemy so the shop preview matches the upcoming fight.
+  if(!S.nextEnemy){
+    S.nextEnemy = (ENEMIES[Math.random()*ENEMIES.length|0]||{}).id;
+  }
+  const baseEnemy = ENEMIES.find(en=>en.id===S.nextEnemy) || ENEMIES[0];
   S.enemy={...baseEnemy};
 
   // Start at 4 HP for round 1, scale to ~115 for round 9 (becomes 150 after 1.3x boss multiplier)
@@ -1471,6 +1465,9 @@ function newEnc(){
     S.enemy.ap=Math.round(S.enemy.ap*1.2);
     S.enemy.name="[BOSS] "+S.enemy.name;
   }
+
+  // Consume cached preview so the next shop call will roll a fresh foe
+  S.nextEnemy=null;
 
   // [T2] Shadow Pact: Apply HP steal from previous dark word use
   if(S.shadowBonusHP > 0){
@@ -1777,7 +1774,7 @@ function updateSlotCalcs(){
     }
 
     // Apply proficiency to tier value
-    const profTierValue = Math.floor(tierValue * proficiencyMultiplier);
+    const profTierValue = parseFloat((tierValue * proficiencyMultiplier).toFixed(2));
 
     let calc = "";
 
@@ -2605,11 +2602,11 @@ function calc(){
     // Apply weapon proficiency to the weapon's AP (good proficiency doubles, poor halves)
     if(slotKey === 'item' && !word.isStick && word.category){
       if(hasWeaponMaster){
-        tierValue = Math.floor(tierValue * 1.5);
+        tierValue = parseFloat((tierValue * 1.5).toFixed(2));
       } else if(h.good === word.category){
-        tierValue = Math.floor(tierValue * 2.0);
+        tierValue = parseFloat((tierValue * 2.0).toFixed(2));
       } else if(h.bad === word.category){
-        tierValue = Math.floor(tierValue * 0.5);
+        tierValue = parseFloat((tierValue * 0.5).toFixed(2));
       }
     }
 
@@ -3441,7 +3438,11 @@ function renderShop(){
 function renderNextEnemyPreview(){
   // Calculate what the next enemy will be
   const nextRound = S.roundIndex;
-  const baseEnemy = ENEMIES[Math.floor(Math.random() * ENEMIES.length)];
+  if(!S.nextEnemy){
+    const roll = ENEMIES[Math.floor(Math.random() * ENEMIES.length)];
+    S.nextEnemy = roll ? roll.id : null;
+  }
+  const baseEnemy = ENEMIES.find(en=>en.id===S.nextEnemy) || ENEMIES[0];
   const previewEnemy = {...baseEnemy};
 
   // Apply HP scaling
@@ -3944,6 +3945,15 @@ document.addEventListener('DOMContentLoaded', () => {
   $("#pause-new").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');startNewRun();};
   $("#pause-achievements").onclick=()=>{document.getElementById('pause-menu').classList.remove('show');document.getElementById('achievements-overlay').classList.add('show');renderStats();};
   $("#pause-exit").onclick=()=>document.getElementById('pause-menu').classList.remove('show');
+  const resetBtn=document.getElementById('stats-reset');
+  if(resetBtn){
+    resetBtn.onclick=()=>{
+      PStats={attempts:0,victories:0,weaponsForged:0,bestDamage:0,heroClears:{},stackedCreations:0};
+      saveStats();
+      clearRunSave();
+      renderStats();
+    };
+  }
   $("#achievements-close").onclick=()=>document.getElementById('achievements-overlay').classList.remove('show');
 });
 
