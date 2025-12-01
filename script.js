@@ -20,114 +20,114 @@ const BUFF_LIMIT=0;
 const HEROES=[
   {
     id:"warrior",
-    name:"Alaric the Ironwill",
+    name:"Grammorian the Ironclause",
     hp:100,
     str:[E.PHYS,E.EARTH],
     weak:[E.POISON,E.DARK],
     good:"slash",
     bad:"magic",
-    desc:"A stoic warrior forged in countless battles. His unwavering resolve makes him a formidable ally.",
+    desc:"A battle-scribe who edits with his blade, turning run-on sentences into run-off enemies.",
     dialogue:[
-      "Greetings, Wordsmith. I require a weapon worthy of this battle.",
-      "Forge me something strong. I shall not falter.",
-      "Another foe? Good. My blade grows restless."
+      "Greetings, Wordsmith. Let's punctuate our foes with steel.",
+      "Forge me something strong; I'll handle the proofreading.",
+      "Another foe? Good. My blade craves correct clauses."
     ]
   },
   {
     id:"ranger",
-    name:"Selene Swiftarrow",
+    name:"Selene Syllabow",
     hp:100,
     str:[E.LIGHTNING,E.LIGHT],
     weak:[E.EARTH,E.DARK],
     good:"pierce",
     bad:"blunt",
-    desc:"A nimble huntress who channels storm and starlight. Her arrows strike true.",
+    desc:"A nimble huntress who hears every stressed syllable and strings them into lightning-fast shots.",
     dialogue:[
-      "Swift greetings! Let's make something electrifying.",
-      "The wind whispers of danger. Arm me well!",
-      "Ooh, this one looks tough! I love a challenge."
+      "Swift greetings! Let's craft a well-accented volley.",
+      "The wind whispers in meter. Arm me with rhythm!",
+      "This foe looks tough—perfect cadence for a challenge."
     ]
   },
   {
     id:"mage",
-    name:"Lyra Emberheart",
+    name:"Lyra Lexiflame",
     hp:100,
     str:[E.FIRE,E.LIGHT],
     weak:[E.WATER,E.PHYS],
     good:"magic",
     bad:"slash",
-    desc:"A brilliant pyromancer whose flames dance with destruction and beauty.",
+    desc:"A lexiconjurer who brands every spell with fiery wordplay and glowing glyphs.",
     dialogue:[
-      "Wordsmith! Let us craft something that BURNS.",
-      "Fire cleanses all. Make me an instrument of purification.",
-      "Mmm, I sense powerful words nearby..."
+      "Wordsmith! Let's ignite a flaming first draft.",
+      "Fire cleanses, commas clarify. Make me an instrument of both.",
+      "Mmm, I sense powerful verbs nearby..."
     ]
   },
   {
     id:"paladin",
-    name:"Theron the Radiant",
+    name:"Theron Paladiction",
     hp:100,
     str:[E.LIGHT,E.PHYS],
     weak:[E.DARK,E.POISON],
     good:"blunt",
     bad:"pierce",
-    desc:"A holy knight blessed by divine light. His oaths shield the innocent.",
+    desc:"A holy knight sworn to defend syntax and smite misquoted vows.",
     dialogue:[
-      "By the light! I need a holy weapon.",
-      "Evil approaches. Together, we shall vanquish it.",
-      "The darkness will fall before our might!"
+      "By the light! I need a righteous rebuttal.",
+      "Evil approaches—prepare a weapon with proper citation.",
+      "The darkness will fall before our well-structured argument!"
     ]
   },
   {
     id:"assassin",
-    name:"Vex Shadowmend",
+    name:"Vex Subtext",
     hp:100,
     str:[E.DARK,E.POISON],
     weak:[E.LIGHT,E.FIRE],
     good:"pierce",
     bad:"blunt",
-    desc:"A deadly shadow who strikes from darkness. Poisons are her companions.",
+    desc:"A whisper of ink and implication, she buries foes under layers of meaning and poison.",
     dialogue:[
-      "Shhh... they won't see it coming.",
-      "Craft me something subtle. And lethal.",
-      "The shadows hunger. Feed them."
+      "Shhh... the subtext will slit their confidence.",
+      "Craft me something subtle—let the meaning linger before the sting.",
+      "The margins hunger. Feed them a sharp aside."
     ]
   },
   {
     id:"druid",
-    name:"Oakheart the Ancient",
+    name:"Oakheart the Punbark",
     hp:100,
     str:[E.EARTH,E.WATER],
     weak:[E.FIRE,E.LIGHTNING],
     good:"blunt",
     bad:"magic",
-    desc:"An ancient guardian of the forest. Commands stone and tide.",
+    desc:"An ancient guardian who tends groves and groan-worthy puns with equal fervor.",
     dialogue:[
-      "The earth speaks... it demands balance.",
-      "Nature provides. Now let us take.",
-      "Root and stone shall be our weapons."
+      "The earth speaks... mostly in dad jokes.",
+      "Nature provides. I'll provide the punchlines.",
+      "Root and stone shall be our weapons—branch out accordingly."
     ]
   }
 ];
 
 // === 8 ENEMIES ===
 const ENEMIES=[
-  {id:"frost",name:"Frostbone Colossus",hp:100,ap:24,weak:[E.FIRE,E.LIGHTNING],res:[E.WATER,E.DARK],atk:E.WATER,
-   desc:"An ancient undead giant encased in eternal ice.",dialogue:["CRRREAAAK... WARM BLOOD...","YOUR HEAT... WILL FADE..."]},
-  {id:"hydra",name:"Venomwilt Hydra",hp:80,ap:22,weak:[E.FIRE,E.LIGHT],res:[E.POISON,E.WATER],atk:E.POISON,
-   desc:"A writhing mass of serpentine heads dripping with toxins.",dialogue:["Hssss... another morsel...","Three headsss, three deathsss..."]},
-  {id:"shade",name:"Shadewoven Matriarch",hp:70,ap:28,weak:[E.LIGHT,E.FIRE],res:[E.DARK,E.POISON],atk:E.DARK,
-   desc:"A void-touched spider queen who weaves darkness itself.",dialogue:["Come, little fly... my web awaits...","The void hungers..."]},
-  {id:"golem",name:"Ironclad Golem",hp:120,ap:20,weak:[E.LIGHTNING,E.WATER],res:[E.EARTH,E.PHYS],atk:E.PHYS,
-   desc:"A mechanical titan of gears and ancient runes.",dialogue:["DIRECTIVE: ELIMINATE.","COMBAT: INITIATED."]},
-  {id:"phoenix",name:"Ashborn Phoenix",hp:75,ap:26,weak:[E.WATER,E.EARTH],res:[E.FIRE,E.LIGHT],atk:E.FIRE,
-   desc:"A blazing bird of eternal flame.",dialogue:["SCREEEEE! BURN!","From ash YOU fall!"]},
-  {id:"lich",name:"Vazreth the Undying",hp:85,ap:25,weak:[E.LIGHT,E.PHYS],res:[E.DARK,E.POISON],atk:E.DARK,
-   desc:"An ancient sorcerer who conquered death itself.",dialogue:["Death is merely... an inconvenience.","Your soul will join my collection."]},
-  {id:"elemental",name:"Stormcore Elemental",hp:90,ap:23,weak:[E.EARTH,E.DARK],res:[E.LIGHTNING,E.WATER],atk:E.LIGHTNING,
-   desc:"Pure elemental fury given form.",dialogue:["CRACKLE... OBLITERATE!","THE STORM CANNOT BE CONTAINED!"]},
-  {id:"treant",name:"Blightwood Treant",hp:130,ap:18,weak:[E.FIRE,E.POISON],res:[E.EARTH,E.WATER],atk:E.EARTH,
-   desc:"A corrupted forest guardian twisted by dark magic.",dialogue:["The forest... remembers...","You will feed... the roots..."]}
+  {id:"frost",name:"Thesaur-ice Colossus",hp:100,ap:24,weak:[E.FIRE,E.LIGHTNING],res:[E.WATER,E.DARK],atk:E.WATER,
+   desc:"An undead giant who hoards every cold synonym and freezes heroes with pedantry.",dialogue:["CRRREAAAK... FIND A BETTER WORD...","YOUR HEAT... WILL BE EDITED OUT..."]},
+  {id:"hydra",name:"Syn-Tacks Hydra",hp:80,ap:22,weak:[E.FIRE,E.LIGHT],res:[E.POISON,E.WATER],atk:E.POISON,
+   desc:"Each head hisses a different grammar rule and bites those who misplace commas.",dialogue:["Hssss... incorrect clause...","Three headsss, three correctionsss..."]},
+  {id:"shade",name:"Webster Widow Matriarch",hp:70,ap:28,weak:[E.LIGHT,E.FIRE],res:[E.DARK,E.POISON],atk:E.DARK,
+   desc:"A void-touched spider who spins webs of definitions that ensnare the unwary.",dialogue:["Come, little fly... consult my entries...","The void hungers for new words..."]},
+  {id:"golem",name:"Ironclad Gloss-lem",hp:120,ap:20,weak:[E.LIGHTNING,E.WATER],res:[E.EARTH,E.PHYS],atk:E.PHYS,
+   desc:"A mechanical titan annotated with marginalia, marching to a footnoted directive.",dialogue:["DIRECTIVE: EDIT. ERASE.","COMBAT: PROOFING SEQUENCE."]},
+  {id:"phoenix",name:"Ashen Anaphora",hp:75,ap:26,weak:[E.WATER,E.EARTH],res:[E.FIRE,E.LIGHT],atk:E.FIRE,
+   desc:"A blazing bird that rises on repeated phrases, its flames stoked by rhetoric.",dialogue:["SCREEEEE! AGAIN AND AGAIN!","From ash YOU fall, from ash YOU fall!"]},
+  {id:"lich",name:"Vazreth the Redacted",hp:85,ap:25,weak:[E.LIGHT,E.PHYS],res:[E.DARK,E.POISON],atk:E.DARK,
+   desc:"An ancient editor who struck his own mortality from the manuscript of life.",dialogue:["Death is merely... deleted text.","Your soul will be... omitted."]},
+  {id:"elemental",name:"Stormcore Elocutional",hp:90,ap:23,weak:[E.EARTH,E.DARK],res:[E.LIGHTNING,E.WATER],atk:E.LIGHTNING,
+   desc:"Pure tempestuous diction given form, booming every syllable with perfect enunciation.",dialogue:["CRACKLE... ENUNCIATE!","THE STORM DEMANDS CLEAR ARTICULATION!"]},
+  {id:"treant",name:"Blightwood Punbark",hp:130,ap:18,weak:[E.FIRE,E.POISON],res:[E.EARTH,E.WATER],atk:E.EARTH,
+   desc:"A corrupted guardian whose roots are tangled in puns and blight alike.",dialogue:["The forest... groans...","You will leaf... reluctantly..."]}
 ];
 
 // Talents are retired for this build to simplify balance.
@@ -678,6 +678,10 @@ function init(){
       tooltip.style.opacity = '0';
     });
   }
+  const combatTotalEl = document.getElementById('combat-total');
+  const combatResultEl = document.getElementById('combat-result');
+  attachDamageTooltip(combatTotalEl);
+  attachDamageTooltip(combatResultEl);
   const sellWordBtn = document.getElementById("sell-word-btn");
   if (sellWordBtn) {
     sellWordBtn.onmouseenter = sfxHover;
@@ -1413,6 +1417,7 @@ function renderTalents(){
 function mkChip(w,disabled,isStickChip){
   const c=document.createElement("div");
   c.className="chip"+(disabled?" disabled":"")+(isStickChip?" rusty":"");
+  if(w.type === 'weapon') c.classList.add('weapon-tile');
   // Assign dataset index only for words in the main inventory; talents and stick chips are excluded
   if(!isStickChip && w.type !== 'talent') c.dataset.idx=S.inv.indexOf(w);
   
@@ -1652,6 +1657,26 @@ function buildMultiplierTooltip(){
   lines.push(`<div class="tooltip-line"><strong>${finalDmg} damage</strong> = ${fmtNum(c.baseAP)} AP × ${fmtNum(c.breakdown.wordCount)} × ${fmtNum(c.totalMultiplier)}</div>`);
 
   return lines.join('');
+}
+
+function attachDamageTooltip(el){
+  if(!el || el.__tooltipAttached) return;
+  el.__tooltipAttached = true;
+  el.classList.add('has-tooltip');
+  el.setAttribute('tabindex','0');
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip modal-tooltip';
+  tooltip.style.whiteSpace = 'normal';
+  tooltip.style.pointerEvents = 'none';
+  el.appendChild(tooltip);
+  const show = () => {
+    const content = el.__tooltipContent || '';
+    tooltip.innerHTML = content;
+    tooltip.style.opacity = content ? '1' : '0';
+  };
+  const hide = () => { tooltip.style.opacity = '0'; };
+  ['mouseenter','focus'].forEach(evt=>el.addEventListener(evt,show));
+  ['mouseleave','blur'].forEach(evt=>el.addEventListener(evt,hide));
 }
 
 function isWordDisabled(w,hasItem,hasNoun){
@@ -2610,6 +2635,14 @@ async function showCombat(r,words,rewards){
   const resultBox=$("#combat-result");
   const resultTitle=$("#combat-result-title");
   const resultDetail=$("#combat-result-detail");
+  const breakdownHtml = buildMultiplierTooltip() || '<div class="tooltip-line">Forge a weapon to see the breakdown.</div>';
+  [total, resultBox].forEach(el => {
+    if(!el) return;
+    attachDamageTooltip(el);
+    el.__tooltipContent = breakdownHtml;
+    const tip = el.querySelector('.tooltip.modal-tooltip, .tooltip');
+    if(tip) tip.innerHTML = breakdownHtml;
+  });
 
   if(!ov||!cw||!total||!flames||!weaponSvg||!cbHero||!cbEnemy||!barHero||!barEnemy||!txtHero||!txtEnemy){
     console.warn("[combat] Missing combat DOM; skipping animation");
@@ -2901,7 +2934,7 @@ function rollShop(){
 
 function renderShop(){
   // Update gold display and show current inventory count under the shop title
-  $("#shop-gold").textContent = `(💰${S.gold})`;
+  $("#shop-gold").textContent = `${S.gold}`;
   const invEl = document.getElementById("shop-inventory");
   if(invEl){
     // Show just the count since the label is now part of the header
@@ -2999,7 +3032,7 @@ function renderShopCrates(){
 
   shopCrates.forEach((crate, i) => {
     const d = document.createElement("div");
-    d.className = "shop-item";
+    d.className = "shop-item card-surface";
     d.style.cssText = "min-width:150px;max-width:180px";
 
     // Crate type icons and colors.  Only two crate types remain: weapon and modifier.
@@ -3083,7 +3116,7 @@ function renderShopBuffCrates(){
 
   shopBuffCrates.forEach((crate, i) => {
     const d = document.createElement("div");
-    d.className = "shop-item";
+    d.className = "shop-item card-surface";
     d.style.cssText = "min-width:150px;max-width:180px";
 
     // Determine effective price with shop discount talents
@@ -3246,6 +3279,7 @@ function renderShopWordBank(){
     const chip = document.createElement("div");
     chip.className = "chip";
     if(word.rarity === R.RUSTY) chip.classList.add("rusty");
+    if(word.type === 'weapon') chip.classList.add('weapon-tile');
 
     const rarityClass = RC[word.rarity] || RC[0];
     const tierText = RN[word.rarity] || "T1";
