@@ -2395,26 +2395,29 @@ function calc(opts={}){
 
     // Determine how this word contributes to base AP and the effective word count.
     // Elemental interactions combine both hero and enemy affinities:
-    //  - If the hero is strong with the element and the enemy is weak to it, apply a 3× multiplier.
-    //  - If either the hero is strong against a neutral enemy or the hero is neutral against a weak enemy, apply a 2× multiplier.
-    //  - If both sides have the same stance (strong vs strong, neutral vs neutral, weak vs weak), apply a 1× multiplier.
-    //  - If the hero is neutral against an enemy that resists the element or the hero is weak against a neutral/strong enemy, apply a 0× multiplier.
+    //  - Strong vs weak: 3×
+    //  - Strong vs neutral: 1.5×
+    //  - Strong vs strong: 1×
+    //  - Neutral vs weak: 2×
+    //  - Neutral vs neutral: 1×
+    //  - Neutral vs strong: 0.5×
+    //  - Weak vs weak: 1×
+    //  - Weak vs neutral/strong: 0×
     let elemMult = 1;
     if(word.elem !== undefined){
       const heroStrong = h.str.includes(word.elem);
       const heroWeak  = h.weak.includes(word.elem);
       const enemyWeak  = e.weak.includes(word.elem);
       const enemyStrong = resists(word.elem);
-      if(heroStrong && enemyWeak){
-        elemMult = 3;
-      } else if((heroStrong && !enemyWeak && !enemyStrong) || (!heroStrong && !heroWeak && enemyWeak)){
-        elemMult = 2;
-      } else if((heroStrong && enemyStrong) || (!heroStrong && !heroWeak && !enemyWeak && !enemyStrong) || (heroWeak && enemyWeak)){
-        elemMult = 1;
-      } else {
-        // Cases: neutral vs strong OR weak vs neutral/strong
-        elemMult = 0;
-      }
+
+      const heroAffinity = heroStrong ? 'strong' : heroWeak ? 'weak' : 'neutral';
+      const enemyAffinity = enemyWeak ? 'weak' : enemyStrong ? 'strong' : 'neutral';
+      const elemMatrix = {
+        strong:  { weak: 3,   neutral: 1.5, strong: 1 },
+        neutral: { weak: 2,   neutral: 1,   strong: 0.5 },
+        weak:    { weak: 1,   neutral: 0,   strong: 0 }
+      };
+      elemMult = elemMatrix[heroAffinity][enemyAffinity];
     }
 
     // Base AP contribution is the tier value times the element multiplier
