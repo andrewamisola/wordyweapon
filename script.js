@@ -149,7 +149,7 @@ const CONSUMABLES=[
      }
      return "No Rare words available.";
    }},
-  {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"Activate to double weapon proficiency for one battle.",
+  {id:"weapon_master_consumable",name:"Weapon Master",cost:10,desc:"Activate to double weapon proficiency during your next battle.",
    use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
   {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
    use:(S)=>{
