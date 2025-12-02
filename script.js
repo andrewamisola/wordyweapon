@@ -1428,7 +1428,9 @@ function updSlots(){
     }
 
     attachDamageTooltip(slot);
-    slot.__tooltipContent = () => getSharedBreakdownContent();
+    slot.__tooltipContent = w
+      ? () => mkTooltip(w, { bare: true })
+      : () => getSharedBreakdownContent();
     const tipEl = slot.querySelector('.tooltip.modal-tooltip, .tooltip');
     if(tipEl) tipEl.innerHTML = slot.__tooltipContent();
   });
