@@ -3334,6 +3334,7 @@ function rollShop(){
     shopCrates.push({
       type: crateType.type,
       name: crateType.name,
+      filter: crateType.filter,
       words: crateWords,
       price: crateType.price,
       // Store the computed quantity so UI and purchase logic reflect the Bulk Discount talent
@@ -3502,11 +3503,17 @@ function renderShopCrates(){
         // Add the crate's words to inventory. If the crate's word list has fewer
         // than qty items (due to filtering), select random additional words of
         // the same type to fill the gap.
-        let wordsToAdd = crate.words;
+        const filterFn = crate.filter || (w => w.type === crate.type);
+        let wordsToAdd = [...crate.words];
         if(wordsToAdd.length < crate.qty){
-          const availableWords = WORDS.filter(w => w.type === crate.type);
+          const availableWords = WORDS.filter(filterFn);
           const neededExtras = crate.qty - wordsToAdd.length;
-          const extras = shuf([...availableWords]).slice(0, neededExtras);
+          const pool = shuf([...availableWords]);
+          const extras = [];
+          while(extras.length < neededExtras){
+            if(pool.length === 0) pool.push(...shuf([...availableWords]));
+            extras.push(pool.pop());
+          }
           wordsToAdd = [...wordsToAdd, ...extras];
         }
         wordsToAdd.forEach(w => {
