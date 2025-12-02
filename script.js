@@ -3297,21 +3297,33 @@ function rollShop(){
 
   crateTypes.forEach(crateType => {
     let availableWords = WORDS.filter(crateType.filter);
+    const highTierPool = availableWords.filter(w => (RRANK[w.rarity] || 0) >= 2);
     // Apply rarity weights: T1=60%, T2=30%, T3=10% (6:3:1 ratio)
-      const weightedPool = [];
-      availableWords.forEach(w => {
-        const rank = RRANK[w.rarity] || 0;
-        // T1 (rank 0) appears 6 times, T2 (rank 2) appears 3 times, T3 (rank ≥3) appears once
-        const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
-        for(let i = 0; i < weight; i++) weightedPool.push(w);
-      });
-      availableWords = weightedPool;
+    const weightedPool = [];
+    availableWords.forEach(w => {
+      const rank = RRANK[w.rarity] || 0;
+      // T1 (rank 0) appears 6 times, T2 (rank 2) appears 3 times, T3 (rank ≥3) appears once
+      const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+      for(let i = 0; i < weight; i++) weightedPool.push(w);
+    });
+    availableWords = weightedPool;
     // Determine quantity.  Bulk Discount talent adds +1 to all crate quantities.
     let qty = crateType.qty;
     if(S.talents && S.talents.includes('bulk_discount')){
       qty += 1;
     }
-    const crateWords = shuf([...availableWords]).slice(0, qty);
+    let crateWords = shuf([...availableWords]).slice(0, qty);
+    // Guarantee at least one T2/T3 pick when such words exist to keep crates exciting
+    const hasHighTier = crateWords.some(w => (RRANK[w.rarity] || 0) >= 2);
+    if(!hasHighTier && highTierPool.length > 0){
+      const pityWord = shuf([...highTierPool])[0];
+      if(crateWords.length > 0){
+        const replaceIdx = Math.random() * crateWords.length | 0;
+        crateWords[replaceIdx] = pityWord;
+      } else {
+        crateWords = [pityWord];
+      }
+    }
     shopCrates.push({
       type: crateType.type,
       name: crateType.name,
