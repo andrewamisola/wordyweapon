@@ -234,9 +234,41 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .tooltip-line.dim{color:#6b7280}
 .tooltip-elem{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;margin-top:4px}
 #buttons{display:flex;justify-content:center;gap:10px;margin-top:14px;align-items:center}
-#forge-btn{background:linear-gradient(180deg,#3d5a37,#2d4a27);border-color:#4ade8055;font-size:15px;padding:12px 28px;position:relative;overflow:hidden}
+#forge-btn{
+  background:linear-gradient(180deg,#3d5a37,#2d4a27);
+  border-color:#4ade8055;
+  font-size:15px;
+  padding:12px 28px;
+  position:relative;
+  overflow:hidden;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
 #forge-btn:hover:not(:disabled){background:linear-gradient(180deg,#4d6a47,#3d5a37);transform:scale(1.02)}
 #forge-btn:active:not(:disabled){transform:scale(0.98)}
+
+#forge-btn .emoji-compact{
+  font-size:1.05em;
+  transform:scale(0.82);
+}
+
+.emoji-compact{
+  display:inline-block;
+  line-height:1;
+  transform:scale(0.9);
+  transform-origin:center;
+}
+
+.crate-icon{
+  font-size:28px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:scale(0.9);
+  transform-origin:center;
+}
 .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s,visibility .3s}
 #pause-menu{z-index:200}
 .overlay.show{display:flex;opacity:1;pointer-events:auto;visibility:visible}
