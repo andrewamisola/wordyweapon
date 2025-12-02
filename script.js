@@ -426,30 +426,270 @@ function getBaseAP(word){
 // === WEAPON SVG ===
 const WEAPON_SVG={
   // SLASH CATEGORY
-  sword:{base:`<path d="M50 10 L55 15 L55 85 L60 90 L60 100 L55 100 L55 105 L60 110 L60 120 L40 120 L40 110 L45 105 L45 100 L40 100 L40 90 L45 85 L45 15 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M50 15 L52 20 L52 80 L50 82 L48 80 L48 20 Z" fill="#ffffff33"/>`,flair1:`<circle cx="50" cy="95" r="4" fill="FLAIR1COLOR"/>`,flair2:`<path d="M35 25 L30 20 M65 25 L70 20 M35 35 L28 33 M65 35 L72 33" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"/>`},
-  greatsword:{base:`<path d="M50 5 L58 12 L58 82 L62 88 L62 100 L58 100 L58 107 L62 112 L62 120 L38 120 L38 112 L42 107 L42 100 L38 100 L38 88 L42 82 L42 12 Z" fill="BASECOLOR" stroke="#333" stroke-width="2"/><path d="M50 10 L54 16 L54 78 L50 82 L46 78 L46 16 Z" fill="#ffffff33"/><rect x="36" y="88" width="28" height="5" fill="#333"/>`,flair1:`<circle cx="50" cy="96" r="5" fill="FLAIR1COLOR"/>`,flair2:`<path d="M32 22 L26 17 M68 22 L74 17 M32 38 L24 35 M68 38 L76 35" stroke="FLAIR2COLOR" stroke-width="2.5" stroke-linecap="round"/>`},
-  claymore:{base:`<path d="M50 3 L60 10 L60 80 L65 86 L65 98 L60 98 L60 106 L65 112 L65 122 L35 122 L35 112 L40 106 L40 98 L35 98 L35 86 L40 80 L40 10 Z" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><path d="M50 8 L56 14 L56 76 L50 82 L44 76 L44 14 Z" fill="#ffffff44"/><rect x="33" y="86" width="34" height="6" fill="#444"/><path d="M25 15 L35 10 M75 15 L65 10" stroke="BASECOLOR" stroke-width="4"/>`,flair1:`<circle cx="50" cy="96" r="6" fill="FLAIR1COLOR"/><circle cx="50" cy="108" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="20" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="20" r="5" fill="FLAIR2COLOR"/><circle cx="28" cy="40" r="4" fill="FLAIR2COLOR"/><circle cx="72" cy="40" r="4" fill="FLAIR2COLOR"/>`},
+  sword:{base:`<defs>
+    <filter id="sword-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="sword-root" filter="url(#sword-drop)">
+    <path id="blade-shadow" d="M50 10 L57 18 L57 90 L62 96 L62 108 L57 108 L57 116 L62 122 L62 126 L38 126 L38 122 L43 116 L43 108 L38 108 L38 96 L43 90 L43 18 Z" fill="#0b1021" opacity="0.3"/>
+    <path id="blade-outline" d="M50 8 L56 15 L56 92 L60 98 L60 110 L56 110 L56 118 L60 124 L60 128 L40 128 L40 124 L44 118 L44 110 L40 110 L40 98 L44 92 L44 15 Z" fill="#111827"/>
+    <path id="blade-base" d="M50 10 L55 16 L55 90 L59 96 L59 107 L55 107 L55 115 L58 120 L58 124 L42 124 L45 115 L41 107 L41 96 L45 90 L45 16 Z" fill="BASECOLOR" stroke="#0f172a" stroke-width="1.4"/>
+    <path id="blade-highlight" d="M51.5 18 L53 21 L53 88 L51.5 90.5 L48.5 88 L48.5 21 Z" fill="#ffffff66"/>
+    <path id="blade-ridge" d="M50 20 L52.5 23 L52.5 86 L50 88.5 L47.5 86 L47.5 23 Z" fill="#00000030"/>
+    <path id="guard-base" d="M36 90 L64 90 L60 94 L40 94 Z" fill="#b68c3f" stroke="#1f1305" stroke-width="1"/>
+    <path id="guard-shadow" d="M36 90 L64 90 L60 94 L40 94 Z" fill="#000" opacity="0.18"/>
+    <rect id="grip-core" x="45" y="94" width="10" height="24" rx="2" fill="#312322" stroke="#0f0f0f" stroke-width="1"/>
+    <path id="grip-bands" d="M45 98 H55 M45 104 H55 M45 110 H55 M45 116 H55" stroke="#7c6f6f" stroke-width="1.5"/>
+    <circle id="pommel" cx="50" cy="120" r="5" fill="#c8a75c" stroke="#403116" stroke-width="1"/>
+  </g>
+  <g id="fx-fiery" style="display:none"><path d="M42 32 Q50 12 58 32 Q50 18 42 32 Z" fill="#f97316" opacity="0.65"/></g>`,flair1:`<g id="sword-gem"><circle id="gem-core" cx="50" cy="98" r="5.5" fill="FLAIR1COLOR" stroke="#1f2937" stroke-width="1"/><path id="gem-gloss" d="M48 95 Q50 92 52 95" fill="#fff9"/></g>`,flair2:`<g id="sword-etch" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M33 30 L27 24"/><path d="M67 30 L73 24"/><path d="M33 40 L26 38"/><path d="M67 40 L74 38"/></g>`},
+  greatsword:{base:`<defs>
+    <filter id="greatsword-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="3" dy="2" stdDeviation="0" flood-color="#0d1117" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g id="greatsword-root" filter="url(#greatsword-drop)">
+    <path id="blade-shadow" d="M50 4 L60 14 L60 86 L66 93 L66 107 L60 107 L60 115 L66 123 L66 130 L34 130 L34 123 L40 115 L40 107 L34 107 L34 93 L40 86 L40 14 Z" fill="#0b1021" opacity="0.32"/>
+    <path id="blade-outline" d="M50 2 L58 12 L58 84 L63 91 L63 105 L58 105 L58 114 L63 121 L63 129 L37 129 L37 121 L42 114 L42 105 L37 105 L37 91 L42 84 L42 12 Z" fill="#0f172a"/>
+    <path id="blade-base" d="M50 4.5 L57 13.5 L57 84 L62 90.5 L62 103.5 L57 103.5 L57 112 L61 118.5 L61 126.5 L39 126.5 L43 112 L39 103.5 L39 90.5 L43 84 L43 13.5 Z" fill="BASECOLOR" stroke="#111827" stroke-width="1.6"/>
+    <path id="blade-highlight" d="M51.5 12 L54.5 16 L54.5 82 L51.5 85 L48.5 82 L48.5 16 Z" fill="#f8fafc77"/>
+    <path id="blade-ridge" d="M50 16 L53 20 L53 80 L50 83.5 L47 80 L47 20 Z" fill="#0000002d"/>
+    <rect id="crossguard" x="32" y="86" width="36" height="7" rx="2" fill="#b88f3f" stroke="#1f1305" stroke-width="1"/>
+    <path id="guard-shadow" d="M32 90 H68" stroke="#000" stroke-width="3" opacity="0.2"/>
+    <rect id="grip-core" x="44" y="93" width="12" height="24" rx="2.2" fill="#2d2421" stroke="#0f0f0f" stroke-width="1"/>
+    <path id="grip-bands" d="M44 97 H56 M44 103 H56 M44 109 H56 M44 115 H56" stroke="#80736e" stroke-width="1.6"/>
+    <circle id="pommel" cx="50" cy="120.5" r="6" fill="#c7a75d" stroke="#3e3215" stroke-width="1.2"/>
+  </g>
+  <g id="fx-electric" style="display:none"><path d="M36 32 L48 18 L46 30 L60 18 L50 34" fill="#38bdf8" opacity="0.65"/></g>`,flair1:`<g id="greatsword-gem"><circle cx="50" cy="100" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><path d="M48 97 Q50 94 52 97" fill="#fff9"/></g>`,flair2:`<g id="greatsword-runes" stroke="FLAIR2COLOR" stroke-width="2.6" stroke-linecap="round"><path d="M30 24 L24 19"/><path d="M70 24 L76 19"/><path d="M30 38 L22 35"/><path d="M70 38 L78 35"/></g>`},
+  claymore:{base:`<defs>
+    <filter id="claymore-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#0d1117" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g id="claymore-root" filter="url(#claymore-drop)">
+    <path id="blade-shadow" d="M50 3 L62 14 L62 86 L69 94 L69 110 L62 110 L62 119 L68 127 L68 134 L32 134 L32 127 L38 119 L38 110 L31 110 L31 94 L38 86 L38 14 Z" fill="#0b1021" opacity="0.35"/>
+    <path id="blade-outline" d="M50 1 L60 12 L60 84 L67 92 L67 108 L60 108 L60 118 L66 125 L66 133 L34 133 L40 118 L34 108 L34 92 L40 84 L40 12 Z" fill="#0f172a"/>
+    <path id="blade-base" d="M50 3.5 L59 13.5 L59 84 L65 91.5 L65 105.5 L59 105.5 L59 116 L64 123.5 L64 131.5 L36 131.5 L41 116 L36 105.5 L36 91.5 L41 84 L41 13.5 Z" fill="BASECOLOR" stroke="#111827" stroke-width="1.7"/>
+    <path id="blade-highlight" d="M52 12 L55.5 16 L55.5 82 L52 86 L48.5 82 L48.5 16 Z" fill="#ffffff66"/>
+    <path id="blade-ridge" d="M50 18 L53 22 L53 78 L50 81.5 L47 78 L47 22 Z" fill="#00000030"/>
+    <rect id="crossguard" x="30" y="86" width="40" height="8" rx="2.5" fill="#c29c46" stroke="#2c1b07" stroke-width="1.1"/>
+    <path id="guard-shadow" d="M30 90 H70" stroke="#000" stroke-width="3" opacity="0.22"/>
+    <rect id="grip-core" x="42" y="94" width="16" height="26" rx="2.2" fill="#312521" stroke="#0f0f0f" stroke-width="1"/>
+    <path id="grip-bands" d="M42 98 H58 M42 104 H58 M42 110 H58 M42 116 H58" stroke="#8b7e78" stroke-width="1.6"/>
+    <rect id="pommel" x="44" y="122" width="12" height="8" rx="2" fill="#d3b36a" stroke="#3f3215" stroke-width="1"/>
+  </g>
+  <g id="fx-freezing" style="display:none"><path d="M44 30 L50 16 L56 30 L62 24 L58 38 L42 38 L38 24 Z" fill="#60a5fa" opacity="0.6"/></g>`,flair1:`<g id="claymore-gems"><circle cx="50" cy="100" r="6.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><circle cx="50" cy="112" r="4.2" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 97 Q50 94 52 97" fill="#fff9"/></g>`,flair2:`<g id="claymore-runes" fill="none" stroke="FLAIR2COLOR" stroke-width="2.6" stroke-linecap="round"><path d="M27 18 L35 12"/><path d="M73 18 L65 12"/><path d="M24 36 L34 32"/><path d="M76 36 L66 32"/></g>`},
 
   // PIERCE CATEGORY
-  bow:{base:`<path d="M50 10 Q20 65 50 120 Q80 65 50 10" fill="none" stroke="BASECOLOR" stroke-width="6" stroke-linecap="round"/><path d="M50 10 Q25 65 50 120" fill="none" stroke="#ffffff22" stroke-width="3"/><line x1="50" y1="15" x2="50" y2="115" stroke="#c9a227" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="65" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="50" cy="105" r="4" fill="FLAIR2COLOR"/>`},
-  longbow:{base:`<path d="M50 5 Q15 65 50 125 Q85 65 50 5" fill="none" stroke="BASECOLOR" stroke-width="7" stroke-linecap="round"/><path d="M50 5 Q20 65 50 125" fill="none" stroke="#ffffff22" stroke-width="4"/><line x1="50" y1="10" x2="50" y2="120" stroke="#c9a227" stroke-width="2"/><circle cx="50" cy="10" r="3" fill="#c9a227"/><circle cx="50" cy="120" r="3" fill="#c9a227"/>`,flair1:`<circle cx="50" cy="65" r="7" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="30" r="5" fill="FLAIR2COLOR"/><circle cx="50" cy="100" r="5" fill="FLAIR2COLOR"/>`},
-  warbow:{base:`<path d="M50 3 Q10 65 50 127 Q90 65 50 3" fill="none" stroke="BASECOLOR" stroke-width="8" stroke-linecap="round"/><path d="M50 3 Q15 65 50 127" fill="none" stroke="#ffffff33" stroke-width="5"/><line x1="50" y1="8" x2="50" y2="122" stroke="#d4a532" stroke-width="2.5"/><path d="M45 8 L50 3 L55 8" fill="#d4a532"/><path d="M45 122 L50 127 L55 122" fill="#d4a532"/><rect x="48" y="60" width="4" height="10" fill="#c9a227"/>`,flair1:`<circle cx="50" cy="65" r="8" fill="FLAIR1COLOR"/><circle cx="50" cy="50" r="4" fill="FLAIR1COLOR"/><circle cx="50" cy="80" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="50" cy="20" r="6" fill="FLAIR2COLOR"/><circle cx="50" cy="110" r="6" fill="FLAIR2COLOR"/><circle cx="40" cy="65" r="4" fill="FLAIR2COLOR"/><circle cx="60" cy="65" r="4" fill="FLAIR2COLOR"/>`},
+  bow:{base:`<defs>
+    <filter id="bow-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g id="bow-root" filter="url(#bow-drop)">
+    <path id="limb-shadow" d="M52 12 Q26 65 52 118 Q78 65 52 12" fill="none" stroke="#0b1021" stroke-width="8" stroke-linecap="round" opacity="0.32"/>
+    <path id="limb-outline" d="M50 10 Q24 65 50 120 Q76 65 50 10" fill="none" stroke="#0f172a" stroke-width="7" stroke-linecap="round"/>
+    <path id="limb-base" d="M50 11 Q26 65 50 119 Q74 65 50 11" fill="none" stroke="BASECOLOR" stroke-width="5.5" stroke-linecap="round"/>
+    <path id="limb-highlight" d="M52 18 Q32 65 52 112" fill="none" stroke="#ffffff66" stroke-width="2.4" stroke-linecap="round"/>
+    <line id="bowstring" x1="50" y1="16" x2="50" y2="114" stroke="#c9a227" stroke-width="1.6"/>
+    <circle id="nock" cx="50" cy="16" r="3" fill="#c9a227" stroke="#0f172a" stroke-width="0.6"/>
+    <circle id="tip" cx="50" cy="114" r="3" fill="#c9a227" stroke="#0f172a" stroke-width="0.6"/>
+    <path id="grip-wrap" d="M46 62 H54 Q56 65 54 68 H46 Q44 65 46 62 Z" fill="#3a2f23" stroke="#0f0f0f" stroke-width="0.8"/>
+  </g>
+  <g id="fx-fiery" style="display:none"><path d="M44 50 Q50 40 56 50 Q50 44 44 50 Z" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="bow-medallion"><circle cx="50" cy="65" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 62 Q50 59 52 62" fill="#fff9"/></g>`,flair2:`<g id="bow-charms" fill="FLAIR2COLOR"><circle cx="50" cy="30" r="4"/><circle cx="50" cy="100" r="4"/></g>`},
+  longbow:{base:`<defs>
+    <filter id="longbow-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g id="longbow-root" filter="url(#longbow-drop)">
+    <path id="limb-shadow" d="M52 8 Q20 66 52 124 Q84 66 52 8" fill="none" stroke="#0b1021" stroke-width="9" stroke-linecap="round" opacity="0.32"/>
+    <path id="limb-outline" d="M50 6 Q18 66 50 126 Q82 66 50 6" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round"/>
+    <path id="limb-base" d="M50 7 Q20 66 50 125 Q80 66 50 7" fill="none" stroke="BASECOLOR" stroke-width="6" stroke-linecap="round"/>
+    <path id="limb-highlight" d="M52 14 Q28 66 52 118" fill="none" stroke="#ffffff66" stroke-width="2.6" stroke-linecap="round"/>
+    <line id="bowstring" x1="50" y1="12" x2="50" y2="122" stroke="#c9a227" stroke-width="2"/>
+    <circle id="nock" cx="50" cy="12" r="3" fill="#c9a227" stroke="#0f172a" stroke-width="0.6"/>
+    <circle id="tip" cx="50" cy="122" r="3" fill="#c9a227" stroke="#0f172a" stroke-width="0.6"/>
+    <rect id="grip-core" x="44" y="62" width="12" height="10" rx="2" fill="#3a2f23" stroke="#0f0f0f" stroke-width="0.8"/>
+  </g>
+  <g id="fx-vines" style="display:none"><path d="M46 40 Q50 48 54 40 Q50 46 46 40 Z" fill="#22c55e" opacity="0.6"/></g>`,flair1:`<g id="longbow-medallion"><circle cx="50" cy="66" r="7" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><path d="M47.5 62.5 Q50 59 52.5 62.5" fill="#fff9"/></g>`,flair2:`<g id="longbow-charms" fill="FLAIR2COLOR"><circle cx="50" cy="32" r="5"/><circle cx="50" cy="100" r="5"/></g>`},
+  warbow:{base:`<defs>
+    <filter id="warbow-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <g id="warbow-root" filter="url(#warbow-drop)">
+    <path id="limb-shadow" d="M52 5 Q16 66 52 127 Q88 66 52 5" fill="none" stroke="#0b1021" stroke-width="10" stroke-linecap="round" opacity="0.34"/>
+    <path id="limb-outline" d="M50 3 Q14 66 50 129 Q86 66 50 3" fill="none" stroke="#0f172a" stroke-width="9" stroke-linecap="round"/>
+    <path id="limb-base" d="M50 4 Q16 66 50 128 Q84 66 50 4" fill="none" stroke="BASECOLOR" stroke-width="7" stroke-linecap="round"/>
+    <path id="limb-highlight" d="M52 12 Q24 66 52 120" fill="none" stroke="#ffffff66" stroke-width="3" stroke-linecap="round"/>
+    <line id="bowstring" x1="50" y1="10" x2="50" y2="122" stroke="#d4a532" stroke-width="2.4"/>
+    <path id="tip-top" d="M46 10 L50 4 L54 10 Z" fill="#d4a532" stroke="#0f172a" stroke-width="0.8"/>
+    <path id="tip-bottom" d="M46 122 L50 128 L54 122 Z" fill="#d4a532" stroke="#0f172a" stroke-width="0.8"/>
+    <rect id="grip-core" x="43" y="60" width="14" height="12" rx="2" fill="#3a2f23" stroke="#0f0f0f" stroke-width="1"/>
+    <rect id="grip-metal" x="48" y="60" width="4" height="12" fill="#c9a227"/>
+  </g>
+  <g id="fx-voltaic" style="display:none"><path d="M44 48 L52 38 L50 48 L58 38 L54 54" fill="#38bdf8" opacity="0.65"/></g>`,flair1:`<g id="warbow-gems"><circle cx="50" cy="66" r="8" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><circle cx="50" cy="50" r="4.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><circle cx="50" cy="82" r="4.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/></g>`,flair2:`<g id="warbow-charms" fill="FLAIR2COLOR"><circle cx="50" cy="22" r="6"/><circle cx="50" cy="110" r="6"/><circle cx="40" cy="66" r="4"/><circle cx="60" cy="66" r="4"/></g>`},
 
   // MAGIC CATEGORY
-  wand:{base:`<rect x="48" y="60" width="4" height="60" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><circle cx="50" cy="25" r="18" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="25" r="10" fill="#ffffff22"/>`,flair1:`<circle cx="50" cy="25" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="35" cy="15" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="15" r="3" fill="FLAIR2COLOR"/><circle cx="35" cy="35" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="35" r="3" fill="FLAIR2COLOR"/>`},
-  staff:{base:`<rect x="47" y="40" width="6" height="80" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1.5"/><circle cx="50" cy="20" r="22" fill="BASECOLOR" stroke="#333" stroke-width="2"/><circle cx="50" cy="20" r="14" fill="#ffffff22"/><path d="M35 110 L50 105 L65 110 L50 120 Z" fill="#8B4513" stroke="#3a2a1a" stroke-width="1"/>`,flair1:`<circle cx="50" cy="20" r="8" fill="FLAIR1COLOR"/><circle cx="50" cy="10" r="4" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="10" r="4" fill="FLAIR2COLOR"/><circle cx="70" cy="10" r="4" fill="FLAIR2COLOR"/><circle cx="30" cy="30" r="4" fill="FLAIR2COLOR"/><circle cx="70" cy="30" r="4" fill="FLAIR2COLOR"/>`},
-  scepter:{base:`<rect x="46" y="45" width="8" height="75" fill="#8B6914" stroke="#5a4307" stroke-width="1.5"/><circle cx="50" cy="18" r="25" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><circle cx="50" cy="18" r="16" fill="#ffffff33"/><path d="M30 15 L50 8 L70 15" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M30 21 L50 28 L70 21" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><rect x="42" y="115" width="16" height="8" fill="#d4af37" stroke="#8B6914" stroke-width="1"/>`,flair1:`<circle cx="50" cy="18" r="10" fill="FLAIR1COLOR"/><circle cx="50" cy="8" r="5" fill="FLAIR1COLOR"/><circle cx="50" cy="28" r="5" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="28" cy="8" r="5" fill="FLAIR2COLOR"/><circle cx="72" cy="8" r="5" fill="FLAIR2COLOR"/><circle cx="25" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="75" cy="25" r="4" fill="FLAIR2COLOR"/><circle cx="35" cy="18" r="3" fill="FLAIR2COLOR"/><circle cx="65" cy="18" r="3" fill="FLAIR2COLOR"/>`},
+  wand:{base:`<defs>
+    <filter id="wand-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <g id="wand-root" filter="url(#wand-drop)">
+    <rect id="wand-shaft" x="47.5" y="60" width="5" height="62" rx="2" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/>
+    <path id="wand-shadow" d="M49 60 h3 v62 h-3z" fill="#0b1021" opacity="0.18"/>
+    <circle id="focus-outline" cx="50" cy="26" r="20" fill="#0f172a"/>
+    <circle id="focus-base" cx="50" cy="25" r="18" fill="BASECOLOR" stroke="#111827" stroke-width="1.4"/>
+    <path id="focus-highlight" d="M50 10 A15 15 0 0 1 63 23 Q50 18 37 23 A15 15 0 0 1 50 10 Z" fill="#ffffff55"/>
+    <path id="focus-shadow" d="M50 25 A18 18 0 0 1 62 35" fill="none" stroke="#0b1021" stroke-width="3" opacity="0.2"/>
+    <path id="grip-bands" d="M47 88 H53 M47 94 H53 M47 100 H53" stroke="#b19772" stroke-width="1.4"/>
+  </g>
+  <g id="fx-glimmer" style="display:none"><circle cx="50" cy="8" r="4" fill="#a855f7" opacity="0.7"/><circle cx="38" cy="20" r="3" fill="#a855f7" opacity="0.5"/></g>`,flair1:`<g id="wand-core"><circle cx="50" cy="25" r="7" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 22 Q50 19 52 22" fill="#fff9"/></g>`,flair2:`<g id="wand-orbs" fill="FLAIR2COLOR"><circle cx="35" cy="15" r="3"/><circle cx="65" cy="15" r="3"/><circle cx="35" cy="35" r="3"/><circle cx="65" cy="35" r="3"/></g>`},
+  staff:{base:`<defs>
+    <filter id="staff-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <g id="staff-root" filter="url(#staff-drop)">
+    <rect id="staff-shaft" x="46.5" y="40" width="7" height="84" rx="2.5" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1.2"/>
+    <path id="shaft-shadow" d="M52 40 v84" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <circle id="head-outline" cx="50" cy="22" r="24" fill="#0f172a"/>
+    <circle id="head-base" cx="50" cy="20" r="22" fill="BASECOLOR" stroke="#111827" stroke-width="1.6"/>
+    <circle id="head-highlight" cx="50" cy="16" r="14" fill="#ffffff55"/>
+    <path id="head-shadow" d="M50 20 A18 18 0 0 1 62 30" fill="none" stroke="#0b1021" stroke-width="3" opacity="0.2"/>
+    <path id="foot-cap" d="M35 118 L50 113 L65 118 L50 126 Z" fill="#8B4513" stroke="#3a2a1a" stroke-width="1"/>
+  </g>
+  <g id="fx-astral" style="display:none"><path d="M36 12 L42 4 L48 12 L54 4 L60 12" fill="#38bdf8" opacity="0.65"/></g>`,flair1:`<g id="staff-cores"><circle cx="50" cy="20" r="9" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.1"/><circle cx="50" cy="10" r="4.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="0.9"/></g>`,flair2:`<g id="staff-orbs" fill="FLAIR2COLOR"><circle cx="30" cy="10" r="4"/><circle cx="70" cy="10" r="4"/><circle cx="30" cy="30" r="4"/><circle cx="70" cy="30" r="4"/></g>`},
+  scepter:{base:`<defs>
+    <filter id="scepter-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="scepter-root" filter="url(#scepter-drop)">
+    <rect id="scepter-shaft" x="45" y="46" width="10" height="78" rx="2.5" fill="#8B6914" stroke="#5a4307" stroke-width="1.3"/>
+    <path id="shaft-shadow" d="M54 46 v78" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <circle id="crown-outline" cx="50" cy="18" r="26" fill="#0f172a"/>
+    <circle id="crown-base" cx="50" cy="18" r="24" fill="BASECOLOR" stroke="#111827" stroke-width="1.8"/>
+    <path id="crown-crest" d="M28 16 L50 7 L72 16" fill="BASECOLOR" stroke="#111827" stroke-width="1.3"/>
+    <path id="crown-ridge" d="M28 22 L50 29 L72 22" fill="BASECOLOR" stroke="#111827" stroke-width="1.3"/>
+    <path id="crown-highlight" d="M50 2 A16 16 0 0 1 65 14 Q50 10 35 14 A16 16 0 0 1 50 2 Z" fill="#ffffff55"/>
+    <rect id="pommel" x="42" y="122" width="16" height="8" rx="2" fill="#d4af37" stroke="#8B6914" stroke-width="1"/>
+  </g>
+  <g id="fx-fiery" style="display:none"><path d="M40 26 Q50 6 60 26 Q50 14 40 26 Z" fill="#f97316" opacity="0.65"/></g>`,flair1:`<g id="scepter-gems"><circle cx="50" cy="18" r="11" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><circle cx="50" cy="8" r="5.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><circle cx="50" cy="28" r="5.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/></g>`,flair2:`<g id="scepter-orbs" fill="FLAIR2COLOR"><circle cx="28" cy="8" r="5"/><circle cx="72" cy="8" r="5"/><circle cx="25" cy="25" r="4"/><circle cx="75" cy="25" r="4"/><circle cx="35" cy="18" r="3.2"/><circle cx="65" cy="18" r="3.2"/></g>`},
 
   // BLUNT CATEGORY
-  mace:{base:`<path d="M45 70 L45 120 L55 120 L55 70 Z" fill="#8B4513" stroke="#333" stroke-width="1"/><circle cx="50" cy="40" r="28" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="40" r="18" fill="#ffffff15"/>`,flair1:`<circle cx="50" cy="40" r="8" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="30" cy="25" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="25" r="5" fill="FLAIR2COLOR"/><circle cx="30" cy="55" r="5" fill="FLAIR2COLOR"/><circle cx="70" cy="55" r="5" fill="FLAIR2COLOR"/>`},
-  warhammer:{base:`<path d="M44 75 L44 120 L56 120 L56 75 Z" fill="#8B4513" stroke="#333" stroke-width="1.5"/><rect x="30" y="35" width="40" height="35" fill="BASECOLOR" stroke="#333" stroke-width="2"/><rect x="34" y="40" width="32" height="25" fill="#ffffff15"/><path d="M25 40 L30 35 M25 65 L30 70 M75 40 L70 35 M75 65 L70 70" stroke="#333" stroke-width="2"/>`,flair1:`<circle cx="50" cy="52" r="9" fill="FLAIR1COLOR"/>`,flair2:`<rect x="35" y="45" width="6" height="6" fill="FLAIR2COLOR"/><rect x="59" y="45" width="6" height="6" fill="FLAIR2COLOR"/><rect x="35" y="57" width="6" height="6" fill="FLAIR2COLOR"/><rect x="59" y="57" width="6" height="6" fill="FLAIR2COLOR"/>`},
-  maul:{base:`<path d="M43 80 L43 122 L57 122 L57 80 Z" fill="#6d5b43" stroke="#3a2a1a" stroke-width="2"/><rect x="25" y="30" width="50" height="45" fill="BASECOLOR" stroke="#333" stroke-width="2.5"/><rect x="30" y="36" width="40" height="33" fill="#ffffff18"/><path d="M20 35 L25 30 M20 70 L25 75 M80 35 L75 30 M80 70 L75 75" stroke="#333" stroke-width="3"/><rect x="38" y="50" width="24" height="10" fill="#444"/>`,flair1:`<circle cx="50" cy="52" r="10" fill="FLAIR1COLOR"/><circle cx="50" cy="42" r="5" fill="FLAIR1COLOR"/><circle cx="50" cy="62" r="5" fill="FLAIR1COLOR"/>`,flair2:`<rect x="32" y="38" width="8" height="8" fill="FLAIR2COLOR"/><rect x="60" y="38" width="8" height="8" fill="FLAIR2COLOR"/><rect x="32" y="59" width="8" height="8" fill="FLAIR2COLOR"/><rect x="60" y="59" width="8" height="8" fill="FLAIR2COLOR"/><circle cx="50" cy="32" r="4" fill="FLAIR2COLOR"/><circle cx="50" cy="72" r="4" fill="FLAIR2COLOR"/>`},
+  mace:{base:`<defs>
+    <filter id="mace-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="mace-root" filter="url(#mace-drop)">
+    <path id="haft" d="M45 72 L45 126 L55 126 L55 72 Z" fill="#8B4513" stroke="#111827" stroke-width="1"/>
+    <path id="haft-shadow" d="M52 72 V126" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <circle id="head-outline" cx="50" cy="42" r="32" fill="#0f172a"/>
+    <circle id="head-base" cx="50" cy="40" r="30" fill="BASECOLOR" stroke="#111827" stroke-width="1.5"/>
+    <circle id="head-highlight" cx="50" cy="32" r="18" fill="#ffffff22"/>
+    <path id="head-shadow" d="M50 40 A22 22 0 0 1 66 52" fill="none" stroke="#0b1021" stroke-width="4" opacity="0.18"/>
+    <circle id="pommel" cx="50" cy="122" r="5" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
+  </g>
+  <g id="fx-spikes" style="display:none"><path d="M50 10 L54 2 L58 10 Z" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="mace-gem"><circle cx="50" cy="40" r="9" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.1"/><path d="M47 36 Q50 33 53 36" fill="#fff9"/></g>`,flair2:`<g id="mace-studs" fill="FLAIR2COLOR"><circle cx="30" cy="25" r="5"/><circle cx="70" cy="25" r="5"/><circle cx="30" cy="55" r="5"/><circle cx="70" cy="55" r="5"/></g>`},
+  warhammer:{base:`<defs>
+    <filter id="warhammer-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="warhammer-root" filter="url(#warhammer-drop)">
+    <path id="haft" d="M44 78 L44 126 L56 126 L56 78 Z" fill="#8B4513" stroke="#111827" stroke-width="1.1"/>
+    <path id="haft-shadow" d="M52 78 V126" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <rect id="head-outline" x="28" y="36" width="44" height="38" rx="4" fill="#0f172a"/>
+    <rect id="head-base" x="30" y="38" width="40" height="34" rx="4" fill="BASECOLOR" stroke="#111827" stroke-width="1.6"/>
+    <rect id="head-highlight" x="34" y="42" width="32" height="26" rx="3" fill="#ffffff22"/>
+    <path id="head-shadow" d="M30 45 H70" stroke="#0b1021" stroke-width="3" opacity="0.2"/>
+    <rect id="pommel" x="47" y="118" width="6" height="10" rx="1.4" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
+  </g>
+  <g id="fx-runes" style="display:none"><path d="M34 48 L40 42 L40 54 Z" fill="#38bdf8" opacity="0.65"/></g>`,flair1:`<g id="warhammer-gem"><circle cx="50" cy="55" r="9.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><path d="M47 50 Q50 47 53 50" fill="#fff9"/></g>`,flair2:`<g id="warhammer-studs" fill="FLAIR2COLOR"><rect x="34" y="44" width="7" height="7" rx="1.2"/><rect x="59" y="44" width="7" height="7" rx="1.2"/><rect x="34" y="57" width="7" height="7" rx="1.2"/><rect x="59" y="57" width="7" height="7" rx="1.2"/></g>`},
+  maul:{base:`<defs>
+    <filter id="maul-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="maul-root" filter="url(#maul-drop)">
+    <path id="haft" d="M43 84 L43 128 L57 128 L57 84 Z" fill="#6d5b43" stroke="#111827" stroke-width="1.2"/>
+    <path id="haft-shadow" d="M52 84 V128" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <rect id="head-outline" x="22" y="32" width="56" height="50" rx="6" fill="#0f172a"/>
+    <rect id="head-base" x="24" y="34" width="52" height="46" rx="6" fill="BASECOLOR" stroke="#111827" stroke-width="1.8"/>
+    <rect id="head-highlight" x="30" y="40" width="40" height="34" rx="4" fill="#ffffff22"/>
+    <path id="head-shadow" d="M24 44 H76" stroke="#0b1021" stroke-width="4" opacity="0.18"/>
+    <rect id="central-band" x="38" y="50" width="24" height="12" rx="2" fill="#383839"/>
+    <rect id="pommel" x="46" y="120" width="8" height="10" rx="2" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
+  </g>
+  <g id="fx-quake" style="display:none"><path d="M32 38 L40 30 L36 42 L48 30 L44 46" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="maul-gems"><circle cx="50" cy="52" r="10" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1.2"/><circle cx="50" cy="42" r="5.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><circle cx="50" cy="62" r="5.5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/></g>`,flair2:`<g id="maul-studs" fill="FLAIR2COLOR"><rect x="30" y="40" width="8" height="8" rx="1.5"/><rect x="62" y="40" width="8" height="8" rx="1.5"/><rect x="30" y="62" width="8" height="8" rx="1.5"/><rect x="62" y="62" width="8" height="8" rx="1.5"/><circle cx="50" cy="32" r="4"/><circle cx="50" cy="74" r="4"/></g>`},
 
   // OLD WEAPONS (keeping for backwards compatibility)
-  stick:{base:`<path d="M48 15 Q45 60 48 120 L52 120 Q55 60 52 15 Z" fill="#5a4a3a" stroke="#3a2a1a" stroke-width="1"/><path d="M46 30 L44 28 M54 50 L57 48 M47 80 L44 82" stroke="#3a2a1a" stroke-width="1.5"/>`,flair1:``,flair2:``},
-  hammer:{base:`<rect x="45" y="80" width="10" height="40" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><rect x="35" y="40" width="30" height="30" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="55" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="40" cy="55" r="4" fill="FLAIR2COLOR"/><circle cx="60" cy="55" r="4" fill="FLAIR2COLOR"/>`},
-  dagger:{base:`<path d="M50 15 L55 20 L55 65 L58 70 L58 75 L50 75 L42 75 L42 70 L45 65 L45 20 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="75" r="4" fill="#8B4513"/>`,flair1:`<circle cx="50" cy="35" r="4" fill="FLAIR1COLOR"/>`,flair2:`<path d="M35 25 L32 23 M65 25 L68 23" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"/>`},
-  axe:{base:`<rect x="47" y="60" width="6" height="60" fill="#6d5b43" stroke="#3a2a1a" stroke-width="1"/><path d="M53 60 L80 50 L80 70 L53 60 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/><path d="M47 60 L20 50 L20 70 L47 60 Z" fill="BASECOLOR" stroke="#333" stroke-width="1.5"/>`,flair1:`<circle cx="50" cy="80" r="6" fill="FLAIR1COLOR"/>`,flair2:`<circle cx="35" cy="55" r="4" fill="FLAIR2COLOR"/><circle cx="65" cy="55" r="4" fill="FLAIR2COLOR"/>`}
+  stick:{base:`<defs>
+    <filter id="stick-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="1.5" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <g id="stick-root" filter="url(#stick-drop)">
+    <path id="branch-outline" d="M48 12 Q45 64 48 126 L52 126 Q55 64 52 12 Z" fill="#3a2a1a"/>
+    <path id="branch-base" d="M48.5 14 Q46 64 48.5 124 H51.5 Q54 64 51.5 14 Z" fill="BASECOLOR" stroke="#2c1f14" stroke-width="1.2"/>
+    <path id="branch-highlight" d="M49.5 26 Q48 64 49.5 112" fill="none" stroke="#ffffff55" stroke-width="1.4"/>
+    <path id="branch-shadow" d="M51.5 30 Q53 64 51.5 116" fill="none" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <path id="knots" d="M46 32 L44 30 M54 52 L57 50 M47 84 L44 86" stroke="#2c1f14" stroke-width="1.6"/>
+  </g>
+  <g id="fx-sticky" style="display:none"><path d="M46 18 Q50 10 54 18" fill="#f97316" opacity="0.5"/></g>`,flair1:``,flair2:``},
+  hammer:{base:`<defs>
+    <filter id="hammer-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="hammer-root" filter="url(#hammer-drop)">
+    <rect id="haft" x="45" y="82" width="10" height="44" rx="2" fill="#6d5b43" stroke="#111827" stroke-width="1"/>
+    <path id="haft-shadow" d="M52 82 V126" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <rect id="head-outline" x="32" y="42" width="36" height="32" rx="3" fill="#0f172a"/>
+    <rect id="head-base" x="34" y="44" width="32" height="28" rx="3" fill="BASECOLOR" stroke="#111827" stroke-width="1.4"/>
+    <path id="head-highlight" d="M36 46 H64" stroke="#ffffff55" stroke-width="3"/>
+    <path id="head-shadow" d="M34 58 H66" stroke="#0b1021" stroke-width="3" opacity="0.2"/>
+    <circle id="pommel" cx="50" cy="122" r="5" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
+  </g>
+  <g id="fx-ember" style="display:none"><path d="M34 48 L42 40 L38 50 L46 40 L42 52" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="hammer-gem"><circle cx="50" cy="55" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 52 Q50 49 52 52" fill="#fff9"/></g>`,flair2:`<g id="hammer-runes" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M40 55 L36 55"/><path d="M60 55 L64 55"/></g>`},
+  dagger:{base:`<defs>
+    <filter id="dagger-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="dagger-root" filter="url(#dagger-drop)">
+    <path id="blade-outline" d="M50 12 L58 20 L58 68 L62 74 L62 80 L50 80 L38 80 L38 74 L42 68 L42 20 Z" fill="#0f172a"/>
+    <path id="blade-base" d="M50 14 L56 20 L56 68 L60 74 L60 78 L50 78 L40 78 L40 74 L44 68 L44 20 Z" fill="BASECOLOR" stroke="#111827" stroke-width="1.4"/>
+    <path id="blade-highlight" d="M51.5 20 L53 22 L53 66 L51.5 68.5 L48.5 66 L48.5 22 Z" fill="#ffffff66"/>
+    <path id="blade-shadow" d="M50 20 L54 24 L54 66 L50 70 L46 66 L46 24 Z" fill="#00000025"/>
+    <circle id="guard" cx="50" cy="78" r="5" fill="#b68c3f" stroke="#1f1305" stroke-width="1"/>
+    <rect id="grip-core" x="45" y="78" width="10" height="18" rx="2" fill="#2f2624" stroke="#0f0f0f" stroke-width="1"/>
+    <path id="grip-bands" d="M45 82 H55 M45 88 H55" stroke="#857872" stroke-width="1.5"/>
+  </g>
+  <g id="fx-stealth" style="display:none"><path d="M44 30 L50 20 L56 30 L50 26 Z" fill="#a3a3a3" opacity="0.6"/></g>`,flair1:`<g id="dagger-gem"><circle cx="50" cy="36" r="5" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 33 Q50 30 52 33" fill="#fff9"/></g>`,flair2:`<g id="dagger-etch" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M34 26 L30 22"/><path d="M66 26 L70 22"/></g>`},
+  axe:{base:`<defs>
+    <filter id="axe-drop" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g id="axe-root" filter="url(#axe-drop)">
+    <rect id="haft" x="46.5" y="62" width="7" height="66" rx="2" fill="#6d5b43" stroke="#111827" stroke-width="1"/>
+    <path id="haft-shadow" d="M52 62 V128" stroke="#0b1021" stroke-width="2" opacity="0.2"/>
+    <path id="blade-outline" d="M53 62 L84 52 L84 72 L53 62 Z" fill="#0f172a"/>
+    <path id="blade-outline-left" d="M47 62 L16 52 L16 72 L47 62 Z" fill="#0f172a"/>
+    <path id="blade-base-right" d="M53 62 L82 52 L82 72 L53 62 Z" fill="BASECOLOR" stroke="#111827" stroke-width="1.4"/>
+    <path id="blade-base-left" d="M47 62 L18 52 L18 72 L47 62 Z" fill="BASECOLOR" stroke="#111827" stroke-width="1.4"/>
+    <path id="blade-highlight" d="M54 60 L80 52" stroke="#ffffff66" stroke-width="2.6"/>
+    <path id="blade-highlight-left" d="M46 60 L20 52" stroke="#ffffff66" stroke-width="2.6"/>
+    <rect id="grip-core" x="44" y="92" width="12" height="22" rx="2" fill="#2f2624" stroke="#0f0f0f" stroke-width="1"/>
+    <circle id="pommel" cx="50" cy="124" r="5" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
+  </g>
+  <g id="fx-fury" style="display:none"><path d="M36 52 L50 44 L64 52 L50 48 Z" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="axe-gem"><circle cx="50" cy="82" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 78.5 Q50 76 52 78.5" fill="#fff9"/></g>`,flair2:`<g id="axe-mark" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M38 56 L32 52"/><path d="M62 56 L68 52"/></g>`}
 };
 const BASE_COLORS={
   // Slash
@@ -1449,8 +1689,10 @@ function mkChip(w,disabled,isStickChip){
     ${elemHtml}
   `;
 
+  // Show the contextual tooltip for this specific word (AP, multipliers, hero/enemy effectiveness)
+  // instead of the global damage breakdown so hovering a word displays its own details.
   attachDamageTooltip(c);
-  c.__tooltipContent = () => getSharedBreakdownContent();
+  c.__tooltipContent = () => mkTooltip(w, { bare: true });
   const chipTip = c.querySelector('.tooltip.modal-tooltip, .tooltip');
   if(chipTip) chipTip.innerHTML = c.__tooltipContent();
   
@@ -1504,7 +1746,7 @@ function mkChip(w,disabled,isStickChip){
   return c;
 }
 
-function mkTooltip(w){
+function mkTooltip(w, opts={}){
   // Special handling for talents: display only their description and tier.  Talents do
   // not have elemental interactions, multipliers or morphological forms.  The rarity
   // colour is still used for the title bar.
@@ -1606,11 +1848,13 @@ function mkTooltip(w){
   const typeParts = [tierLabel];
   if(elemBadge) typeParts.push(elemBadge);
 
-  return `<div class="tooltip">
+  const inner = `
     <div class="tooltip-title ${rc}">${w.name}</div>
     <div class="tooltip-type">${typeParts.join(" ")}</div>
     ${lines.join("")}
-  </div>`;
+  `;
+
+  return opts?.bare ? inner : `<div class="tooltip">${inner}</div>`;
 }
 
 // Build a breakdown of all AP contributions and multipliers currently affecting the damage preview.
