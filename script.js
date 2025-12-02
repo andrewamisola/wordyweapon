@@ -9,8 +9,8 @@ RRANK=[0,1,2,3,3,3], // Rarity ranks: 0=T1, 2=T2, 3=T3, EPIC=3, LEGENDARY=3
 TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
 
 // Maximum inventory size to prevent hoarding too many words
-// Adjusted to keep the forge manageable while offering room for build variety
-const INV_LIMIT=24;
+// Increase inventory limit so players can hold more words
+const INV_LIMIT=30;
 // Cap how many consumables can be held at once to keep power in check
 const CONSUMABLE_LIMIT=2;
 // Talents are disabled for this build; keep the limit at zero to prevent acquisition.
@@ -141,31 +141,31 @@ const CONSUMABLES=[
      const pool=WORDS.filter(w=>w.rarity===R.RARE);
      if(pool.length>0){
        if(S.inv.length>=INV_LIMIT){
-         return `Inventory full (max ${INV_LIMIT})! Cannot add new word.`;
+         return {success:false,message:"Inventory full! Cannot add new word."};
        }
        const w=pool[Math.random()*pool.length|0];
        S.inv.push({...w});
-       return `Generated ${w.name}!`;
+       return {success:true,message:`Generated ${w.name}!`};
      }
-     return "No Rare words available.";
+     return {success:false,message:"No Rare words available."};
    }},
   {id:"weapon_master_consumable",name:"Weapon Master (1 battle)",cost:10,desc:"Activate to double weapon proficiency for one battle.",
-   use:(S)=>{S.tempEffects.weaponMaster=true;return "Weapon Master active!"}},
+   use:(S)=>{S.tempEffects.weaponMaster=true;return {success:true,message:"Weapon Master active!"}}},
   {id:"quality_assurance",name:"Quality Assurance",cost:15,desc:"Upgrade a selected word by one tier for this run.",
    use:(S)=>{
      const target = S.pendingWord;
-     if(!target) return "Highlight a word to upgrade.";
+     if(!target) return {success:false,message:"Highlight a word to upgrade."};
      const rank = getTierRank(target);
-     if(rank >= 3) return `${target.name} is already at the highest rank.`;
+     if(rank >= 3) return {success:false,message:`${target.name} is already at the highest rank.`};
      const nextTierWord=findNextTierWord(target);
      if(!nextTierWord){
-       return `${target.name} is already at the highest rank.`;
+       return {success:false,message:`${target.name} is already at the highest rank.`};
      }
      applyWordUpgrade(target,nextTierWord);
-     return `${target.name} refined!`;
+     return {success:true,message:`${target.name} refined!`};
    }},
   {id:"polymorph",name:"Polymorph",cost:12,desc:"Use to strip enemy resistances for your next battle.",
-   use:(S)=>{S.tempEffects.polymorph=true;return "Enemy resistances nullified!"}}
+   use:(S)=>{S.tempEffects.polymorph=true;return {success:true,message:"Enemy resistances nullified!"}}}
 ];
 
 // === WORDS ===
@@ -1281,7 +1281,7 @@ function render(){
 
   // Update inventory counter (current count / limit)
   const invEl=document.getElementById("inv-counter");
-  if(invEl){invEl.textContent=`${S.inv.length}/${INV_LIMIT} max`;}
+  if(invEl){invEl.textContent=`${S.inv.length}/${INV_LIMIT}`;}
 
   updSlots();renderBank();renderConsumables();renderTalents();renderWeapon();updateSlotCalcs();
 }
@@ -1615,10 +1615,14 @@ function renderConsumables(){
       div.title=cItem.desc;
       div.onclick=()=>{
         // Use consumable effect
-        const msg=cItem.use(S);
+        const result=cItem.use(S);
+        const success=typeof result==="object"&&result!==null&&"success" in result?!!result.success:true;
+        const msg=typeof result==="object"&&result!==null?result.message:result;
         alert(msg||`${cItem.name} used`);
-        // Remove consumable from list
-        S.consumables.splice(i,1);
+        // Remove consumable from list on success only
+        if(success){
+          S.consumables.splice(i,1);
+        }
         render();
       };
     } else {
@@ -3354,7 +3358,7 @@ function renderShop(){
   const invEl = document.getElementById("shop-inventory");
   if(invEl){
     // Show just the count since the label is now part of the header
-    invEl.textContent = `${S.inv.length}/${INV_LIMIT} max`;
+    invEl.textContent = `${S.inv.length}/${INV_LIMIT}`;
   }
   const conEl = document.getElementById("shop-consumable-cap");
   if(conEl){
