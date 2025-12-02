@@ -3398,7 +3398,7 @@ function renderShopCrates(){
     d.innerHTML = `
       <div style="font-size:32px;margin-bottom:8px">${crateInfo.icon}</div>
       <div style="font-size:14px;font-weight:bold;color:${crateInfo.color};margin-bottom:6px">${crate.name}</div>
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Mystery Box<br>${crate.qty} Random ${crate.type === 'modifier' ? 'words' : crate.type + (crate.qty>1?'s':'')}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">${crate.qty} Random ${crate.type === 'modifier' ? 'words' : crate.type + (crate.qty>1?'s':'')}</div>
       <div class="shop-price gold">💰${effectivePrice}</div>
       <button class="shop-btn" ${S.gold < effectivePrice ? "disabled" : ""}>Buy Crate</button>
     `;
