@@ -64,7 +64,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .weapon-glow{position:absolute;inset:-6%;mix-blend-mode:screen;pointer-events:none;opacity:0.9;transform:translateZ(16px);}
 #weapon-display .weapon-canvas{width:120px;height:150px;margin:0 auto;}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
-#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
+#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help;z-index:10}
 #damage-preview-text::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.6}
 #preview-tooltip-hint{opacity:0.85;display:flex;align-items:center;gap:8px}
 .icon-button{width:20px;height:20px;border-radius:50%;border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;font-size:12px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0}
@@ -222,7 +222,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .chip-info{font-size:8px;color:#6b7280}
 .chip-elem{font-size:8px;margin-top:2px}
 .rarity-common{color:#9ca3af}.rarity-magic{color:#60a5fa}.rarity-rare{color:#f4d03f}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f97316}.rarity-rusty{color:#b45309}
-.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:260px;text-align:left;z-index:250;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
+.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:260px;text-align:left;z-index:1200;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
 .chip:hover .tooltip{opacity:1}
 /* Allow tooltips on slots to appear when hovering */
 .slot:hover .tooltip{opacity:1}
