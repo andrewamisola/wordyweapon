@@ -203,7 +203,7 @@
 </div>
 
 <div class="overlay" id="shop-overlay">
-  <div class="modal" style="min-width:600px">
+  <div class="modal shop-modal" style="min-width:600px">
     <div class="modal-topbar shop-topbar">
       <div class="shop-top-left">
         <div class="shop-pill">💰 <span id="shop-gold"></span></div>
@@ -227,26 +227,22 @@
         </div>
       </div>
 
-      <div class="shop-columns">
-        <div class="shop-section" style="flex:1">
-          <div class="shop-section-title">📦 WORD CRATES</div>
-          <div id="shop-crates" class="shop-grid card-surface"></div>
-          <div class="shop-section" style="margin-top:12px; display:none">
-            <div class="shop-section-title">✨ BUFFS</div>
-            <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
-          </div>
+      <div class="shop-section">
+        <div class="shop-section-title">📦 WORD CRATES</div>
+        <div id="shop-crates" class="shop-grid card-surface"></div>
+        <div class="shop-section" style="margin-top:12px; display:none">
+          <div class="shop-section-title">✨ BUFFS</div>
+          <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
         </div>
-        <div class="shop-section" style="flex:1">
-          <div class="shop-section-header">
+        <div class="shop-consumable-stack">
+          <div class="shop-section-header" style="margin-top:12px">
             <div class="shop-section-title" style="margin:0">🎴 CONSUMABLES</div>
             <div id="shop-consumable-cap" class="dim" style="font-size:11px"></div>
           </div>
-          <div class="shop-consumable-stack">
-            <div class="shop-subtitle">For sale</div>
-            <div id="shop-consumables" class="shop-grid card-surface"></div>
-            <div class="shop-subtitle">Owned</div>
-            <div id="shop-owned-consumables" class="shop-grid card-surface"></div>
-          </div>
+          <div class="shop-subtitle">For sale</div>
+          <div id="shop-consumables" class="consumable-row card-surface"></div>
+          <div class="shop-subtitle">Owned</div>
+          <div id="shop-owned-consumables" class="consumable-row card-surface"></div>
         </div>
       </div>
       <div class="shop-section">

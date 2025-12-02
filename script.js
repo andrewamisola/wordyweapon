@@ -3781,8 +3781,7 @@ function renderShopConsumables(){
 
   const makeChip=(c,mode,index)=>{
     const chip=document.createElement("div");
-    chip.className="chip";
-    chip.style.width="100%";
+    chip.className="consumable-item";
     chip.onmouseenter=sfxHover;
 
     const name=c?.name||"Consumable";
