@@ -229,9 +229,9 @@ const WORDS=[
   {id:"vicious",name:"Vicious",type:"adjective",mult:1.7,elem:E.PHYS,rarity:R.UNCOMMON,desc:"Physical. ×1.7",hiddenInBank:true},
   {id:"devastating",name:"Devastating",type:"adjective",mult:2.1,elem:E.PHYS,rarity:R.MAGIC,desc:"Physical. ×2.1",hiddenInBank:true},
   // Nouns (Gems) - ALL ELEMENTS, 3 tiers each
-  {id:"ember",name:"Ember",type:"noun",elem:E.FIRE,ap:1,rarity:R.COMMON,desc:"+1 AP Fire"},
-  {id:"flame",name:"Flame",type:"noun",elem:E.FIRE,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Fire"},
-  {id:"inferno",name:"Inferno",type:"noun",elem:E.FIRE,ap:3,rarity:R.RARE,desc:"+3 AP Fire"},
+  {id:"flame",name:"Flame",type:"noun",elem:E.FIRE,ap:1,rarity:R.COMMON,desc:"+1 AP Fire"},
+  {id:"inferno",name:"Inferno",type:"noun",elem:E.FIRE,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Fire"},
+  {id:"conflagration",name:"Conflagration",type:"noun",elem:E.FIRE,ap:3,rarity:R.RARE,desc:"+3 AP Fire"},
   {id:"wave",name:"Wave",type:"noun",elem:E.WATER,ap:1,rarity:R.COMMON,desc:"+1 AP Water"},
   {id:"torrent",name:"Torrent",type:"noun",elem:E.WATER,ap:2,rarity:R.UNCOMMON,desc:"+2 AP Water"},
   {id:"tsunami",name:"Tsunami",type:"noun",elem:E.WATER,ap:3,rarity:R.RARE,desc:"+3 AP Water"},
@@ -263,9 +263,9 @@ const WORDS=[
 // Flame → Scorching and Inferno → Infernal even when the rarities differ.
 const NOUN_TO_ADJ = {
   // Fire nouns
-  ember: 'Blazing',
-  flame: 'Scorching',
-  inferno: 'Infernal',
+  flame: 'Blazing',
+  inferno: 'Scorching',
+  conflagration: 'Infernal',
   // Water nouns
   wave: 'Frigid',
   torrent: 'Glacial',
@@ -656,7 +656,7 @@ const WEAPON_SVG={
     <path id="head-shadow" d="M34 58 H66" stroke="#0b1021" stroke-width="3" opacity="0.2"/>
     <circle id="pommel" cx="50" cy="122" r="5" fill="#c7a75d" stroke="#3e3215" stroke-width="1"/>
   </g>
-  <g id="fx-ember" style="display:none"><path d="M34 48 L42 40 L38 50 L46 40 L42 52" fill="#f97316" opacity="0.6"/></g>`,flair1:`<g id="hammer-gem"><circle cx="50" cy="55" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 52 Q50 49 52 52" fill="#fff9"/></g>`,flair2:`<g id="hammer-runes" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M40 55 L36 55"/><path d="M60 55 L64 55"/></g>`},
+  `,flair1:`<g id="hammer-gem"><circle cx="50" cy="55" r="6" fill="FLAIR1COLOR" stroke="#111827" stroke-width="1"/><path d="M48 52 Q50 49 52 52" fill="#fff9"/></g>`,flair2:`<g id="hammer-runes" stroke="FLAIR2COLOR" stroke-width="2" stroke-linecap="round"><path d="M40 55 L36 55"/><path d="M60 55 L64 55"/></g>`},
   dagger:{base:`<defs>
     <filter id="dagger-drop" x="-20%" y="-20%" width="140%" height="150%">
       <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#0f172a" flood-opacity="0.45"/>
@@ -2410,12 +2410,6 @@ function calc(opts={}){
       }
     }
 
-    // [Joker] Ember Focus: fire words deal ×1.5 damage.  Multiply the element multiplier
-    // accordingly.  This does not override elemental immunity (0 multiplier remains 0).
-    if(hasTalent('ember_focus') && word.elem === E.FIRE){
-      elemMult *= 1.5;
-      if(wantBreakdown) breakdown.words.push(`×1.5 Ember Focus (${word.name})`);
-    }
     // Base AP contribution is the tier value times the element multiplier
     let apContribution = tierValue * elemMult;
     let wCountDelta    = elemMult;
