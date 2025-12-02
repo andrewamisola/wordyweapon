@@ -672,6 +672,14 @@ function init(){
       return getSharedBreakdownContent(precomputed);
     };
   }
+  const previewTooltipBtn = document.getElementById('preview-tooltip-button');
+  if(previewTooltipBtn){
+    attachDamageTooltip(previewTooltipBtn);
+    previewTooltipBtn.__tooltipContent = () => {
+      const precomputed = S.sel.item ? calc({ breakdown: true }) : null;
+      return getSharedBreakdownContent(precomputed);
+    };
+  }
   const combatTotalEl = document.getElementById('combat-total');
   const combatResultEl = document.getElementById('combat-result');
   attachDamageTooltip(combatTotalEl);
@@ -1520,6 +1528,7 @@ function mkTooltip(w){
   const rc=w.isStick?"rarity-rusty":RC[w.rarity];
   const rarityRank = RRANK[w.rarity] ?? w.rarity ?? 0;
   const tierLabel = w.isStick?"Backup":(RN[rarityRank] || RN[w.rarity] || "T1");
+  const isModifier = w.type === 'affinity' || w.type === 'noun' || w.type === 'adjective';
   
   let lines=[];
   if(w.desc)lines.push(`<div class="tooltip-line">${w.desc}</div>`);
@@ -1542,47 +1551,18 @@ function mkTooltip(w){
     }
     lines.push(`<div class="tooltip-line ${profClass}">${profText}</div>`);
   }
-  
-  if(w.type==="affinity"||w.type==="noun"||(w.type==="adjective"&&w.elem!==undefined)){
-    // Show combined hero vs enemy element interaction.  Determine the hero's stance (strong/neutral/weak)
-    // and the enemy's stance (weak/neutral/strong) based on their respective arrays.  Then map the pair
-    // to the correct multiplier following the simplified table:
-    // Strong vs Weak → 3×; Strong vs Neutral or Neutral vs Weak → 2×;
-    // Matching stances (both strong, both neutral, both weak) → 1×; otherwise → 0×.
-    const el = w.elem;
-    const heroStrong = S.hero?.str.includes(el);
-    const heroWeak  = S.hero?.weak.includes(el);
-    const enemyWeak  = S.enemy?.weak.includes(el);
-    const enemyStrong = !(S.tempEffects && S.tempEffects.polymorph) && S.enemy?.res.includes(el);
-    let multi = 1;
-    let note  = '';
-    if(heroStrong && enemyWeak){
-      multi = 3;
-      note  = 'Hero strong, enemy weak: ×3.0';
-    } else if((heroStrong && !enemyWeak && !enemyStrong) || (!heroStrong && !heroWeak && enemyWeak)){
-      multi = 2;
-      note  = heroStrong ? 'Hero strong, enemy neutral: ×2.0' : 'Hero neutral, enemy weak: ×2.0';
-    } else if((heroStrong && enemyStrong) || (!heroStrong && !heroWeak && !enemyWeak && !enemyStrong) || (heroWeak && enemyWeak)){
-      multi = 1;
-      // Provide context for stalemate
-      note  = 'No advantage: ×1.0';
-    } else {
-      multi = 0;
-      note  = 'No effect: ×0.0';
-    }
-    const cssClass = multi === 0 ? 'negative' : multi > 1 ? 'positive' : 'dim';
-    lines.push(`<div class="tooltip-line ${cssClass}">${note}</div>`);
-  }
-  
+
   // Show multiplier line only for adjectives (affinity words no longer have inherent multipliers)
   if(w.mult && w.type !== "affinity"){
     lines.push(`<div class="tooltip-line">Multiplier: ×${w.mult}</div>`);
   }
-  // Show baseline AP for all words.  Use explicit 'ap' if provided (e.g. gem nouns);
-  // otherwise derive from rarity via our helper.  This keeps tier values consistent
-  // with how AP is calculated in combat (T1=1, T2=2, T3=3).
-  const tierAP = (w.ap !== undefined ? w.ap : rarityToAP(w.rarity));
-  lines.push(`<div class="tooltip-line">Base AP: +${tierAP}</div>`);
+  if(!isModifier){
+    // Show baseline AP for weapons only.  Use explicit 'ap' if provided;
+    // otherwise derive from rarity via our helper.  This keeps tier values consistent
+    // with how AP is calculated in combat (T1=1, T2=2, T3=3).
+    const tierAP = (w.ap !== undefined ? w.ap : rarityToAP(w.rarity));
+    lines.push(`<div class="tooltip-line">Base AP: +${tierAP}</div>`);
+  }
 
   // Show morphological variants based on the WORD_FORMS mapping.  If a word has
   // prefix or suffix forms different from its own name, display them so the
@@ -1673,16 +1653,46 @@ function attachDamageTooltip(el){
   tooltip.style.whiteSpace = 'normal';
   tooltip.style.pointerEvents = 'none';
   el.appendChild(tooltip);
+
+  const clickToggle = el.classList.contains('click-tooltip');
   const show = () => {
     const content = typeof el.__tooltipContent === 'function'
       ? (el.__tooltipContent() || '')
       : (el.__tooltipContent || '');
     tooltip.innerHTML = content;
+    tooltip.style.pointerEvents = clickToggle ? 'auto' : 'none';
     tooltip.style.opacity = content ? '1' : '0';
+    tooltip.dataset.visible = content ? 'true' : 'false';
   };
-  const hide = () => { tooltip.style.opacity = '0'; };
-  ['mouseenter','focus'].forEach(evt=>el.addEventListener(evt,show));
-  ['mouseleave','blur'].forEach(evt=>el.addEventListener(evt,hide));
+  const hide = () => {
+    tooltip.style.opacity = '0';
+    tooltip.dataset.visible = 'false';
+  };
+
+  if(clickToggle){
+    const toggle = (e) => {
+      e.stopPropagation();
+      const isOpen = tooltip.dataset.visible === 'true';
+      if(isOpen){
+        hide();
+      } else {
+        show();
+      }
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        toggle(e);
+      }
+    });
+    document.addEventListener('click', (evt) => {
+      if(!el.contains(evt.target)) hide();
+    });
+  } else {
+    ['mouseenter','focus'].forEach(evt=>el.addEventListener(evt,show));
+    ['mouseleave','blur'].forEach(evt=>el.addEventListener(evt,hide));
+  }
 }
 
 function isWordDisabled(w,hasItem,hasNoun){

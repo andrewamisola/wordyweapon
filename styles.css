@@ -66,7 +66,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
 #damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
 #damage-preview-text::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.6}
-#preview-tooltip-hint{opacity:0.85}
+#preview-tooltip-hint{opacity:0.85;display:flex;align-items:center;gap:8px}
+.icon-button{width:20px;height:20px;border-radius:50%;border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;font-size:12px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0}
+.icon-button:hover:not(:disabled){background:#374151;border-color:#6b7280}
+.icon-button:focus-visible{outline:2px solid #f4d03f;outline-offset:2px}
 .damage-number{font-size:24px;font-weight:700;min-width:60px;text-align:center}
 .damage-number.hero-damage{color:#4ade80}
 .damage-number.enemy-damage{color:#f87171}
