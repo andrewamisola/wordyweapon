@@ -9,8 +9,8 @@ RRANK=[0,1,2,3,3,3], // Rarity ranks: 0=T1, 2=T2, 3=T3, EPIC=3, LEGENDARY=3
 TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
 
 // Maximum inventory size to prevent hoarding too many words
-// Increase inventory limit so players can hold more words
-const INV_LIMIT=30;
+// Adjusted to keep the forge manageable while offering room for build variety
+const INV_LIMIT=24;
 // Cap how many consumables can be held at once to keep power in check
 const CONSUMABLE_LIMIT=2;
 // Talents are disabled for this build; keep the limit at zero to prevent acquisition.
@@ -141,7 +141,7 @@ const CONSUMABLES=[
      const pool=WORDS.filter(w=>w.rarity===R.RARE);
      if(pool.length>0){
        if(S.inv.length>=INV_LIMIT){
-         return "Inventory full! Cannot add new word.";
+         return `Inventory full (max ${INV_LIMIT})! Cannot add new word.`;
        }
        const w=pool[Math.random()*pool.length|0];
        S.inv.push({...w});
@@ -1281,7 +1281,7 @@ function render(){
 
   // Update inventory counter (current count / limit)
   const invEl=document.getElementById("inv-counter");
-  if(invEl){invEl.textContent=`${S.inv.length}/${INV_LIMIT}`;}
+  if(invEl){invEl.textContent=`${S.inv.length}/${INV_LIMIT} max`;}
 
   updSlots();renderBank();renderConsumables();renderTalents();renderWeapon();updateSlotCalcs();
 }
@@ -3354,7 +3354,7 @@ function renderShop(){
   const invEl = document.getElementById("shop-inventory");
   if(invEl){
     // Show just the count since the label is now part of the header
-    invEl.textContent = `${S.inv.length}/${INV_LIMIT}`;
+    invEl.textContent = `${S.inv.length}/${INV_LIMIT} max`;
   }
   const conEl = document.getElementById("shop-consumable-cap");
   if(conEl){
