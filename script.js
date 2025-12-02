@@ -13,6 +13,8 @@ TYPE_ORDER={weapon:0,affinity:1,adjective:2,noun:3};
 const INV_LIMIT=30;
 // Cap how many consumables can be held at once to keep power in check
 const CONSUMABLE_LIMIT=2;
+// Talents are disabled for this build; keep the limit at zero to prevent acquisition.
+const BUFF_LIMIT=0;
 
 // === 8 HEROES ===
 const HEROES=[
@@ -879,6 +881,7 @@ function init(){
   }
   const shopExitBtn = document.getElementById("exit-shop-btn");
   if(shopExitBtn){
+    shopExitBtn.textContent = "Exit Shop ➡️";
     shopExitBtn.onclick = () => {
       document.getElementById("shop-overlay").classList.remove("show");
       S.rerollCost = 5;
@@ -3274,7 +3277,7 @@ function spawnFlames(count){
 }
 
 // === SHOP ===
-let shopCrates=[],shopConsumables=[];
+let shopCrates=[],shopBuffCrates=[],shopConsumables=[];
 function showShop(){
   S.rerollCost=5;
   rollShop();
@@ -3341,6 +3344,8 @@ function rollShop(){
   // Select consumables at random.
   shopConsumables = shuf([...CONSUMABLES]).slice(0,3);
 
+  // Buff crates disabled while talents are removed.
+  shopBuffCrates = [];
 }
 
 function renderShop(){
@@ -3386,7 +3391,9 @@ function renderShop(){
   renderNextEnemyPreview();
 
   renderShopCrates();
+  renderShopBuffCrates();
   renderShopWordBank();
+  renderShopTalents();
   renderShopConsumables();
 }
 
@@ -3517,6 +3524,157 @@ function renderShopCrates(){
   if(shopCrates.length === 0){
     cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
   }
+}
+
+function renderShopBuffCrates(){
+  const cont = $("#shop-buff-crates");
+  cont.innerHTML = "";
+
+  shopBuffCrates.forEach((crate, i) => {
+    const d = document.createElement("div");
+    d.className = "shop-item card-surface";
+    d.style.cssText = "min-width:150px;max-width:180px";
+
+    // Determine effective price with shop discount talents
+    const hasTalent = (id) => S.talents.includes(id);
+    let effectivePrice = crate.price;
+    if(hasTalent('merchant_guild')){
+      effectivePrice = Math.ceil(effectivePrice * 0.5);
+    }
+    if(hasTalent('bargain_hunter')){
+      effectivePrice = Math.ceil(effectivePrice * 0.8);
+    }
+    d.innerHTML = `
+      <div style="font-size:32px;margin-bottom:8px">✨</div>
+      <div style="font-size:14px;font-weight:bold;color:#a855f7;margin-bottom:6px">${crate.name}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Choose 1 of 3<br>Buffs</div>
+      <div class="shop-price gold">💰${effectivePrice}</div>
+      <button class="shop-btn" ${S.gold < effectivePrice ? "disabled" : ""}>Buy Crate</button>
+    `;
+
+    const buyBtn = d.querySelector("button");
+    buyBtn.onmouseenter = sfxHover;
+    buyBtn.onclick = () => {
+      // Compute effective price again inside click handler
+      let priceToPay = crate.price;
+      if(hasTalent('merchant_guild')) priceToPay = Math.ceil(priceToPay * 0.5);
+      if(hasTalent('bargain_hunter')) priceToPay = Math.ceil(priceToPay * 0.8);
+      if(S.gold >= priceToPay){
+        sfxBuy();
+        S.gold -= priceToPay;
+        shopBuffCrates.splice(i, 1);
+        renderShop();
+        render();
+        showBuffSelect();
+      }
+    };
+
+    cont.appendChild(d);
+  });
+
+  if(shopBuffCrates.length === 0){
+    cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">Sold out!</div>';
+  }
+}
+
+function showBuffSelect(){
+  // Pick up to 3 random buffs that the player doesn't already have.  Apply a weighted
+  // distribution of 60% T1, 30% T2, 10% T3 when selecting each buff.  Do not allow
+  // acquisition if the buff inventory (talent bar) is full.
+  if(S.talents && S.talents.length >= BUFF_LIMIT){
+    alert(`Your buff inventory is full (${BUFF_LIMIT} buffs). Remove or use a buff before acquiring more.`);
+    return;
+  }
+  const availableBuffs = TALENTS.filter(t => !S.talents.includes(t.id));
+  if(availableBuffs.length === 0){
+    alert("No more buffs available!");
+    return;
+  }
+  // Separate available buffs by tier for weighting
+  const pool = {1:[],2:[],3:[]};
+  availableBuffs.forEach(t => {
+    pool[t.tier] = pool[t.tier] || [];
+    pool[t.tier].push(t);
+  });
+  const choices = [];
+  for(let i=0;i<3;i++){
+    // Determine desired tier based on weighted random
+    let tier = 1;
+    const r = Math.random();
+    if(r < 0.7){ tier = 1; }
+    else if(r < 0.95){ tier = 2; }
+    else { tier = 3; }
+    // If no buffs in desired tier, fallback to next available tier (1->2->3)
+    let pickPool = pool[tier] || [];
+    if(pickPool.length === 0){
+      // Flatten all remaining tiers into one list
+      const remaining = [...(pool[1]||[]),...(pool[2]||[]),...(pool[3]||[])];
+      if(remaining.length === 0) break;
+      pickPool = remaining;
+    }
+    // Choose a random buff from the pool
+    const idx = Math.floor(Math.random() * pickPool.length);
+    const chosen = pickPool.splice(idx,1)[0];
+    // Remove chosen from the overall pools to avoid duplicates
+    [1,2,3].forEach(ti=>{
+      const arr = pool[ti];
+      const j = arr ? arr.indexOf(chosen) : -1;
+      if(j >= 0) arr.splice(j,1);
+    });
+    choices.push(chosen);
+    // If we've exhausted all available buffs, stop early
+    if(Object.values(pool).every(arr => arr.length === 0)) break;
+  }
+  const container = $("#buff-choices");
+  container.innerHTML = "";
+  // Display horizontally rather than stacking vertically
+  container.style.flexDirection = "row";
+  container.style.justifyContent = "center";
+
+  choices.forEach(buff => {
+    const div = document.createElement("div");
+    div.className = "talent-choice";
+    div.style.cssText = "border:2px solid #666;padding:12px;border-radius:8px;cursor:pointer;transition:all 0.2s";
+
+    // Tier colors
+    const tierColors = {1: "#4d99ff", 2: "#9966cc", 3: "#ff6633"};
+    const tierColor = tierColors[buff.tier] || "#666";
+
+    div.title = buff.desc; // Add tooltip
+
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:16px;font-weight:bold;color:${tierColor}">${buff.name}</div>
+        <div style="font-size:11px;padding:2px 6px;background:${tierColor};color:#000;border-radius:4px">T${buff.tier}</div>
+      </div>
+      <div style="font-size:13px;line-height:1.4;color:#ccc">${buff.desc}</div>
+    `;
+
+    div.onmouseenter = () => {
+      div.style.borderColor = tierColor;
+      div.style.transform = "scale(1.02)";
+    };
+    div.onmouseleave = () => {
+      div.style.borderColor = "#666";
+      div.style.transform = "scale(1)";
+    };
+
+    div.onclick = () => {
+      // Do not add beyond buff capacity
+      if(S.talents.length >= BUFF_LIMIT){
+        alert(`Your buff inventory is full (${BUFF_LIMIT} buffs). Remove or use a buff before acquiring more.`);
+        return;
+      }
+      S.talents.push(buff.id);
+      $("#buff-select-overlay").classList.remove("show");
+      renderShop();
+      render();
+    };
+
+    container.appendChild(div);
+  });
+
+  $("#buff-select-overlay").classList.add("show");
 }
 
 // Track multiple selected words for selling
@@ -3699,6 +3857,40 @@ function renderShopConsumables(){
   } else {
     ownedItems.forEach(({item,mode,index})=>ownedCont.appendChild(makeChip(item,mode,index)));
   }
+}
+
+// Render active talents within the shop overlay.  Each talent is displayed as a chip with its
+// name and rarity colour.  Clicking a talent will sell it for gold based on its tier or rarity.
+function renderShopTalents(){
+  const bar = document.getElementById('shop-talent-bar');
+  if(!bar) return;
+  bar.innerHTML = '';
+  if(!S.talents || S.talents.length === 0){
+    bar.innerHTML = '<div class="dim" style="font-size:10px;padding:4px">No active buffs</div>';
+    return;
+  }
+  // Display current buff count versus capacity at the start of the bar
+  const countDiv = document.createElement('div');
+  countDiv.className = 'dim';
+  countDiv.style.fontSize = '10px';
+  countDiv.style.padding = '4px';
+  countDiv.textContent = `${S.talents.length}/${BUFF_LIMIT}`;
+  bar.appendChild(countDiv);
+  S.talents.forEach((tid, idx) => {
+    const t = TALENTS.find(x => x.id === tid);
+    if(!t) return;
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    // Determine rarity class using the existing RC mapping; fall back to Common if undefined
+    const rarityClass = RC[t.rarity] || 'rarity-common';
+    // Build tooltip for the talent using mkTooltip.  Talents behave similarly to words
+    const tooltip = mkTooltip(t);
+    chip.innerHTML = `<div class="chip-name ${rarityClass}">${t.name}</div><div class="chip-info">Buff</div>${tooltip}`;
+    chip.style.cursor = 'default';
+    chip.style.opacity = '0.9';
+    // Buffs are not clickable/sellable - just display only
+    bar.appendChild(chip);
+  });
 }
 
 function rerollShop(){
