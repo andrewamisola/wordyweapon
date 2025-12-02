@@ -1916,6 +1916,14 @@ function attachDamageTooltip(el){
       ? (el.__tooltipContent() || '')
       : (el.__tooltipContent || '');
     tooltip.innerHTML = content;
+    // Position the tooltip in the viewport so it can float above any scrollable containers.
+    const rect = el.getBoundingClientRect();
+    const offset = 8;
+    const centerX = rect.left + rect.width / 2;
+    const defaultTop = rect.top - offset;
+    const modalTop = rect.bottom + offset;
+    tooltip.style.setProperty('--tooltip-left', `${centerX}px`);
+    tooltip.style.setProperty('--tooltip-top', `${tooltip.classList.contains('modal-tooltip') ? modalTop : defaultTop}px`);
     tooltip.style.pointerEvents = clickToggle ? 'auto' : 'none';
     tooltip.style.opacity = content ? '1' : '0';
     tooltip.dataset.visible = content ? 'true' : 'false';
