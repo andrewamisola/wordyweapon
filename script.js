@@ -879,16 +879,17 @@ function init(){
     combatContinueBtn.onclick = afterCombat;
     combatContinueBtn.onmouseenter = sfxHover;
   }
-  const shopContinueBtn = document.getElementById("shop-continue");
-  if(shopContinueBtn){
-    shopContinueBtn.onclick = () => {
+  const shopExitBtn = document.getElementById("exit-shop-btn");
+  if(shopExitBtn){
+    shopExitBtn.textContent = "Exit Shop ➡️";
+    shopExitBtn.onclick = () => {
       document.getElementById("shop-overlay").classList.remove("show");
       S.rerollCost = 5;
       clrSel();
       newEnc();
       render();
     };
-    shopContinueBtn.onmouseenter = sfxHover;
+    shopExitBtn.onmouseenter = sfxHover;
   }
   const shopMenuBtn = document.getElementById("shop-menu");
   if(shopMenuBtn){
