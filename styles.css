@@ -193,6 +193,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .slot-calc.positive{color:#4ade80}.slot-calc.negative{color:#f87171}
 #of-label{font-size:16px;color:#6b7280;padding-top:14px}
 #of-label.hidden{display:none}
+.connector-phrase{font-style:italic}
 #preview{display:flex;justify-content:center;align-items:center;gap:30px;background:#080a0d;border-radius:8px;padding:12px;margin-bottom:14px}
 .preview-block{text-align:center}
 .preview-label{font-size:9px;color:#6b7280;margin-bottom:2px}

@@ -851,6 +851,7 @@ function sfxLose(){[400,300,200,150].forEach((f,i)=>setTimeout(()=>playTone(f,0.
 function sfxBuy(){playTone(880,0.1,'sine',0.15);setTimeout(()=>playTone(1100,0.15,'sine',0.12),80)}
 
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const escapeHtml=str=>String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]||ch));
 
 // === INIT ===
 function init(){
@@ -2170,8 +2171,16 @@ function renderWeapon(target="#weapon-svg"){
   if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
 
   if(target==="#weapon-svg"){
-    const nm=buildWeaponName();
-    $("#weapon-name").textContent=nm;
+    const parts=buildWeaponNameParts();
+    const nm=buildWeaponName(parts);
+    const weaponNameEl=$("#weapon-name");
+    if(weaponNameEl){
+      weaponNameEl.setAttribute('aria-label', nm);
+      weaponNameEl.innerHTML=parts.map(p=>{
+        const safeText=escapeHtml(p.text);
+        return p.italic?`<em class="connector-phrase">${safeText}</em>`:safeText;
+      }).join(' ');
+    }
   }
 }
 
@@ -2207,7 +2216,7 @@ function renderWeaponProgress(target, progress){
   if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
 }
 
-function buildWeaponName(){
+function buildWeaponNameParts(){
   const s=S.sel;
   const parts=[];
   // Helper to get the display name for a word based on the slot it occupies. If a noun is
@@ -2225,21 +2234,30 @@ function buildWeaponName(){
     return word.name;
   }
 
+  function addWord(word, slotKey){
+    if(!word) return;
+    parts.push({text:getDisplayName(word, slotKey), italic:false});
+  }
+
   // Order: adj1 adj2 weapon of [the] adj3 adj4 noun1
-  if(s.adj1) parts.push(getDisplayName(s.adj1, 'adj1'));
-  if(s.adj2) parts.push(getDisplayName(s.adj2, 'adj2'));
-  if(s.item) parts.push(getDisplayName(s.item, 'item'));
+  addWord(s.adj1, 'adj1');
+  addWord(s.adj2, 'adj2');
+  addWord(s.item, 'item');
 
   // If a gem is present, always include "of the" and then any adjectives
   // after the gem and the gem itself.  This removes ambiguity between
   // "of" and "of the" and makes the sentence structure consistent.
   if(s.noun1){
-    parts.push('of the');
-    if(s.adj3) parts.push(getDisplayName(s.adj3, 'adj3'));
-    if(s.adj4) parts.push(getDisplayName(s.adj4, 'adj4'));
-    parts.push(getDisplayName(s.noun1, 'noun1'));
+    parts.push({text:'of the', italic:true});
+    addWord(s.adj3, 'adj3');
+    addWord(s.adj4, 'adj4');
+    addWord(s.noun1, 'noun1');
   }
-  return parts.join(' ');
+  return parts;
+}
+
+function buildWeaponName(parts=buildWeaponNameParts()){
+  return parts.map(p=>p.text).join(' ');
 }
 
 // === CALCULATION WITH TALENT HOOKS ===
