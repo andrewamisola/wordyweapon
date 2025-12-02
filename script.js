@@ -1894,15 +1894,21 @@ function getSharedBreakdownContent(precomputed){
 }
 
 function attachDamageTooltip(el){
-  if(!el || el.__tooltipAttached) return;
-  el.__tooltipAttached = true;
+  if(!el) return;
   el.classList.add('has-tooltip');
   el.setAttribute('tabindex','0');
-  const tooltip = document.createElement('div');
-  tooltip.className = 'tooltip modal-tooltip';
-  tooltip.style.whiteSpace = 'normal';
-  tooltip.style.pointerEvents = 'none';
-  el.appendChild(tooltip);
+
+  let tooltip = el.querySelector('.tooltip.modal-tooltip');
+  if(!tooltip){
+    tooltip = document.createElement('div');
+    tooltip.className = 'tooltip modal-tooltip';
+    tooltip.style.whiteSpace = 'normal';
+    tooltip.style.pointerEvents = 'none';
+    el.appendChild(tooltip);
+  }
+
+  if(el.__tooltipAttached) return;
+  el.__tooltipAttached = true;
 
   const clickToggle = el.classList.contains('click-tooltip');
   const show = () => {
