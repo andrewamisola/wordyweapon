@@ -805,6 +805,9 @@ function init(){
 }
 
 function startNewRun(){
+  // Ensure no overlays remain visible when starting a fresh run
+  closeRunOverlays();
+
   // Reset run state
   S.wins=0;S.losses=0;S.streak=0;S.gold=30;
   S.level=1;S.roundIndex=1;S.floor=1;
@@ -3635,6 +3638,17 @@ function closePauseMenu(){
   }
 }
 
+function closeRunOverlays(){
+  // Close pause menu first to reset its state, then hide other run overlays
+  closePauseMenu();
+  ['shop-overlay','combat-overlay'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.classList.remove('show');
+    }
+  });
+}
+
 // Defer initialization until the DOM has fully loaded.  This ensures that
 // elements like the main menu start button exist when we attach event
 // handlers.  We also bind the start button here rather than in init() so
@@ -3660,7 +3674,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pauseBtn=document.getElementById('pause-btn');
   if(pauseBtn){pauseBtn.onclick=()=>openPauseMenu(isShopOpen()?"shop":"run");}
   $("#pause-continue").onclick=()=>closePauseMenu();
-  $("#pause-new").onclick=()=>{closePauseMenu();startNewRun();};
+  $("#pause-new").onclick=()=>{closeRunOverlays();startNewRun();};
   $("#pause-achievements").onclick=()=>{closePauseMenu();document.getElementById('achievements-overlay').classList.add('show');renderStats();};
   $("#pause-exit").onclick=()=>closePauseMenu();
   const shopMenuBtn=document.getElementById('shop-menu');
