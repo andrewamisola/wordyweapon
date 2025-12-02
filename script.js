@@ -514,7 +514,8 @@ let S={
   shadowBonusHP:0, // For Shadow Pact talent
   battleHardenedBonus:0, // For Battle Hardened talent cap tracking
   quickStudyBonus:0, // For Quick Study talent cap tracking
-  tempEffects:{} // One-battle temporary modifiers
+  tempEffects:{}, // One-battle temporary modifiers
+  rewardOverflow:[] // Boss rewards queued when inventory is full
 },audioOn=true;
 
 function loadStats(){
@@ -814,6 +815,7 @@ function startNewRun(){
   S.quickStudyBonus=0; // Reset talent state
   S.tempEffects={};
   S.consumables=[];
+  S.rewardOverflow=[];
   // Reset hero selection flag so that a new hero must be chosen on each new run.
   S.heroSelected = false;
   // Populate starting inventory: give all Tier 1 weapons (COMMON rarity) to the player
@@ -2548,33 +2550,48 @@ function afterCombat(){
     // a simple weighted rarity: common words are more likely than higher tiers.
     const isBoss = (S.roundIndex % 3 === 0);
     if(isBoss){
-      const deliveryCount = 4;
-      if(S.inv.length + deliveryCount <= INV_LIMIT){
-        // Select one random weapon with T1=60%, T2=30%, T3=10% distribution
-        const weapons = WORDS.filter(w => w.type === 'weapon');
-        const weaponWeighted = [];
-        weapons.forEach(w => {
-          const rank = RRANK[w.rarity] || 0;
-          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
-          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
-          for(let i = 0; i < weight; i++) weaponWeighted.push(w);
-        });
-        const randWeapon = weaponWeighted[Math.floor(Math.random() * weaponWeighted.length)];
-        S.inv.push({ ...randWeapon });
-        // Build a weighted list of non‑weapon words.  Rarity weighting: T1=60%, T2=30%, T3=10%
-        // Using weights: T1 ×6, T2 ×3, T3 ×1 (6:3:1 ratio = 60%:30%:10%)
-        const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
-        const weighted = [];
-        nonWeapons.forEach(w => {
-          const rank = RRANK[w.rarity] || 0;
-          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
-          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
-          for(let i = 0; i < weight; i++) weighted.push(w);
-        });
-        for(let i = 0; i < 3; i++){
-          const randWord = weighted[Math.floor(Math.random() * weighted.length)];
-          S.inv.push({ ...randWord });
+      const rewards=[];
+      // Select one random weapon with T1=60%, T2=30%, T3=10% distribution
+      const weapons = WORDS.filter(w => w.type === 'weapon');
+      const weaponWeighted = [];
+      weapons.forEach(w => {
+        const rank = RRANK[w.rarity] || 0;
+        // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
+        const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+        for(let i = 0; i < weight; i++) weaponWeighted.push(w);
+      });
+      const randWeapon = weaponWeighted[Math.floor(Math.random() * weaponWeighted.length)];
+      rewards.push({ ...randWeapon });
+      // Build a weighted list of non‑weapon words.  Rarity weighting: T1=60%, T2=30%, T3=10%
+      // Using weights: T1 ×6, T2 ×3, T3 ×1 (6:3:1 ratio = 60%:30%:10%)
+      const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
+      const weighted = [];
+      nonWeapons.forEach(w => {
+        const rank = RRANK[w.rarity] || 0;
+        // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
+        const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+        for(let i = 0; i < weight; i++) weighted.push(w);
+      });
+      for(let i = 0; i < 3; i++){
+        const randWord = weighted[Math.floor(Math.random() * weighted.length)];
+        rewards.push({ ...randWord });
+      }
+
+      const addedNames=[],queuedNames=[];
+      rewards.forEach(item=>{
+        if(S.inv.length < INV_LIMIT){
+          S.inv.push({ ...item });
+          addedNames.push(item.name);
+        }else{
+          S.rewardOverflow.push({ ...item });
+          queuedNames.push(item.name);
         }
+      });
+
+      if(queuedNames.length){
+        alert(`Inventory full! Added ${addedNames.length} boss reward(s) and queued ${queuedNames.length}: ${queuedNames.join(', ')}. Clear space in your inventory to claim queued rewards at the shop.`);
+      }else if(addedNames.length){
+        alert(`Boss rewards added: ${addedNames.join(', ')}`);
       }
     }
 
@@ -2957,10 +2974,35 @@ function spawnFlames(count){
   }
 }
 
+function claimQueuedRewards(){
+  if(!S.rewardOverflow || !S.rewardOverflow.length) return;
+  const added=[];
+  const remaining=[];
+  S.rewardOverflow.forEach(item=>{
+    if(S.inv.length < INV_LIMIT){
+      S.inv.push({ ...item });
+      added.push(item.name);
+    }else{
+      remaining.push(item);
+    }
+  });
+  S.rewardOverflow=[...remaining];
+  if(!added.length && !remaining.length) return;
+  let msg="";
+  if(added.length){
+    msg += `Claimed ${added.length} queued boss reward(s): ${added.join(', ')}.`;
+  }
+  if(remaining.length){
+    msg += `${msg?" ":""}Inventory full—${remaining.length} queued reward(s) remain. Clear space to claim them.`;
+  }
+  alert(msg);
+}
+
 // === SHOP ===
 let shopCrates=[],shopBuffCrates=[],shopConsumables=[];
 function showShop(){
   S.rerollCost=5;
+  claimQueuedRewards();
   rollShop();
   renderShop();
   saveRun();
