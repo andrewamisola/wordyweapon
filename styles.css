@@ -54,8 +54,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .details-panel.hidden{display:none}
 .details-content{font-size:12px}
 #vs-center{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:16px}
-#weapon-display{text-align:center}
-.weapon-canvas{position:relative;transition:transform .3s,filter .3s;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));perspective:800px}
+#weapon-display{text-align:center;overflow:visible}
+.weapon-canvas{position:relative;transition:transform .3s,filter .3s;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));perspective:800px;overflow:visible}
 .weapon-layered{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .25s ease,filter .25s ease;--tilt-x:0deg;--tilt-y:0deg;transform:rotateX(var(--tilt-x)) rotateY(var(--tilt-y));}
 .weapon-layered[data-parallax-enabled="false"]{transform:none}
 .weapon-layered:hover{filter:drop-shadow(0 10px 24px rgba(0,0,0,0.55));}
@@ -64,7 +64,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .weapon-glow{position:absolute;inset:-15%;mix-blend-mode:screen;pointer-events:none;opacity:0.9;transform:translateZ(16px);}
 #weapon-display .weapon-canvas{width:120px;height:150px;margin:0 auto;}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
-#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help;z-index:5000}
+#damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help}
 #damage-preview-text::before{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(245,193,92,0.2);pointer-events:none;mask:radial-gradient(20px 20px at 0 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 0,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 0 100%,#000 95%,transparent 100%) subtract,radial-gradient(20px 20px at 100% 100%,#000 95%,transparent 100%);opacity:.6}
 #preview-tooltip-hint{opacity:0.85;display:flex;align-items:center;gap:8px}
 .icon-button{width:20px;height:20px;border-radius:50%;border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;font-size:12px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0}
@@ -228,6 +228,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 /* Allow tooltips on slots to appear when hovering */
 .slot .tooltip{z-index:20000;pointer-events:none}
 .slot:hover .tooltip{opacity:1}
+.has-tooltip .tooltip.modal-tooltip{z-index:20000}
 .tooltip-title{font-size:13px;font-weight:bold;margin-bottom:4px}
 .tooltip-type{font-size:10px;color:#6b7280;margin-bottom:6px}
 .tooltip-line{margin:4px 0;color:#d1d5db}
@@ -345,7 +346,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .shop-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px;border-radius:12px}
 .shop-reroll{display:flex;align-items:center;gap:8px;font-size:13px}
 .shop-reroll-cost{color:#9ca3af;font-size:12px}
-#forge-btn::after,#exit-shop-btn::after{content:"";position:absolute;inset:-40% 70% -40% -40%;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,0.55) 50%,transparent 65%);transform:skewX(-20deg);animation:exitShine 2.4s ease-in-out infinite}
+#exit-shop-btn::after{content:"";position:absolute;inset:-40% 70% -40% -40%;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,0.55) 50%,transparent 65%);transform:skewX(-20deg);animation:exitShine 2.4s ease-in-out infinite}
 #exit-shop-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#ecfdf3;border-color:#34d399;box-shadow:0 0 12px rgba(52,211,153,0.45),0 8px 18px rgba(22,163,74,0.35);position:relative;overflow:hidden}
 #exit-shop-btn:hover:not(:disabled){background:linear-gradient(135deg,#2dd978,#16a34a);border-color:#6ee7b7;box-shadow:0 0 14px rgba(52,211,153,0.6),0 10px 20px rgba(22,163,74,0.45)}
 #exit-shop-btn:active{transform:translateY(0)}
