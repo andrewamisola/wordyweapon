@@ -744,6 +744,8 @@ let S={
   sel:{item:null,adj1:null,adj2:null,adj3:null,adj4:null,noun1:null}, // Selected words: 1 weapon, 4 adjectives, 1 noun
   // Word currently selected from the bank awaiting assignment to a slot
   pendingWord:null,
+  // Pre-rolled boss loot used to keep preview text and actual rewards in sync
+  pendingBossLoot:null,
   rerollCost:5,
   sortMode:"type",
   // Sort direction for the forge inventory: true=ascending, false=descending
@@ -1063,6 +1065,7 @@ function startNewRun(){
   S.shadowBonusHP=0; // Reset talent state
   S.battleHardenedBonus=0; // Reset talent state
   S.quickStudyBonus=0; // Reset talent state
+  S.pendingBossLoot=null; // Clear any pre-rolled boss loot
   S.tempEffects={};
   S.consumables=[];
   // Reset hero selection flag so that a new hero must be chosen on each new run.
@@ -2720,6 +2723,9 @@ function forge(){
   const {enemy:safeEnemy}=getCombatants();
   const targetHp = safeEnemy.hp || 0;
 
+  // Reset any pre-rolled loot when entering combat; re-roll if a boss victory is predicted
+  S.pendingBossLoot = null;
+
   if(c.heroDmg >= targetHp){
     // Victory - calculate gold
     const overkill = Math.max(0, Math.round(c.heroDmg - targetHp));
@@ -2732,16 +2738,18 @@ function forge(){
     // Boss loot
     const isBoss = (S.roundIndex % 3 === 0);
     if(isBoss){
-      // Preview what loot will be granted (1 weapon + 3 random words)
-      const weapons = WORDS.filter(w => w.type === 'weapon');
-      const randWeapon = weapons[Math.floor(Math.random() * weapons.length)];
-      rewards.items.push(randWeapon.name);
+      // Preview what loot will be granted: 1 weapon + 3 words with a guaranteed Tier-3 drop
+      const bossLoot = rollBossLootDrops();
+      S.pendingBossLoot = bossLoot;
 
-      const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
-      for(let i = 0; i < 3; i++){
-        const randWord = nonWeapons[Math.floor(Math.random() * nonWeapons.length)];
-        rewards.items.push(randWord.name);
+      const dropOrder = [];
+      if(bossLoot && Array.isArray(bossLoot.words)){
+        dropOrder.push(...bossLoot.words);
       }
+      if(bossLoot && bossLoot.weapon){
+        dropOrder.push(bossLoot.weapon);
+      }
+      rewards.items.push(...dropOrder.map(item => item.name));
     }
   }
 
@@ -2756,8 +2764,47 @@ function forge(){
   showCombat(c, words, rewards);
 }
 
+function buildWeightedPool(words){
+  const pool = [];
+  words.forEach(w => {
+    const rank = RRANK[w.rarity] || 0;
+    const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
+    for(let i = 0; i < weight; i++) pool.push(w);
+  });
+  return pool;
+}
+
+function rollBossLootDrops(){
+  const weapons = WORDS.filter(w => w.type === 'weapon');
+  const weightedWeapons = buildWeightedPool(weapons);
+  const weaponDrop = weightedWeapons.length
+    ? weightedWeapons[Math.floor(Math.random() * weightedWeapons.length)]
+    : null;
+
+  const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
+  const weightedNonWeapons = buildWeightedPool(nonWeapons);
+  const tier3Pool = nonWeapons.filter(w => (RRANK[w.rarity] || 0) >= 3);
+  const guaranteedT3 = tier3Pool.length
+    ? tier3Pool[Math.floor(Math.random() * tier3Pool.length)]
+    : (weightedNonWeapons[0] || null);
+
+  const wordDrops = [];
+  if(guaranteedT3) wordDrops.push(guaranteedT3);
+
+  const desiredWordCount = 3;
+  for(let i = wordDrops.length; i < desiredWordCount; i++){
+    if(weightedNonWeapons.length === 0) break;
+    const randWord = weightedNonWeapons[Math.floor(Math.random() * weightedNonWeapons.length)];
+    if(randWord) wordDrops.push(randWord);
+  }
+
+  return { weapon: weaponDrop, words: wordDrops };
+}
+
 function afterCombat(){
   const lastResult=window.lastCombatResult;
+  const pendingBossLoot = S.pendingBossLoot;
+  S.pendingBossLoot = null;
   $("#combat-overlay").classList.remove("show");
   S.tempEffects={};
 
@@ -2799,39 +2846,23 @@ function afterCombat(){
     // Level up
     S.level++;
 
-    // Delivery of goods: grant the player a free pack of 1 weapon and 3 random words ONLY after boss victories.
-    // Bosses occur at rounds 3, 6, 9, etc. (every 3rd round).
-    // Only add the items if there is enough inventory space.  Words are selected with
-    // a simple weighted rarity: common words are more likely than higher tiers.
+    // Delivery of goods: grant the player a free pack of 1 weapon and 3 words ONLY after boss victories.
+    // Bosses occur at rounds 3, 6, 9, etc. (every 3rd round). One of the words is always Tier-3,
+    // with the remaining drops still using weighted rarity (T1=60%, T2=30%, T3=10%).
     const isBoss = (S.roundIndex % 3 === 0);
     if(isBoss){
-      const deliveryCount = 4;
-      if(S.inv.length + deliveryCount <= INV_LIMIT){
-        // Select one random weapon with T1=60%, T2=30%, T3=10% distribution
-        const weapons = WORDS.filter(w => w.type === 'weapon');
-        const weaponWeighted = [];
-        weapons.forEach(w => {
-          const rank = RRANK[w.rarity] || 0;
-          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
-          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
-          for(let i = 0; i < weight; i++) weaponWeighted.push(w);
-        });
-        const randWeapon = weaponWeighted[Math.floor(Math.random() * weaponWeighted.length)];
-        S.inv.push({ ...randWeapon });
-        // Build a weighted list of non‑weapon words.  Rarity weighting: T1=60%, T2=30%, T3=10%
-        // Using weights: T1 ×6, T2 ×3, T3 ×1 (6:3:1 ratio = 60%:30%:10%)
-        const nonWeapons = WORDS.filter(w => w.type !== 'weapon');
-        const weighted = [];
-        nonWeapons.forEach(w => {
-          const rank = RRANK[w.rarity] || 0;
-          // Apply weights: T1×6, T2×3, T3×1 (6:3:1 ratio)
-          const weight = rank === 0 ? 6 : rank === 2 ? 3 : 1;
-          for(let i = 0; i < weight; i++) weighted.push(w);
-        });
-        for(let i = 0; i < 3; i++){
-          const randWord = weighted[Math.floor(Math.random() * weighted.length)];
-          S.inv.push({ ...randWord });
-        }
+      const bossLoot = pendingBossLoot || rollBossLootDrops();
+      const dropOrder = [];
+      if(bossLoot && Array.isArray(bossLoot.words)){
+        dropOrder.push(...bossLoot.words);
+      }
+      if(bossLoot && bossLoot.weapon){
+        dropOrder.push(bossLoot.weapon);
+      }
+
+      const availableSlots = Math.max(0, INV_LIMIT - S.inv.length);
+      if(availableSlots > 0){
+        dropOrder.slice(0, availableSlots).forEach(drop => S.inv.push({ ...drop }));
       }
     }
 
@@ -3150,8 +3181,18 @@ async function showCombat(r,words,rewards){
 💰 +${rewards.gold} Gold`;
       }
       if(rewards && rewards.items.length > 0){
-        detailText += `
-🎁 Boss Loot: ${rewards.items.join(", ")}`;
+        const availableSlots = Math.max(0, INV_LIMIT - (S.inv?.length || 0));
+        const lootNames = rewards.items.slice(0, availableSlots);
+        if(lootNames.length > 0){
+          detailText += `
+🎁 Boss Loot: ${lootNames.join(", ")}`;
+          if(availableSlots < rewards.items.length){
+            detailText += " (inventory space limited)";
+          }
+        } else {
+          detailText += `
+🎁 Boss Loot: (inventory full)`;
+        }
       }
       if(resultDetail){
         resultDetail.textContent=detailText;
