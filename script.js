@@ -3440,96 +3440,80 @@ function renderShopWordBank(){
 }
 
 function renderShopConsumables(){
-  const cont=$("#shop-consumables");cont.innerHTML="";
-  const shopHeader=document.createElement("div");
-  shopHeader.className="dim";
-  shopHeader.style.fontSize="11px";
-  shopHeader.style.textAlign="center";
-  shopHeader.style.marginBottom="6px";
-  shopHeader.textContent="Shop Stock";
-  cont.appendChild(shopHeader);
+  const cont=$("#shop-consumables");
+  cont.innerHTML="";
+  cont.style.flexWrap="nowrap";
+  cont.style.justifyContent="flex-start";
+  cont.style.alignItems="stretch";
 
-  shopConsumables.forEach((c,i)=>{
-    const atLimit = S.consumables.length>=CONSUMABLE_LIMIT;
-    const canAfford = S.gold>=c.cost;
-    const d=document.createElement("div");d.className="shop-item";
-    d.innerHTML=`
-      <div class="chip-name rarity-magic">${c.name}</div>
-      <div class="chip-info" style="font-size:9px;line-height:1.3;margin:4px 0">${c.desc}</div>
-      <div class="shop-price gold">💰${c.cost}</div>
-      <button class="shop-btn" ${(!canAfford||atLimit)?"disabled":""}>${atLimit?"Full" : "Buy"}</button>
-    `;
-    const btn=d.querySelector("button");
-    btn.onmouseenter = sfxHover;
-    btn.onclick=()=>{
-      if(S.consumables.length>=CONSUMABLE_LIMIT){
-        alert(`You can only carry ${CONSUMABLE_LIMIT} consumables.`);
-        return;
+  const buildTooltip=(c)=>{
+    const name=c?.name||"Consumable";
+    const desc=c?.desc||"Consumable";
+    return `<div class="tooltip"><div class="tooltip-title">${name}</div><div class="tooltip-line">${desc}</div></div>`;
+  };
+
+  const makeChip=(c,mode,index)=>{
+    const chip=document.createElement("div");
+    chip.className="chip";
+    chip.style.flex="0 0 auto";
+    chip.onmouseenter=sfxHover;
+
+    const name=c?.name||"Consumable";
+    const cost=c?.cost||0;
+    const tooltip=buildTooltip(c);
+
+    if(mode==="shop"){
+      const atLimit=S.consumables.length>=CONSUMABLE_LIMIT;
+      const canAfford=S.gold>=cost;
+      const infoLabel=`${atLimit?"At capacity":"Buy"} · 💰${cost}`;
+      if(atLimit||!canAfford){
+        chip.classList.add("disabled");
       }
-      if(S.gold>=c.cost){
-        sfxBuy();
-        S.gold-=c.cost;
-        // Always add consumable to inventory for later use
-        S.consumables.push(c.id);
-        alert(`Purchased ${c.name}!`);
-        shopConsumables.splice(i,1);
-        renderShop();
-        render();
-      }
-    };
-    cont.appendChild(d);
-  });
-  if(shopConsumables.length===0){
-    const soldOut=document.createElement("div");
-    soldOut.className="dim";
-    soldOut.style.padding="10px";
-    soldOut.style.fontSize="11px";
-    soldOut.textContent="Sold out!";
-    cont.appendChild(soldOut);
-  }
-
-  const ownedHeader=document.createElement("div");
-  ownedHeader.className="dim";
-  ownedHeader.style.fontSize="11px";
-  ownedHeader.style.textAlign="center";
-  ownedHeader.style.margin="10px 0 6px";
-  ownedHeader.textContent="Your Consumables";
-  cont.appendChild(ownedHeader);
-
-  if(!S.consumables.length){
-    const none=document.createElement("div");
-    none.className="dim";
-    none.style.padding="10px";
-    none.style.fontSize="11px";
-    none.textContent="You have no consumables to sell.";
-    cont.appendChild(none);
-  } else {
-    S.consumables.forEach((cid)=>{
-      const cItem=CONSUMABLES.find(x=>x.id===cid);
-      const sellPrice=Math.max(1, Math.floor((cItem?.cost||0)/2));
-      const d=document.createElement("div");d.className="shop-item";
-      d.innerHTML=`
-        <div class="chip-name rarity-magic">${cItem?.name||cid}</div>
-        <div class="chip-info" style="font-size:9px;line-height:1.3;margin:4px 0">${cItem?.desc||"Consumable"}</div>
-        <div class="shop-price gold">Sell for 💰${sellPrice}</div>
-        <button class="shop-btn">Sell</button>
-      `;
-      const btn=d.querySelector("button");
-      btn.onmouseenter = sfxHover;
-      btn.onclick=()=>{
-        const idx=S.consumables.indexOf(cid);
-        if(idx>=0){
-          sfxRemove();
-          S.consumables.splice(idx,1);
-          S.gold+=sellPrice;
-          alert(`Sold ${cItem?.name||cid} for ${sellPrice} gold.`);
+      chip.onclick=()=>{
+        if(atLimit){
+          alert(`You can only carry ${CONSUMABLE_LIMIT} consumables.`);
+          return;
+        }
+        if(S.gold>=cost){
+          sfxBuy();
+          S.gold-=cost;
+          S.consumables.push(c.id);
+          shopConsumables.splice(index,1);
           renderShop();
           render();
         }
       };
-      cont.appendChild(d);
-    });
-  }
+      chip.innerHTML=`<div class="chip-name rarity-magic">${name}</div><div class="chip-info">${infoLabel}</div>${tooltip}`;
+    } else {
+      const sellPrice=Math.max(1,Math.floor(cost/2));
+      chip.onclick=()=>{
+        const idx=S.consumables.indexOf(c?.id||index);
+        if(idx>=0){
+          sfxRemove();
+          S.consumables.splice(idx,1);
+          S.gold+=sellPrice;
+          renderShop();
+          render();
+        }
+      };
+      chip.innerHTML=`<div class="chip-name rarity-magic">${name}</div><div class="chip-info">Sell · 💰${sellPrice}</div>${tooltip}`;
+    }
+
+    return chip;
+  };
+
+  const items=[
+    ...shopConsumables.map((c,i)=>({item:c,mode:"shop",index:i})),
+    ...S.consumables.map((cid,i)=>({
+      item:CONSUMABLES.find(x=>x.id===cid)||{id:cid,name:cid,desc:"Consumable",cost:0},
+      mode:"owned",
+      index:i
+    }))
+  ];
+
+  items.forEach(({item,mode,index})=>{
+    cont.appendChild(makeChip(item,mode,index));
+  });
 }
 
 // Render active talents within the shop overlay.  Each talent is displayed as a chip with its
