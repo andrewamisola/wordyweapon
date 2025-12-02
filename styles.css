@@ -222,7 +222,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .chip-info{font-size:8px;color:#6b7280}
 .chip-elem{font-size:8px;margin-top:2px}
 .rarity-common{color:#9ca3af}.rarity-magic{color:#60a5fa}.rarity-rare{color:#f4d03f}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f97316}.rarity-rusty{color:#b45309}
-.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:260px;text-align:left;z-index:50;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
+.tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1a1d24;border:1px solid #4b5563;border-radius:8px;padding:10px;font-size:11px;width:260px;text-align:left;z-index:250;pointer-events:none;opacity:0;transition:opacity .15s;margin-bottom:8px;box-shadow:0 4px 20px #000a}
 .chip:hover .tooltip{opacity:1}
 /* Allow tooltips on slots to appear when hovering */
 .slot:hover .tooltip{opacity:1}
@@ -279,7 +279,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #combat-result.lose{background:#7f1d1d44;border-color:#f8717155}
 #combat-result-title{font-size:22px;margin-bottom:3px}
 #combat-result-detail{font-size:12px;color:#9ca3af}
-.has-tooltip{position:relative;cursor:help}
+.has-tooltip{position:relative;cursor:help;z-index:1}
 .tooltip.modal-tooltip{bottom:auto;top:100%;margin-top:8px}
 .shop-section{margin-bottom:10px;padding:10px;border-radius:10px}
 .shop-section-title{font-size:12px;color:#6b7280;margin-bottom:6px;text-align:center}
