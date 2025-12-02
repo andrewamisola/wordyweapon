@@ -230,7 +230,7 @@
       <div class="shop-columns">
         <div class="shop-section" style="flex:1">
           <div class="shop-section-title">📦 WORD CRATES</div>
-          <div id="shop-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+          <div id="shop-crates" class="shop-grid card-surface"></div>
           <div class="shop-section" style="margin-top:12px; display:none">
             <div class="shop-section-title">✨ BUFFS</div>
             <div id="shop-buff-crates" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
@@ -241,7 +241,12 @@
             <div class="shop-section-title" style="margin:0">🎴 CONSUMABLES</div>
             <div id="shop-consumable-cap" class="dim" style="font-size:11px"></div>
           </div>
-          <div id="shop-consumables" style="display:flex;gap:6px;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:6px"></div>
+          <div class="shop-consumable-stack">
+            <div class="shop-subtitle">For sale</div>
+            <div id="shop-consumables" class="shop-grid card-surface"></div>
+            <div class="shop-subtitle">Owned</div>
+            <div id="shop-owned-consumables" class="shop-grid card-surface"></div>
+          </div>
         </div>
       </div>
       <div class="shop-section">

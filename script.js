@@ -3749,11 +3749,11 @@ function renderShopWordBank(){
 }
 
 function renderShopConsumables(){
-  const cont=$("#shop-consumables");
-  cont.innerHTML="";
-  cont.style.flexWrap="nowrap";
-  cont.style.justifyContent="flex-start";
-  cont.style.alignItems="stretch";
+  const shopCont=$("#shop-consumables");
+  const ownedCont=$("#shop-owned-consumables");
+  if(!shopCont||!ownedCont) return;
+  shopCont.innerHTML="";
+  ownedCont.innerHTML="";
 
   const buildTooltip=(c)=>{
     const name=c?.name||"Consumable";
@@ -3764,7 +3764,7 @@ function renderShopConsumables(){
   const makeChip=(c,mode,index)=>{
     const chip=document.createElement("div");
     chip.className="chip";
-    chip.style.flex="0 0 auto";
+    chip.style.width="100%";
     chip.onmouseenter=sfxHover;
 
     const name=c?.name||"Consumable";
@@ -3811,18 +3811,34 @@ function renderShopConsumables(){
     return chip;
   };
 
-  const items=[
-    ...shopConsumables.map((c,i)=>({item:c,mode:"shop",index:i})),
-    ...S.consumables.map((cid,i)=>({
-      item:CONSUMABLES.find(x=>x.id===cid)||{id:cid,name:cid,desc:"Consumable",cost:0},
-      mode:"owned",
-      index:i
-    }))
-  ];
+  const shopItems=shopConsumables.map((c,i)=>({item:c,mode:"shop",index:i}));
+  const ownedItems=S.consumables.map((cid,i)=>({
+    item:CONSUMABLES.find(x=>x.id===cid)||{id:cid,name:cid,desc:"Consumable",cost:0},
+    mode:"owned",
+    index:i
+  }));
 
-  items.forEach(({item,mode,index})=>{
-    cont.appendChild(makeChip(item,mode,index));
-  });
+  if(shopItems.length===0){
+    const empty=document.createElement("div");
+    empty.className="dim";
+    empty.style.fontSize="11px";
+    empty.style.padding="6px";
+    empty.textContent="Sold out!";
+    shopCont.appendChild(empty);
+  } else {
+    shopItems.forEach(({item,mode,index})=>shopCont.appendChild(makeChip(item,mode,index)));
+  }
+
+  if(ownedItems.length===0){
+    const empty=document.createElement("div");
+    empty.className="dim";
+    empty.style.fontSize="11px";
+    empty.style.padding="6px";
+    empty.textContent="No consumables owned";
+    ownedCont.appendChild(empty);
+  } else {
+    ownedItems.forEach(({item,mode,index})=>ownedCont.appendChild(makeChip(item,mode,index)));
+  }
 }
 
 // Render active talents within the shop overlay.  Each talent is displayed as a chip with its
