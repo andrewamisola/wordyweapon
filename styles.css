@@ -61,7 +61,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .weapon-layered:hover{filter:drop-shadow(0 10px 24px rgba(0,0,0,0.55));}
 .weapon-layer{position:absolute;inset:0;pointer-events:none;width:100%;height:100%;}
 .weapon-shadow{position:absolute;inset:0;filter:blur(10px);opacity:0.25;transform:translateZ(-20px);background:radial-gradient(circle at 50% 10%, rgba(0,0,0,0.35), transparent 65%);}
-.weapon-glow{position:absolute;inset:-6%;mix-blend-mode:screen;pointer-events:none;opacity:0.9;transform:translateZ(16px);}
+.weapon-glow{position:absolute;inset:-15%;mix-blend-mode:screen;pointer-events:none;opacity:0.9;transform:translateZ(16px);}
 #weapon-display .weapon-canvas{width:120px;height:150px;margin:0 auto;}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px}
 #damage-preview-text{display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(0,0,0,0.4));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.09);outline:1px solid rgba(0,0,0,0.7);position:relative;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,0.7),0 12px 24px rgba(0,0,0,0.55);cursor:help;z-index:10}
