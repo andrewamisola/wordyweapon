@@ -8,15 +8,15 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "sync": "rm -rf game && cp -r ../game .",
-    "start": "npm run sync && electron .",
-    "build-mac": "npm run sync && electron-builder --mac",
-    "build-win": "npm run sync && electron-builder --win",
-    "build-linux": "npm run sync && electron-builder --linux",
-    "build-all": "npm run sync && electron-builder --mac --win --linux",
-    "build-steam": "npm run sync && electron-builder --mac --win && cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/steam/ && cp -r dist/win-unpacked ../../WordyWeapon-Builds/steam/",
-    "build-demo": "npm run sync && electron-builder --mac --win --linux && mkdir -p ../../WordyWeapon-Builds/demo/mac && mkdir -p ../../WordyWeapon-Builds/demo/win && mkdir -p ../../WordyWeapon-Builds/demo/linux && cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/demo/mac/ && cp -r dist/win-unpacked/* ../../WordyWeapon-Builds/demo/win/ && cp -r dist/linux-unpacked/* ../../WordyWeapon-Builds/demo/linux/",
-    "build-itch": "npm run sync && cp -r game/* ../../WordyWeapon-Builds/itch/"
+    "start": "electron .",
+    "start:sync": "npx shx rm -rf game && npx shx cp -r ../game . && electron .",
+    "build-mac": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --mac",
+    "build-win": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --win",
+    "build-linux": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --linux",
+    "build-all": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --mac --win --linux",
+    "build-steam": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --mac --win && npx shx cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/steam/ && npx shx cp -r dist/win-unpacked ../../WordyWeapon-Builds/steam/",
+    "build-demo": "npx shx rm -rf game && npx shx cp -r ../game . && electron-builder --mac --win --linux && npx shx mkdir -p ../../WordyWeapon-Builds/demo/mac && npx shx mkdir -p ../../WordyWeapon-Builds/demo/win && npx shx mkdir -p ../../WordyWeapon-Builds/demo/linux && npx shx cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/demo/mac/ && npx shx cp -r dist/win-unpacked/* ../../WordyWeapon-Builds/demo/win/ && npx shx cp -r dist/linux-unpacked/* ../../WordyWeapon-Builds/demo/linux/",
+    "build-itch": "npx shx rm -rf game && npx shx cp -r ../game . && npx shx cp -r game/* ../../WordyWeapon-Builds/itch/"
   },
   "dependencies": {
     "steamworks.js": "^0.3.1"
