@@ -2,32 +2,38 @@
 // Full build (set to true to re-enable demo restrictions)
 const IS_DEMO = false;
 
-// === FIXED RENDER RESOLUTION ===
-// Game renders at 1080p, then scales to fit any screen (letterboxed)
+// === RESPONSIVE LAYOUT ===
+// Game uses viewport-filling CSS grid layout (no fixed dimensions)
+// These constants kept for canvas sizing reference
 const GAME_WIDTH = 1920;
 const GAME_HEIGHT = 1080;
 
 // Detect if running in Electron (uses setZoomFactor for scaling)
 const IS_ELECTRON = typeof process !== 'undefined' && process.versions && process.versions.electron;
 
-// Scale game container to fit viewport (browser only - Electron uses setZoomFactor)
-function scaleGame() {
-  if (IS_ELECTRON) return; // Electron handles scaling via main.js setZoomFactor
+// User UI scale preference (1.0 = 100%) - load from localStorage immediately
+let userUiScale = parseFloat(localStorage.getItem('wordy-ui-scale')) || 1.0;
 
-  const container = document.getElementById('game-container');
-  if (!container) return;
-
-  const scaleX = window.innerWidth / GAME_WIDTH;
-  const scaleY = window.innerHeight / GAME_HEIGHT;
-  const scale = Math.min(scaleX, scaleY);
-
-  container.style.transform = `scale(${scale})`;
-  container.style.transformOrigin = 'center center';
+// Apply user UI scale preference via CSS custom property or Electron zoom
+function applyUserScale() {
+  if (IS_ELECTRON && window.electronAudio?.setUiScale) {
+    // Electron: send scale to main process for setZoomFactor
+    window.electronAudio.setUiScale(userUiScale);
+  } else {
+    // Browser: apply via CSS zoom for user preference
+    document.documentElement.style.zoom = userUiScale;
+  }
 }
 
-// Initialize scaling on load and resize
-window.addEventListener('resize', scaleGame);
-window.addEventListener('DOMContentLoaded', scaleGame);
+// Legacy function name for compatibility
+function scaleGame() {
+  applyUserScale();
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', () => {
+  applyUserScale();
+});
 
 // === 136 BPM RHYTHMIC TIMING ===
 const RHYTHM = {
@@ -561,17 +567,18 @@ const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
 let fxWidth = GAME_WIDTH;
 let fxHeight = GAME_HEIGHT;
 
-// Initialize canvas at fixed resolution (no DPI scaling needed - CSS transform handles display scaling)
+// Initialize canvas to match viewport dimensions (responsive layout)
 function resizeFxCanvas() {
   if (!fxCanvas || !fxCtx) return;
-  fxWidth = GAME_WIDTH;
-  fxHeight = GAME_HEIGHT;
 
-  // Fixed resolution - always 1920x1080, CSS transform scales to screen
-  fxCanvas.width = GAME_WIDTH;
-  fxCanvas.height = GAME_HEIGHT;
+  // Match the viewport dimensions for responsive layout
+  fxWidth = window.innerWidth;
+  fxHeight = window.innerHeight;
 
-  // Reset transform to identity (no DPI scaling needed with fixed resolution)
+  fxCanvas.width = fxWidth;
+  fxCanvas.height = fxHeight;
+
+  // Reset transform to identity
   fxCtx.setTransform(1, 0, 0, 1, 0, 0);
 }
 window.addEventListener('resize', resizeFxCanvas);
@@ -5386,7 +5393,7 @@ const WEAPON_SVG={
     <rect x="46" y="46" width="6" height="76" fill="#ffffff" opacity="0.07"/>
     <rect x="22" y="12" width="56" height="36" rx="5" fill="url(#ml-head)"/>
     <rect x="26" y="16" width="34" height="22" fill="#ffffff" opacity="0.15"/>
-    <path d="M24" y="14 L76 14 L74 44 L26 44 Z" fill="#0f172a" opacity="0.06"/>
+    <path d="M24 14 L76 14 L74 44 L26 44 Z" fill="#0f172a" opacity="0.06"/>
     <rect x="38" y="44" width="24" height="10" rx="3" fill="url(#ml-band)"/>
     <path d="M44 92 L56 92 M44 104 L56 104 M44 116 L56 116" stroke="#6b5840" stroke-width="2" opacity="0.5"/>
     <rect x="44" y="120" width="12" height="8" rx="2" fill="url(#ml-band)"/>
@@ -20937,6 +20944,34 @@ function initGfxSettingsListeners() {
       gfxSettings.lowFx = lowFxCheckbox.checked;
       applyGfxSettings();
       saveGfxSettings();
+    };
+  }
+
+  // UI Scale slider
+  const uiScaleSlider = document.getElementById('ui-scale');
+  const uiScaleValue = document.getElementById('ui-scale-value');
+  if (uiScaleSlider) {
+    const applyUiScale = (scale) => {
+      userUiScale = scale;
+      if (uiScaleValue) uiScaleValue.textContent = Math.round(scale * 100) + '%';
+      localStorage.setItem('wordy-ui-scale', scale);
+
+      // In Electron, send scale to main process
+      if (IS_ELECTRON && window.electronAudio?.setUiScale) {
+        window.electronAudio.setUiScale(scale);
+      } else {
+        scaleGame();
+      }
+    };
+
+    // Load saved scale
+    const savedScale = parseFloat(localStorage.getItem('wordy-ui-scale')) || 1;
+    uiScaleSlider.value = Math.round(savedScale * 100);
+    applyUiScale(savedScale);
+
+    uiScaleSlider.oninput = () => {
+      const scale = parseInt(uiScaleSlider.value) / 100;
+      applyUiScale(scale);
     };
   }
 

@@ -95,22 +95,23 @@ ipcMain.handle('steam-cloud-load', (event, key) => steamCloudLoad(key));
 ipcMain.handle('steam-unlock-achievement', (event, id) => unlockSteamAchievement(id));
 ipcMain.handle('steam-is-achievement-unlocked', (event, id) => isSteamAchievementUnlocked(id));
 
-// Update content scaling when window size changes (especially for fullscreen on 4K)
-// Uses Electron's setZoomFactor for reliable scaling
+// User UI scale preference (1.0 = 100%)
+let userUiScale = 1.0;
+
+ipcMain.handle('set-ui-scale', (event, scale) => {
+  userUiScale = scale;
+  updateContentScale();
+  return true;
+});
+
+// Update content scaling - CSS handles responsiveness, this just applies user preference
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  const [windowWidth, windowHeight] = mainWindow.getContentSize();
+  // Apply user's UI scale preference only (CSS handles responsive layout)
+  mainWindow.webContents.setZoomFactor(userUiScale);
 
-  // Calculate zoom factor to fit game (1920x1080) into window
-  const scaleX = windowWidth / BASE_WIDTH;
-  const scaleY = windowHeight / BASE_HEIGHT;
-  const zoomFactor = Math.min(scaleX, scaleY);
-
-  // Apply zoom factor - this scales all content uniformly
-  mainWindow.webContents.setZoomFactor(zoomFactor);
-
-  console.log(`Window: ${windowWidth}x${windowHeight}, Zoom: ${zoomFactor.toFixed(3)}`);
+  console.log(`User UI Scale: ${userUiScale}`);
 }
 
 // MIME types for serving files

@@ -12,36 +12,40 @@
   --quarter-beat: 0.1103s;   /* 1/16 note */
   --eighth-beat: 0.0551s;    /* 1/32 note */
   --bar: 1.7647s;            /* 1 measure (4 beats) */
+  /* UI Scale: 10% larger for better readability */
+  --ui-scale: 1.1;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}
 
-/* Body: Black background for letterboxing, centers game container */
-body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0;padding:0}
+/* Body: Black background, no centering needed with viewport-filling container */
+body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh;overflow:hidden;margin:0;padding:0}
 
-/* Game Container: Fixed 1080p resolution, CSS-scaled to fit screen */
+/* Game Container: Viewport-filling flex layout */
 #game-container {
-  width: 1920px;
-  height: 1080px;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh; /* Modern viewport height with fallback */
   position: relative;
   overflow: hidden;
   background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),radial-gradient(circle at 80% 0,rgba(76,152,255,0.05),transparent 28%),linear-gradient(135deg,#0a0f17,#080a0f 40%,#0c0f19);
   background-blend-mode:overlay;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  /* transform applied by JS scaleGame() */
+
+  /* Flexbox layout: header at top, battle+forge centered as unit */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 40px; /* Bottom padding */
 }
 
-/* FX Canvas: Fixed 1080p resolution inside container */
+/* FX Canvas: Matches viewport, positioned absolutely */
 #fx-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1920px;
-  height: 1080px;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 10000; /* Above overlays for combat effects */
 }
@@ -298,14 +302,12 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
 
   transition: opacity var(--quarter-beat) ease;
 }
-#flame-bg{position:absolute;top:0;left:0;width:1920px;height:1080px;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
+#flame-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
 #flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:filter var(--half-beat) ease,opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
 /* Orange/yellow glow - bigger, behind, more feathered, wider aspect */
-/* Fixed pixel values: 120vw->2304px, 70vh->756px (based on 1920x1080) */
-#flame-bg::after{width:2304px;height:756px;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(20,90%,45%) 35%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
+#flame-bg::after{width:120vw;height:70vh;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(20,90%,45%) 35%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
 /* Red core - smaller, on top, tighter blur, wider aspect */
-/* Fixed pixel values: 70vw->1344px, 50vh->540px (based on 1920x1080) */
-#flame-bg::before{width:1344px;height:540px;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(5,85%,40%) 45%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
+#flame-bg::before{width:70vw;height:50vh;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(5,85%,40%) 45%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
 /* Purple flame for pre-boss shop */
 #flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%)}
 #flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%)}
@@ -346,7 +348,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;background:#1a1d24;border:1px solid var(--border-soft)}
 .tag.str{color:#4ade80;border-color:#4ade8055}.tag.weak{color:#f87171;border-color:#f8717155}.tag.prof{color:#60a5fa;border-color:#60a5fa55}.tag.neutral{color:#9ca3af;border-color:#9ca3af55}.tag.ability{color:#d8b4fe;border-color:#a855f7;background:rgba(168,85,247,0.15)}
 .tag.irony{color:#e879f9;border-color:#d946ef;background:rgba(217,70,239,0.15)}.irony-badge{display:inline-block;background:linear-gradient(135deg,#d946ef,#a855f7);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
-#header{width:100%;max-width:950px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;position:relative;z-index:5}
+#header{
+  flex-shrink:0; /* Don't shrink */
+  width:100%;
+  max-width:min(1100px, 95vw);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 24px;
+  position:relative;
+  z-index:100
+}
 /* Hide header when main menu is showing (game hasn't started) */
 body.menu-active #header{display:none}
 /* Hide header during victory celebration */
@@ -790,8 +802,20 @@ body:has(#achievements-overlay.show) #header{display:none}
       rgba(16, 20, 28, 1)) !important;
   }
 }
-#battle-view{display:flex;gap:40px;width:100%;max-width:1000px;margin-bottom:12px;align-items:center;justify-content:center;position:relative;z-index:5}
-.portrait-container{flex:0 0 280px}
+#battle-view{
+  flex-shrink:0; /* Don't shrink */
+  margin-top:auto; /* Push down, centering with forge */
+  display:flex;
+  gap:clamp(20px, 4vw, 60px);
+  width:100%;
+  max-width:min(1200px, 95vw);
+  padding:16px;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  z-index:5
+}
+.portrait-container{flex:0 1 clamp(200px, 25vw, 320px)}
 .portrait{background:#0d1117;border-radius:12px;padding:16px;border:2px solid #2a2f38;position:relative;overflow:hidden;cursor:pointer;transition:border-color var(--half-beat) ease,box-shadow var(--half-beat) ease}
 .hero-portrait{border-color:#4ade8044}.enemy-portrait{border-color:#f8717144}
 .hero-portrait:hover{border-color:#4ade8088;box-shadow:0 0 12px rgba(74,222,128,0.15)}
@@ -965,7 +989,19 @@ body:has(#achievements-overlay.show) #header{display:none}
   margin-bottom:4px;
   letter-spacing:0.03em;
 }
-#forge{background:#12151a;border-radius:12px;padding:12px 20px;width:100%;max-width:950px;border:1px solid #2a2f38;position:relative;z-index:20!important;transition:transform var(--half-beat) ease, opacity var(--half-beat) ease;margin:0 auto}
+#forge{
+  flex-shrink:0; /* Don't shrink */
+  margin-bottom:auto; /* Push up, centering with battle-view */
+  background:#12151a;
+  border-radius:12px;
+  padding:12px 20px;
+  width:100%;
+  max-width:min(1100px, 95vw);
+  border:1px solid #2a2f38;
+  position:relative;
+  z-index:20!important;
+  transition:transform var(--half-beat) ease, opacity var(--half-beat) ease
+}
 #forge.shop-hidden{transform:scale(0.95);opacity:0.5;pointer-events:none}
 #sentence{display:flex;justify-content:center;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .slot-container{display:flex!important;flex-direction:column;align-items:center;position:relative;z-index:10;transition:opacity var(--beat) ease,transform var(--beat) cubic-bezier(0.34,1.56,0.64,1),max-width var(--beat) ease,margin var(--beat) ease;opacity:1;transform:scale(1);max-width:140px;margin:0 4px;overflow:visible}
@@ -1052,7 +1088,20 @@ body.is-dragging #bank .chip{pointer-events:none}
   font-size:16px;
   line-height:1;
 }
-#bank{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(4,minmax(52px,auto));gap:4px;padding:8px;background:#0d1017;border-radius:8px;position:relative;transition:background var(--quarter-beat),border var(--quarter-beat);justify-items:center;align-items:start;overflow:visible}
+#bank{
+  display:grid;
+  grid-template-columns:repeat(10, 1fr);
+  grid-template-rows:repeat(3, minmax(52px, auto));
+  gap:4px;
+  padding:8px;
+  background:#0d1017;
+  border-radius:8px;
+  position:relative;
+  transition:background var(--quarter-beat),border var(--quarter-beat);
+  justify-items:center;
+  align-items:start;
+  overflow:visible
+}
 #bank .chip{font-size:10px;padding:8px 6px;min-width:0;width:100%;text-align:center;white-space:nowrap;min-height:52px}
 #bank .chip .chip-name{overflow:hidden;text-overflow:ellipsis}
 #bank .chip:hover{z-index:100000}
@@ -1811,7 +1860,7 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
   .portrait-container{flex:1 1 auto;width:100%}
   #vs-center{width:100%;margin-bottom:20px}
   #forge{width:100%;max-width:100%;padding:10px}
-  #bank{grid-template-columns:repeat(4,1fr)}
+  /* #bank uses auto-fill, no fixed columns needed */
 }
 @media (max-width:640px){
   .modal-topbar{grid-template-columns:1fr;justify-items:center;text-align:center}
