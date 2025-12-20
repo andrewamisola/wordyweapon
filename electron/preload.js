@@ -5,8 +5,7 @@ const { ipcRenderer } = require('electron');
 
 // Set immediately
 window.electronAudio = {
-  isElectron: true,
-  setUiScale: (scale) => ipcRenderer.invoke('set-ui-scale', scale)
+  isElectron: true
 };
 
 // Steam API wrapper for game code
@@ -60,10 +59,7 @@ window.steamAPI = {
 
 // Also set on DOMContentLoaded to be safe
 document.addEventListener('DOMContentLoaded', () => {
-  window.electronAudio = {
-    isElectron: true,
-    setUiScale: (scale) => ipcRenderer.invoke('set-ui-scale', scale)
-  };
+  window.electronAudio = { isElectron: true };
 });
 
 console.log('[Preload] electronAudio set:', window.electronAudio);

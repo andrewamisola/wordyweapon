@@ -247,6 +247,42 @@ requestAnimationFrame(() => {
 
 **Performance Result**: Consistent 60 FPS at any resolution including 4K fullscreen
 
+### Smart Auto-Scaling (2025-12-20)
+
+**Problem**: Previous scaling only considered resolution. A 48" 4K TV and 13" MacBook Retina both report similar resolutions but need different UI sizes.
+
+**Solution**: Smart scaling that considers both DPI and physical screen size:
+
+1. **Estimate physical screen diagonal** from resolution and `display.scaleFactor`
+2. **Apply comfort multiplier** based on screen size:
+   - < 14" (laptop): 0.85-1.0x (smaller UI fits better)
+   - 14-27" (desktop): 1.0x (standard, designed for this)
+   - 27-48" (large display): 1.0-1.8x (bigger for viewing distance)
+   - 48"+ (TV): 1.8-2.3x (couch gaming)
+
+**Multi-Monitor Support**: Recalculates when window moves between displays.
+
+**Files**: `electron/main.js` - `estimateScreenDiagonal()`, `calculateSmartBaseZoom()`, `updateContentScale()`
+
+### Splash Screen (2025-12-20)
+
+**Design**: Animated & Dynamic - flame background visible, logo with pulsing golden glow.
+
+**Animation Sequence** (BPM-synced at 136 BPM):
+1. **0s**: Pure black (::before pseudo-element covers screen)
+2. **--half-beat (~0.22s)**: Black fades out over 3 beats, content fades in simultaneously
+3. **3 beats (~1.32s)**: Logo + button fully visible
+4. **4 beats (~1.76s)**: Logo golden glow pulse begins (3s cycle)
+5. **User clicks ENTER**: Dissolve transition to main menu (blur + scale, 2 beats)
+
+**Key CSS**:
+- `#splash-screen::before`: Black cover that fades out (splashReveal animation)
+- `.splash-content`: Fades in with scale (splashContentIn animation)
+- `#splash-screen .logo-img`: Pulsing golden glow (logoGlow animation)
+- All timing uses CSS variables: `var(--beat)`, `var(--half-beat)`
+
+**Files**: `game/styles.css` lines 1391-1433
+
 ### CSS Improvements Needed
 ```css
 .particle, .spark, .ember, .orb {
@@ -289,6 +325,7 @@ requestAnimationFrame(() => {
 
 ### Electron (Desktop)
 - Fixed 1920x1080 render resolution, scaled via setZoomFactor()
+- Smart auto-scaling based on screen size and DPI (see Performance Optimization)
 - Window: 16:9 aspect ratio locked, min 960x540
 - Local HTTP server for Tone.js
 - Steamworks.js bridge via preload.js
@@ -350,6 +387,10 @@ requestAnimationFrame(() => {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2025-12-20 | Splash screen redesign: BPM-synced animations, flame bg visible, pulsing logo glow | Tech Subagent |
+| 2025-12-20 | Removed UI scale slider (smart scaling handles it automatically) | Tech Subagent |
+| 2025-12-20 | Updated smart scaling: 1.8x for 48" TVs, removed user preference slider | Tech Subagent |
+| 2025-12-20 | Smart auto-scaling: considers screen size + DPI for comfortable UI on laptops vs TVs | Tech Subagent |
 | 2025-12-20 | Fixed flame background position in Low FX mode: center transform + skip mouse tracking | Tech Subagent |
 | 2025-12-20 | Fixed Electron first-word-placement lag: pre-warm Web Audio node types (BufferSource, Gain, StereoPanner) | Tech Subagent |
 | 2025-12-20 | Fixed first-word-placement stutter: pre-warm BlacksmithEmberManager and preload audio samples | Tech Subagent |

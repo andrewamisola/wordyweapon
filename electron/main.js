@@ -13,12 +13,70 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // Base game dimensions (16:9 aspect ratio to match game content)
 const BASE_WIDTH = 1920;
 const BASE_HEIGHT = 1080;
-const MAX_SCALE = 1.0; // Don't exceed native resolution
 const SERVER_PORT = 45678; // Local server port for serving game files
 
 let mainWindow;
 let localServer;
 let steamClient = null;
+let smartBaseZoom = 1.0; // Calculated based on display characteristics
+let moveDebounceTimer = null;
+
+// === SMART AUTO-SCALING ===
+// Estimate physical screen diagonal in inches from resolution and DPI scale
+function estimateScreenDiagonal(physicalWidth, physicalHeight, scaleFactor) {
+  const baseDpi = 96; // Windows default DPI
+  const estimatedDpi = baseDpi * scaleFactor;
+  const widthInches = physicalWidth / estimatedDpi;
+  const heightInches = physicalHeight / estimatedDpi;
+  return Math.sqrt(widthInches * widthInches + heightInches * heightInches);
+}
+
+// Calculate smart base zoom based on display characteristics
+function calculateSmartBaseZoom(display) {
+  const { width: physicalWidth, height: physicalHeight } = display.size;
+  const { width: workWidth, height: workHeight } = display.workAreaSize;
+  const scaleFactor = display.scaleFactor;
+
+  // How much the game fits in the work area
+  const fitScale = Math.min(workWidth / BASE_WIDTH, workHeight / BASE_HEIGHT);
+
+  // Estimate physical screen size
+  let diagonalInches = estimateScreenDiagonal(physicalWidth, physicalHeight, scaleFactor);
+
+  // Heuristic: 4K+ at 100% scaling is likely a large TV/monitor
+  const pixelCount = physicalWidth * physicalHeight;
+  if (pixelCount > 4000000 && scaleFactor === 1.0) {
+    diagonalInches = Math.max(diagonalInches, 32);
+  }
+
+  // Comfort multiplier based on estimated screen size
+  let comfortMultiplier;
+  if (diagonalInches <= 14) {
+    // Small laptop: scale down slightly (0.85 at 10", 1.0 at 14")
+    comfortMultiplier = 0.85 + (diagonalInches - 10) * 0.0375;
+  } else if (diagonalInches <= 27) {
+    // Desktop monitor: neutral zone
+    comfortMultiplier = 1.0;
+  } else if (diagonalInches <= 48) {
+    // Large display/TV: scale up (1.0 at 27", 1.8 at 48")
+    comfortMultiplier = 1.0 + (diagonalInches - 27) * 0.0381;
+  } else {
+    // Very large TV: scale up more (capped at 2.3)
+    comfortMultiplier = 1.8 + Math.min((diagonalInches - 48) * 0.05, 0.5);
+  }
+
+  // Clamp comfort multiplier
+  comfortMultiplier = Math.max(0.7, Math.min(3.0, comfortMultiplier));
+
+  // Calculate base zoom (never exceed what fits the screen)
+  const baseZoom = Math.min(fitScale, 1.0) * comfortMultiplier;
+
+  console.log(`Display: ${physicalWidth}x${physicalHeight} @ ${scaleFactor}x scale`);
+  console.log(`Estimated diagonal: ${diagonalInches.toFixed(1)}" | Comfort: ${comfortMultiplier.toFixed(2)}`);
+  console.log(`Smart base zoom: ${baseZoom.toFixed(3)}`);
+
+  return Math.max(0.5, Math.min(3.0, baseZoom));
+}
 
 // === STEAMWORKS INTEGRATION ===
 // Initialize Steam client - only works when launched through Steam
@@ -95,23 +153,22 @@ ipcMain.handle('steam-cloud-load', (event, key) => steamCloudLoad(key));
 ipcMain.handle('steam-unlock-achievement', (event, id) => unlockSteamAchievement(id));
 ipcMain.handle('steam-is-achievement-unlocked', (event, id) => isSteamAchievementUnlocked(id));
 
-// User UI scale preference (1.0 = 100%)
-let userUiScale = 1.0;
-
-ipcMain.handle('set-ui-scale', (event, scale) => {
-  userUiScale = scale;
-  updateContentScale();
-  return true;
-});
-
-// Update content scaling - CSS handles responsiveness, this just applies user preference
+// Update content scaling with smart auto-zoom based on display
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  // Apply user's UI scale preference only (CSS handles responsive layout)
-  mainWindow.webContents.setZoomFactor(userUiScale);
+  // Get current display (handles window moving between monitors)
+  const { screen } = require('electron');
+  const windowBounds = mainWindow.getBounds();
+  const currentDisplay = screen.getDisplayMatching(windowBounds);
 
-  console.log(`User UI Scale: ${userUiScale}`);
+  // Calculate smart zoom for current display
+  smartBaseZoom = calculateSmartBaseZoom(currentDisplay);
+
+  // Use Electron's setZoomFactor - properly handles both visuals and hit testing
+  mainWindow.webContents.setZoomFactor(smartBaseZoom);
+
+  console.log(`Smart zoom applied: ${smartBaseZoom.toFixed(3)}`);
 }
 
 // MIME types for serving files
@@ -181,10 +238,10 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
-  // Calculate optimal scale factor
+  // Calculate optimal window scale (cap at 1.0 to not exceed base resolution)
   const scaleX = screenWidth / BASE_WIDTH;
   const scaleY = screenHeight / BASE_HEIGHT;
-  const scale = Math.min(scaleX, scaleY, MAX_SCALE);
+  const scale = Math.min(scaleX, scaleY, 1.0);
 
   const windowWidth = Math.floor(BASE_WIDTH * scale);
   const windowHeight = Math.floor(BASE_HEIGHT * scale);
@@ -192,10 +249,11 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    minWidth: 960,
-    minHeight: 540,  // Maintains 16:9 aspect at minimum size (half of 1080p)
+    minWidth: 1280,
+    minHeight: 720,  // 720p minimum to prevent UI elements getting cut off
     backgroundColor: '#0a0a0a',
     icon: path.join(__dirname, '..', 'game', 'icon.png'),
+    fullscreen: true,  // Start in fullscreen by default
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,  // Required for preload to use require('electron')
@@ -222,6 +280,12 @@ function createWindow() {
   mainWindow.on('resize', updateContentScale);
   mainWindow.on('enter-full-screen', updateContentScale);
   mainWindow.on('leave-full-screen', updateContentScale);
+
+  // Recalculate when window moves to different display (debounced)
+  mainWindow.on('move', () => {
+    if (moveDebounceTimer) clearTimeout(moveDebounceTimer);
+    moveDebounceTimer = setTimeout(updateContentScale, 100);
+  });
 
   // Open external links in default browser (for Steam wishlist button)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

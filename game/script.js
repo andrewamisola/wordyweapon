@@ -8,32 +8,8 @@ const IS_DEMO = false;
 const GAME_WIDTH = 1920;
 const GAME_HEIGHT = 1080;
 
-// Detect if running in Electron (uses setZoomFactor for scaling)
+// Detect if running in Electron (uses smart auto-scaling via setZoomFactor)
 const IS_ELECTRON = typeof process !== 'undefined' && process.versions && process.versions.electron;
-
-// User UI scale preference (1.0 = 100%) - load from localStorage immediately
-let userUiScale = parseFloat(localStorage.getItem('wordy-ui-scale')) || 1.0;
-
-// Apply user UI scale preference via CSS custom property or Electron zoom
-function applyUserScale() {
-  if (IS_ELECTRON && window.electronAudio?.setUiScale) {
-    // Electron: send scale to main process for setZoomFactor
-    window.electronAudio.setUiScale(userUiScale);
-  } else {
-    // Browser: apply via CSS zoom for user preference
-    document.documentElement.style.zoom = userUiScale;
-  }
-}
-
-// Legacy function name for compatibility
-function scaleGame() {
-  applyUserScale();
-}
-
-// Initialize on load
-window.addEventListener('DOMContentLoaded', () => {
-  applyUserScale();
-});
 
 // === 136 BPM RHYTHMIC TIMING ===
 const RHYTHM = {
@@ -19585,44 +19561,21 @@ function waitForIntroDismiss() {
   return introDismissPromise || Promise.resolve();
 }
 
-// Scene transition effect - smooth vignette blink
-// onPeak callback runs when transition covers screen
-let isTransitioning = false; // Global lock to prevent rapid transitions
+// Scene transition - just runs callback with lock to prevent rapid clicks
+let isTransitioning = false;
 
 async function playSceneTransition(onPeak = null) {
-  // Prevent overlapping transitions from rapid clicking
   if (isTransitioning) return;
   isTransitioning = true;
-
-  // Skip visual transition in Low FX mode, just run callback
-  if (gfxSettings.lowFx) {
-    if (onPeak) await onPeak();
-    isTransitioning = false;
-    return;
-  }
-
-  let overlay = document.getElementById('scene-transition-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'scene-transition-overlay';
-    document.body.appendChild(overlay);
-  }
 
   // Play transition sound
   try { playSample('transition.ogg', 0.5); } catch(e) {}
 
-  // Fade in (quick) - extra 50ms buffer ensures CSS completes before callback
-  overlay.classList.add('active');
-  await dly(RHYTHM.HALF + 50);
-
-  // Execute callback at peak
+  // Execute callback
   if (onPeak) await onPeak();
 
-  // Fade out (gentler) - extra 50ms buffer ensures CSS completes before unlock
-  overlay.classList.remove('active');
-  await dly(RHYTHM.HALF + 50);
-
-  // Release lock after transition completes
+  // Brief delay before unlocking to prevent rapid clicks
+  await dly(RHYTHM.QUARTER);
   isTransitioning = false;
 }
 
@@ -20944,34 +20897,6 @@ function initGfxSettingsListeners() {
       gfxSettings.lowFx = lowFxCheckbox.checked;
       applyGfxSettings();
       saveGfxSettings();
-    };
-  }
-
-  // UI Scale slider
-  const uiScaleSlider = document.getElementById('ui-scale');
-  const uiScaleValue = document.getElementById('ui-scale-value');
-  if (uiScaleSlider) {
-    const applyUiScale = (scale) => {
-      userUiScale = scale;
-      if (uiScaleValue) uiScaleValue.textContent = Math.round(scale * 100) + '%';
-      localStorage.setItem('wordy-ui-scale', scale);
-
-      // In Electron, send scale to main process
-      if (IS_ELECTRON && window.electronAudio?.setUiScale) {
-        window.electronAudio.setUiScale(scale);
-      } else {
-        scaleGame();
-      }
-    };
-
-    // Load saved scale
-    const savedScale = parseFloat(localStorage.getItem('wordy-ui-scale')) || 1;
-    uiScaleSlider.value = Math.round(savedScale * 100);
-    applyUiScale(savedScale);
-
-    uiScaleSlider.oninput = () => {
-      const scale = parseInt(uiScaleSlider.value) / 100;
-      applyUiScale(scale);
     };
   }
 

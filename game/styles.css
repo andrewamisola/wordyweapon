@@ -29,7 +29,7 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
   height: 100lvh; /* Modern viewport height with fallback */
   position: relative;
   overflow: hidden;
-  background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),radial-gradient(circle at 80% 0,rgba(76,152,255,0.05),transparent 28%),linear-gradient(135deg,#0a0f17,#080a0f 40%,#0c0f19);
+  background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),linear-gradient(135deg,#0a0a0a,#080808 40%,#0c0c0c);
   background-blend-mode:overlay;
 
   /* Flexbox layout: header at top, battle+forge centered as unit */
@@ -65,7 +65,7 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
 }
 #paper-overlay rect {
   mix-blend-mode: soft-light;
-  opacity: 0.2;
+  opacity: 0.18;
   pointer-events: none;
 }
 
@@ -74,7 +74,26 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
   inset: 0;
   pointer-events: none;
   z-index: 9000;
-  background: radial-gradient(circle at center, transparent 60%, rgba(10,15,23,0.25) 85%, rgba(5,8,12,0.6) 100%);
+  background: radial-gradient(circle at center,
+    transparent 0%,
+    transparent 55%,
+    rgba(12,12,12,0.08) 65%,
+    rgba(10,10,10,0.18) 75%,
+    rgba(8,8,8,0.28) 85%,
+    rgba(5,5,5,0.45) 92%,
+    rgba(0,0,0,0.6) 100%
+  );
+}
+
+/* Anti-banding dither overlay - high-frequency noise to break up gradient steps */
+#dither-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9001;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
 /* Demo Footer */
@@ -305,9 +324,10 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
 #flame-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
 #flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:filter var(--half-beat) ease,opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
 /* Orange/yellow glow - bigger, behind, more feathered, wider aspect */
-#flame-bg::after{width:120vw;height:70vh;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(20,90%,45%) 35%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
+/* Extra gradient stops reduce banding on large displays */
+#flame-bg::after{width:120vw;height:70vh;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(24,94%,52%) 12%,hsl(22,92%,50%) 22%,hsl(20,90%,45%) 35%,hsl(18,85%,35%) 45%,hsl(15,70%,20%) 55%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
 /* Red core - smaller, on top, tighter blur, wider aspect */
-#flame-bg::before{width:70vw;height:50vh;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(5,85%,40%) 45%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
+#flame-bg::before{width:70vw;height:50vh;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(2,88%,47%) 15%,hsl(4,86%,43%) 30%,hsl(5,85%,40%) 45%,hsl(6,75%,30%) 55%,hsl(8,60%,18%) 62%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
 /* Purple flame for pre-boss shop */
 #flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%)}
 #flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%)}
@@ -1371,38 +1391,45 @@ body.is-dragging #bank .chip{pointer-events:none}
 /* Splash Screen - Click to Enter */
 #splash-screen{
   z-index:10000;
-  background:radial-gradient(ellipse at center,rgba(10,15,23,0.95) 0%,rgba(8,10,15,0.98) 100%);
-  transition:opacity calc(var(--beat) * 2) ease-out;
+  background:transparent;
 }
-/* Loading state: fade in logo, hide button */
-#splash-screen.loading .splash-content{
-  opacity:0;
-  animation:splashFadeIn 1.2s ease-out forwards;
+/* Black cover that fades out to reveal content */
+#splash-screen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#000;
+  z-index:-1;
+  animation:splashReveal calc(var(--beat) * 3) ease-out var(--half-beat) forwards;
 }
-#splash-screen.loading .splash-btn{
-  opacity:0;
-  pointer-events:none;
+@keyframes splashReveal{
+  from{opacity:1}
+  to{opacity:0}
 }
-/* Ready state: show button with fade */
-#splash-screen.ready .splash-btn{
-  animation:splashBtnAppear 0.5s ease-out forwards;
-}
-@keyframes splashFadeIn{
-  from{opacity:0;transform:scale(0.95)}
-  to{opacity:1;transform:scale(1)}
-}
-@keyframes splashBtnAppear{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
+/* Dissolving state for exit */
 #splash-screen.dissolving{
   opacity:0;
   pointer-events:none;
+  transition:opacity calc(var(--beat) * 2) ease-out;
 }
 #splash-screen.dissolving .splash-content{
   transform:scale(1.03);
   filter:blur(6px);
   transition:transform calc(var(--beat) * 2) ease-out, filter calc(var(--beat) * 2) ease-out;
+}
+/* Logo with pulsing glow */
+#splash-screen .logo-img{
+  filter:drop-shadow(0 0 20px rgba(251,191,36,0.4)) drop-shadow(0 0 40px rgba(251,191,36,0.2));
+  animation:logoGlow 3s ease-in-out calc(var(--beat) * 4) infinite;
+}
+@keyframes logoGlow{
+  0%,100%{filter:drop-shadow(0 0 20px rgba(251,191,36,0.4)) drop-shadow(0 0 40px rgba(251,191,36,0.2))}
+  50%{filter:drop-shadow(0 0 30px rgba(251,191,36,0.6)) drop-shadow(0 0 60px rgba(251,191,36,0.3))}
+}
+/* Button appears after content settles */
+@keyframes splashBtnAppear{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
 }
 
 /* Main Menu crossfade transition */
@@ -1422,6 +1449,12 @@ body.is-dragging #bank .chip{pointer-events:none}
   flex-direction:column;
   align-items:center;
   gap:40px;
+  opacity:0;
+  animation:splashContentIn calc(var(--beat) * 3) ease-out var(--half-beat) forwards;
+}
+@keyframes splashContentIn{
+  from{opacity:0;transform:scale(0.95)}
+  to{opacity:1;transform:scale(1)}
 }
 .splash-btn{
   padding:12px 44px;
@@ -1438,6 +1471,7 @@ body.is-dragging #bank .chip{pointer-events:none}
   box-shadow:0 0 20px rgba(245,193,92,0.15), 0 4px 16px rgba(0,0,0,0.4);
   transition:all var(--half-beat) ease;
   opacity:0;
+  animation:splashBtnAppear var(--beat) ease-out calc(var(--beat) * 3) forwards;
 }
 .splash-btn:hover{
   background:linear-gradient(135deg,#243044,#1a2332);
@@ -2679,24 +2713,6 @@ html.screen-shake{
   text-shadow:0 0 15px rgba(248,113,113,0.5);
 }
 
-/* Scene Transition - Smooth vignette blink */
-#scene-transition-overlay{
-  position:fixed;
-  inset:0;
-  z-index:99999;
-  pointer-events:none;
-  opacity:0;
-  transition:opacity var(--half-beat) ease-in;
-  background:radial-gradient(
-    ellipse 60% 60% at center,
-    rgba(10,13,18,0.9) 0%,
-    #0a0d12 50%
-  );
-}
-#scene-transition-overlay.active{
-  opacity:1;
-  transition:opacity var(--half-beat) ease-out;
-}
 
 /* Crate Opening Reel Animation */
 .crate-reel{
