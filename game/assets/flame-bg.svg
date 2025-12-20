@@ -1,0 +1,59 @@
+<svg viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <!-- Base dark background gradient -->
+    <linearGradient id="bg-grad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#1a0a00"/>
+    </linearGradient>
+    <!-- Flame gradients - warm orange to deep red -->
+    <linearGradient id="flame1" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#c2410c"/>
+      <stop offset="50%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+    <linearGradient id="flame2" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#7c2d12"/>
+      <stop offset="60%" stop-color="#c2410c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="flame3" x1="30%" y1="100%" x2="70%" y2="0%">
+      <stop offset="0%" stop-color="#431407"/>
+      <stop offset="50%" stop-color="#9a3412"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="flame4" x1="70%" y1="100%" x2="30%" y2="0%">
+      <stop offset="0%" stop-color="#1c0a00"/>
+      <stop offset="40%" stop-color="#7c2d12"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="1920" height="1080" fill="url(#bg-grad)"/>
+
+  <!-- Back layer flames - largest, most transparent -->
+  <path d="M-100,1080 L-100,750 Q0,650 150,580 Q300,500 400,350 Q450,250 420,150 Q400,80 450,50 Q520,100 500,200 Q480,350 550,480 Q650,650 800,720 Q950,780 1100,700 Q1200,640 1280,500 Q1350,380 1320,250 Q1300,150 1380,80 Q1450,150 1420,280 Q1380,450 1450,600 Q1550,780 1700,820 Q1850,850 2020,750 L2020,1080 Z" fill="url(#flame1)" opacity="0.25"/>
+
+  <!-- Mid-back layer - organic curves -->
+  <path d="M200,1080 L200,850 Q280,780 350,700 Q450,580 500,450 Q540,350 520,250 Q500,180 560,120 Q620,180 600,300 Q580,450 650,580 Q750,720 900,780 Q1000,820 1100,760 Q1180,700 1220,580 Q1260,450 1240,320 Q1220,220 1300,160 Q1380,230 1350,380 Q1320,550 1400,700 Q1520,880 1720,920 L1720,1080 Z" fill="url(#flame2)" opacity="0.35"/>
+
+  <!-- Center-left flame tongue -->
+  <path d="M300,1080 Q320,950 380,850 Q460,720 520,600 Q580,480 560,360 Q540,260 600,180 Q680,260 650,400 Q620,560 700,700 Q800,860 950,920 Q1050,960 1100,1080 Z" fill="url(#flame3)" opacity="0.5"/>
+
+  <!-- Center flame - most prominent -->
+  <path d="M700,1080 Q720,920 800,800 Q900,650 960,500 Q1020,350 980,220 Q950,120 1040,60 Q1130,140 1080,280 Q1020,450 1100,620 Q1200,800 1350,900 Q1450,960 1500,1080 Z" fill="url(#flame1)" opacity="0.6"/>
+
+  <!-- Center-right flame tongue -->
+  <path d="M1000,1080 Q1050,900 1150,780 Q1280,620 1350,480 Q1400,360 1360,240 Q1330,150 1420,100 Q1500,180 1460,320 Q1400,500 1480,680 Q1580,880 1700,980 L1700,1080 Z" fill="url(#flame2)" opacity="0.45"/>
+
+  <!-- Right side accent flame -->
+  <path d="M1400,1080 Q1450,950 1550,850 Q1680,720 1750,580 Q1800,460 1760,340 Q1730,250 1820,200 Q1900,280 1860,420 Q1800,600 1880,780 Q1950,920 2020,1000 L2020,1080 Z" fill="url(#flame4)" opacity="0.4"/>
+
+  <!-- Left side accent flame -->
+  <path d="M-50,1080 Q0,900 100,780 Q220,620 280,480 Q320,360 280,250 Q250,160 340,120 Q420,200 380,340 Q320,520 400,700 Q500,880 650,980 L650,1080 Z" fill="url(#flame3)" opacity="0.35"/>
+
+  <!-- Small accent wisps - adds detail -->
+  <path d="M550,1080 Q580,980 620,900 Q680,800 720,720 Q760,650 740,580 Q720,520 780,480 Q840,540 810,640 Q770,760 820,880 Q880,980 950,1050 L950,1080 Z" fill="url(#flame1)" opacity="0.3"/>
+
+  <path d="M1150,1080 Q1180,960 1240,880 Q1320,780 1380,700 Q1420,630 1400,560 Q1380,500 1450,460 Q1520,520 1480,620 Q1430,740 1500,860 Q1580,980 1650,1060 L1650,1080 Z" fill="url(#flame2)" opacity="0.25"/>
+</svg>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordy Weapon - Talent SVG Gallery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      min-height: 100vh;
+      color: #e5e5e5;
+      padding: 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      text-align: center;
+      color: #9ca3af;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+    .section {
+      margin-bottom: 50px;
+    }
+    .section-title {
+      font-size: 22px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid;
+    }
+    .section-title.t3 { color: #9333ea; border-color: #9333ea44; }
+    .section-title.t2 { color: #06b6d4; border-color: #06b6d444; }
+    .section-title.t1 { color: #d4af37; border-color: #d4af3744; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .card.t3 { border-color: #9333ea44; }
+    .card.t3:hover { box-shadow: 0 10px 30px rgba(147,51,234,0.3); }
+    .card.t2 { border-color: #06b6d444; }
+    .card.t2:hover { box-shadow: 0 10px 30px rgba(6,182,212,0.3); }
+    .card.t1 { border-color: #d4af3744; }
+    .card.t1:hover { box-shadow: 0 10px 30px rgba(212,175,55,0.3); }
+    .icon {
+      width: 80px;
+      height: 104px;
+      margin: 0 auto 10px;
+    }
+    .icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .name {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .name.t3 { color: #a855f7; }
+    .name.t2 { color: #22d3ee; }
+    .name.t1 { color: #fbbf24; }
+    .id {
+      font-size: 10px;
+      color: #6b7280;
+      font-family: monospace;
+    }
+    .stats {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 28px; font-weight: bold; }
+    .stat-num.t3 { color: #9333ea; }
+    .stat-num.t2 { color: #06b6d4; }
+    .stat-num.t1 { color: #d4af37; }
+    .stat-label { font-size: 12px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <h1>Talent SVG Gallery</h1>
+  <p class="subtitle">All 70 unique talent icons for Wordy Weapon</p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num t3">12</div>
+      <div class="stat-label">T3 Rare</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num t2">34</div>
+      <div class="stat-label">T2 Uncommon</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num t1">24</div>
+      <div class="stat-label">T1 Common</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title t3">T3 Rare (12 icons) - Purple Glow</h2>
+    <div class="grid" id="t3-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title t2">T2 Uncommon (34 icons) - Cyan Accents</h2>
+    <div class="grid" id="t2-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title t1">T1 Common (24 icons) - Gold Glow</h2>
+    <div class="grid" id="t1-grid"></div>
+  </div>
+
+  <script>
+    // T3 Talents (12)
+    const T3_TALENTS = [
+      { id: 'anaphora', name: 'Anaphora' },
+      { id: 'epistrophe', name: 'Epistrophe' },
+      { id: 'amplify', name: 'Amplify' },
+      { id: 'crescendo', name: 'Crescendo' },
+      { id: 'berserker', name: 'Berserker' },
+      { id: 'cascade', name: 'Cascade' },
+      { id: 'compound_interest', name: 'Compound Interest' },
+      { id: 'overflow', name: 'Overflow' },
+      { id: 'chain_reaction', name: 'Chain Reaction' },
+      { id: 'crown_jewel', name: 'Crown Jewel' },
+      { id: 'reread_amplifier', name: 'Reread Amplifier' },
+      { id: 'echo_chamber', name: 'Echo Chamber' }
+    ];
+
+    // T2 Talents (34)
+    const T2_TALENTS = [
+      { id: 'world_sky_focus', name: 'World & Sky Focus' },
+      { id: 'body_soul_focus', name: 'Body & Soul Focus' },
+      { id: 'weakness_exploit', name: 'Weakness Exploit' },
+      { id: 'isocolon', name: 'Isocolon' },
+      { id: 'alliteration', name: 'Alliteration' },
+      { id: 'lexicon_growth', name: 'Lexicon Growth' },
+      { id: 'tithe', name: 'Tithe' },
+      { id: 'magma_core', name: 'Magma Core' },
+      { id: 'tempest', name: 'Tempest' },
+      { id: 'eclipse', name: 'Eclipse' },
+      { id: 'necrotoxin', name: 'Necrotoxin' },
+      { id: 'blessed_steel', name: 'Blessed Steel' },
+      { id: 'static_earth', name: 'Static Earth' },
+      { id: 'synecdoche', name: 'Synecdoche' },
+      { id: 'minimalist', name: 'Minimalist' },
+      { id: 'maximalist', name: 'Maximalist' },
+      { id: 'dual_spec', name: 'Dual Spec' },
+      { id: 'monolith', name: 'Monolith' },
+      { id: 'trinity', name: 'Trinity' },
+      { id: 'glass_cannon', name: 'Glass Cannon' },
+      { id: 'focused_fire', name: 'Focused Fire' },
+      { id: 'fortuna', name: 'Fortuna' },
+      { id: 'perfectionist', name: 'Perfectionist' },
+      { id: 'gemination', name: 'Gemination' },
+      { id: 'diacope', name: 'Diacope' },
+      { id: 'resonance', name: 'Resonance' },
+      { id: 'execute', name: 'Execute' },
+      { id: 'critical_mass', name: 'Critical Mass' },
+      { id: 'polysyndeton', name: 'Polysyndeton' },
+      { id: 'anadiplosis', name: 'Anadiplosis' },
+      { id: 'chiasmus', name: 'Chiasmus' },
+      { id: 'signature_style', name: 'Signature Style' },
+      { id: 'hyperbole', name: 'Hyperbole' },
+      { id: 'residual', name: 'Residual' }
+    ];
+
+    // T1 Talents (24)
+    const T1_TALENTS = [
+      { id: 'steady_hand', name: 'Steady Hand' },
+      { id: 'first_blood', name: 'First Blood' },
+      { id: 'comfort_zone', name: 'Comfort Zone' },
+      { id: 'linguist', name: 'Linguist' },
+      { id: 'condensed', name: 'Condensed' },
+      { id: 'spectrum', name: 'Spectrum' },
+      { id: 'inferno', name: 'Inferno' },
+      { id: 'verdant', name: 'Verdant' },
+      { id: 'venom_strike', name: 'Venom Strike' },
+      { id: 'twilight', name: 'Twilight' },
+      { id: 'bibliophile', name: 'Bibliophile' },
+      { id: 'proficiency_focus', name: 'Proficiency Focus' },
+      { id: 'hendiadys', name: 'Hendiadys' },
+      { id: 'stony_brook', name: 'Stony Brook' },
+      { id: 'golden_tongue', name: 'Golden Tongue' },
+      { id: 'momentum', name: 'Momentum' },
+      { id: 'word_hoard', name: 'Word Hoard' },
+      { id: 'slow_burn', name: 'Slow Burn' },
+      { id: 'weak_point', name: 'Weak Point' },
+      { id: 'opening_strike', name: 'Opening Strike' },
+      { id: 'david_goliath', name: 'David & Goliath' },
+      { id: 'irony', name: 'Irony' },
+      { id: 'overkill_dividend', name: 'Overkill Dividend' },
+      { id: 'gem_resonance', name: 'Gem Resonance' }
+    ];
+
+    // Load TALENT_SVG from script.js
+    const script = document.createElement('script');
+    script.src = 'game/script.js';
+    script.onload = () => {
+      renderGrid('t3-grid', T3_TALENTS, 't3');
+      renderGrid('t2-grid', T2_TALENTS, 't2');
+      renderGrid('t1-grid', T1_TALENTS, 't1');
+    };
+    document.head.appendChild(script);
+
+    function renderGrid(gridId, talents, tier) {
+      const grid = document.getElementById(gridId);
+      talents.forEach(t => {
+        const svg = typeof TALENT_SVG !== 'undefined' ? (TALENT_SVG[t.id] || TALENT_SVG.default) : '<svg></svg>';
+        const card = document.createElement('div');
+        card.className = `card ${tier}`;
+        card.innerHTML = `
+          <div class="icon">${svg}</div>
+          <div class="name ${tier}">${t.name}</div>
+          <div class="id">${t.id}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+{
+  "name": "wordy-weapon",
+  "productName": "Wordy Weapon",
+  "version": "1.0.0",
+  "description": "A word-forging roguelite RPG",
+  "main": "main.js",
+  "author": "Andrew Amisola",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "sync": "rm -rf game && cp -r ../game .",
+    "start": "npm run sync && electron .",
+    "build-mac": "npm run sync && electron-builder --mac",
+    "build-win": "npm run sync && electron-builder --win",
+    "build-linux": "npm run sync && electron-builder --linux",
+    "build-all": "npm run sync && electron-builder --mac --win --linux",
+    "build-steam": "npm run sync && electron-builder --mac --win && cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/steam/ && cp -r dist/win-unpacked ../../WordyWeapon-Builds/steam/",
+    "build-demo": "npm run sync && electron-builder --mac --win --linux && mkdir -p ../../WordyWeapon-Builds/demo/mac && mkdir -p ../../WordyWeapon-Builds/demo/win && mkdir -p ../../WordyWeapon-Builds/demo/linux && cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/demo/mac/ && cp -r dist/win-unpacked/* ../../WordyWeapon-Builds/demo/win/ && cp -r dist/linux-unpacked/* ../../WordyWeapon-Builds/demo/linux/",
+    "build-itch": "npm run sync && cp -r game/* ../../WordyWeapon-Builds/itch/"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.3.1"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.andrewamisola.wordyweapon",
+    "productName": "Wordy Weapon",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "game/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "game/icon.png",
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["universal"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "game/icon.png",
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "game/icon.png",
+      "category": "Game",
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  }
+}

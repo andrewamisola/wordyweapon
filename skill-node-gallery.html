@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordy Weapon - Skill Node SVG Gallery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      min-height: 100vh;
+      color: #e5e5e5;
+      padding: 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #d4af37, #f4d03f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      text-align: center;
+      color: #9ca3af;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+    .section {
+      margin-bottom: 50px;
+    }
+    .section-title {
+      font-size: 20px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #d4af3744;
+      color: #d4af37;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(212,175,55,0.3);
+      border-color: #d4af3744;
+    }
+    .icon-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .icon-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 6px;
+    }
+    .icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .icon.gray { color: #9ca3af; }
+    .icon.gold { color: #f5c15c; }
+    .icon.green { color: #4ade80; }
+    .icon.purple { color: #c084fc; }
+    .state-label {
+      font-size: 9px;
+      color: #6b7280;
+    }
+    .name {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #fbbf24;
+    }
+    .id {
+      font-size: 10px;
+      color: #6b7280;
+      font-family: monospace;
+    }
+    .stats {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 28px; font-weight: bold; color: #d4af37; }
+    .stat-label { font-size: 12px; color: #9ca3af; }
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+    .legend-color.gray { background: #9ca3af; }
+    .legend-color.gold { background: #f5c15c; }
+    .legend-color.green { background: #4ade80; }
+    .legend-color.purple { background: #c084fc; }
+  </style>
+</head>
+<body>
+  <h1>Skill Node SVG Gallery</h1>
+  <p class="subtitle">All skill tree node icons for Wordy Weapon</p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">20</div>
+      <div class="stat-label">Unique Icons</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-color gray"></div>
+      <span>Locked</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color gold"></div>
+      <span>Allocated</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color green"></div>
+      <span>Maxed</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color purple"></div>
+      <span>Capstone</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Slot Bonuses</h2>
+    <div class="grid" id="slot-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Weapon Type Bonuses</h2>
+    <div class="grid" id="weapon-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Element Bonuses</h2>
+    <div class="grid" id="element-grid"></div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Special Bonuses</h2>
+    <div class="grid" id="special-grid"></div>
+  </div>
+
+  <script>
+    const SKILL_NODE_SVG = {
+      weaponAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3 L14 14 M3 14 L7 14 L7 10 M17 17 L14 14 M3 3 L7 3 L7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M17 3 L6 14 M17 3 L13 3 L13 7 M3 17 L6 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+      adjAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2 L10 18 M2 10 L18 10 M4 4 L16 16 M16 4 L4 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="10" cy="10" r="2" fill="currentColor"/>
+      </svg>`,
+      nounAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 4 L10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M10 4 Q6 3 3 5 L3 16 Q6 14 10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 4 Q14 3 17 5 L17 16 Q14 14 10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      gemAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2 L17 7 L10 18 L3 7 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M3 7 L17 7 M7 7 L10 2 L13 7 M7 7 L10 18 L13 7" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      </svg>`,
+      startGold: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="10" cy="14" rx="6" ry="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 14 L4 11 Q4 8 10 8 Q16 8 16 11 L16 14" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <ellipse cx="10" cy="11" rx="6" ry="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 11 L4 8 Q4 5 10 5 Q16 5 16 8 L16 11" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <ellipse cx="10" cy="8" rx="6" ry="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>`,
+      slashAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 2 L5 16 L6 17 L8 16 L16 4 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5 16 L3 18 M6 17 L5 19" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+      pierceAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17 L17 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M17 3 L17 8 M17 3 L12 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M3 17 L6 14 L4 12 Z" fill="currentColor"/>
+      </svg>`,
+      bluntAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="10" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 9 L8 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>`,
+      magicAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17 L14 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M16 4 L16 2 M16 4 L18 4 M16 4 L14 4 M16 4 L16 6 M14.5 2.5 L17.5 5.5 M17.5 2.5 L14.5 5.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>`,
+      physAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 8 L6 13 Q6 16 10 16 L14 16 Q16 16 16 14 L16 9 Q16 7 14 7 L12 7 L12 5 Q12 4 11 4 L9 4 Q8 4 8 5 L8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 8 L6 8 Q4 8 4 10 L4 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+      fireAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2 Q14 6 14 10 Q14 14 10 17 Q6 14 6 10 Q6 6 10 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M10 8 Q12 10 12 12 Q12 14 10 15 Q8 14 8 12 Q8 10 10 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`,
+      waterAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2 Q16 9 16 12 Q16 17 10 17 Q4 17 4 12 Q4 9 10 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M7 12 Q7 14 10 14" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>`,
+      lightAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 2 L10 4 M10 16 L10 18 M2 10 L4 10 M16 10 L18 10 M4.3 4.3 L5.7 5.7 M14.3 14.3 L15.7 15.7 M15.7 4.3 L14.3 5.7 M5.7 14.3 L4.3 15.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+      darkAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 4 Q9 5 9 10 Q9 15 14 16 Q10 18 6 14 Q3 10 6 6 Q10 2 14 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="15" cy="6" r="0.8" fill="currentColor"/>
+        <circle cx="17" cy="9" r="0.5" fill="currentColor"/>
+      </svg>`,
+      earthAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 16 L7 6 L10 10 L13 5 L18 16 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5 16 L8 11 L10 13" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      </svg>`,
+      lightningAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2 L6 10 L10 10 L8 18 L14 10 L10 10 L12 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`,
+      poisonAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="8" cy="7" r="1.2" fill="currentColor"/>
+        <circle cx="12" cy="7" r="1.2" fill="currentColor"/>
+        <path d="M8 10 L8 12 M10 10 L10 13 M12 10 L12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M7 16 Q7 18 8.5 18 Q10 18 10 16 Q10 18 11.5 18 Q13 18 13 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>`,
+      bossAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 5 L6 7 L8 4 L10 7 L12 4 L14 7 L16 5 L16 8 L4 8 Z" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+        <circle cx="10" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="8" cy="11" r="1" fill="currentColor"/>
+        <circle cx="12" cy="11" r="1" fill="currentColor"/>
+        <path d="M8 14 L12 14" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>`,
+      weaknessAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="2" fill="currentColor"/>
+        <path d="M10 2 L10 6 M10 14 L10 18 M2 10 L6 10 M14 10 L18 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+      capstone: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 15 L3 8 L6 11 L10 5 L14 11 L17 8 L17 15 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="3" cy="8" r="1.5" fill="currentColor"/>
+        <circle cx="10" cy="5" r="1.5" fill="currentColor"/>
+        <circle cx="17" cy="8" r="1.5" fill="currentColor"/>
+      </svg>`,
+      default: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2 L12 8 L18 8 L13 12 L15 18 L10 14 L5 18 L7 12 L2 8 L8 8 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`
+    };
+
+    const SLOT_ICONS = [
+      { id: 'weaponAP', name: 'Weapon Slot' },
+      { id: 'adjAP', name: 'Adjective Slot' },
+      { id: 'nounAP', name: 'Noun Slot' },
+      { id: 'gemAP', name: 'Gem Slot' },
+      { id: 'startGold', name: 'Starting Gold' }
+    ];
+
+    const WEAPON_ICONS = [
+      { id: 'slashAP', name: 'Slash Mastery' },
+      { id: 'pierceAP', name: 'Pierce Mastery' },
+      { id: 'bluntAP', name: 'Blunt Mastery' },
+      { id: 'magicAP', name: 'Magic Mastery' }
+    ];
+
+    const ELEMENT_ICONS = [
+      { id: 'physAP', name: 'Physical' },
+      { id: 'fireAP', name: 'Fire' },
+      { id: 'waterAP', name: 'Water' },
+      { id: 'lightAP', name: 'Light' },
+      { id: 'darkAP', name: 'Dark' },
+      { id: 'earthAP', name: 'Earth' },
+      { id: 'lightningAP', name: 'Lightning' },
+      { id: 'poisonAP', name: 'Poison' }
+    ];
+
+    const SPECIAL_ICONS = [
+      { id: 'bossAP', name: 'Boss Slayer' },
+      { id: 'weaknessAP', name: 'Weakness Exploit' },
+      { id: 'capstone', name: 'Capstone' },
+      { id: 'default', name: 'Default' }
+    ];
+
+    function renderGrid(gridId, icons) {
+      const grid = document.getElementById(gridId);
+      icons.forEach(icon => {
+        const svg = SKILL_NODE_SVG[icon.id];
+        const isCapstone = icon.id === 'capstone';
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="icon-row">
+            <div class="icon-container">
+              <div class="icon gray">${svg}</div>
+              <span class="state-label">Locked</span>
+            </div>
+            <div class="icon-container">
+              <div class="icon ${isCapstone ? 'purple' : 'gold'}">${svg}</div>
+              <span class="state-label">Allocated</span>
+            </div>
+            <div class="icon-container">
+              <div class="icon ${isCapstone ? 'purple' : 'green'}">${svg}</div>
+              <span class="state-label">Maxed</span>
+            </div>
+          </div>
+          <div class="name">${icon.name}</div>
+          <div class="id">${icon.id}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    renderGrid('slot-grid', SLOT_ICONS);
+    renderGrid('weapon-grid', WEAPON_ICONS);
+    renderGrid('element-grid', ELEMENT_ICONS);
+    renderGrid('special-grid', SPECIAL_ICONS);
+  </script>
+</body>
+</html>
