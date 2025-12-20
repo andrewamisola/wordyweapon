@@ -217,11 +217,101 @@ Play 6 T2 words → infinite loop → ULTIMATE WEAPON VICTORY
 
 ---
 
+## Steam Achievements (NEW)
+
+### Design Philosophy
+- **Fun over grind**: No 200+ hour grinds. Achievements should be entertaining challenges.
+- **Playstyle variety**: Encourage players to explore different heroes, elements, talents, and strategies.
+- **Skill-based**: Reward creative play and mastery, not just time investment.
+- **Discoverable**: Most achievements should emerge naturally from skilled play.
+
+### Achievement List (15 New Achievements)
+
+#### Precision & Mastery
+| ID | Name | Description | Unlock Condition |
+|----|------|-------------|------------------|
+| ACH_PERFECT_STRIKE | Perfect Strike | Deal damage exactly equal to enemy's remaining HP | heroDmg === enemyHp (any combat) |
+| ACH_LEGENDARY_FORGE | Legendary Forge | Forge a weapon with all 6 slots filled using only Tier 3 words | All 6 slots filled AND all words are tier === 3 |
+| ACH_ULTIMATE_WEAPON | The Ultimate Weapon | Trigger an infinite loop and forge the Ultimate Weapon | ultimateWeaponForged === true (⚠️ Needs testing) |
+
+#### Element & Synergy
+| ID | Name | Description | Unlock Condition |
+|----|------|-------------|------------------|
+| ACH_RAINBOW_WARRIOR | Rainbow Warrior | Forge a weapon using all 8 elements in a single run | Track unique elements used across run, check === 8 |
+| ACH_PURE_ELEMENT | Elemental Purist | Win a combat using only words from a single element (no Physical) | All words in forge are same element (Fire/Water/Earth/Lightning/Poison/Light/Dark) |
+| ACH_FAMILY_REUNION | Family Reunion | Forge a weapon using 4 words from the same element family (World & Sky OR Body & Soul) | 4+ words from same family in one forge |
+
+#### Talent Mastery
+| ID | Name | Description | Unlock Condition |
+|----|------|-------------|------------------|
+| ACH_ECHO_CHAMBER | Echo Chamber | Trigger 10+ REREADs in a single combat | rereadCount >= 10 |
+| ACH_WORDS_OF_POWER | Words of Power | Win a round with 100+ W in the calculation | Final W >= 100 before multipliers |
+| ACH_MULTIPLIER_MADNESS | Multiplier Madness | Win with a 10x or higher damage multiplier | Final damage multiplier >= 10 |
+
+#### Hero Challenges
+| ID | Name | Description | Unlock Condition |
+|----|------|-------------|------------------|
+| ACH_WELL_READ | Well-Read Scholar | Win a run with Belle Lettres using only Body & Soul words | Belle + all words used are Body & Soul (Phys/Poison/Light/Dark) |
+| ACH_SILENT_VICTORY | Silent Victory | Win a combat with Caesura using only Dark and Poison words | Caesura + all words are Dark or Poison |
+| ACH_NATURES_WRATH | Nature's Wrath | Win a run with Reed reaching Round 15+ | Reed + roundIndex >= 15 |
+
+#### Economy & Strategy
+| ID | Name | Description | Unlock Condition |
+|----|------|-------------|------------------|
+| ACH_HOARDER | Word Hoarder | Fill your Word Bank to maximum capacity (24 words) | inventory.length >= 24 |
+| ACH_TREASURE_HUNTER | Treasure Hunter | Accumulate 1000+ gold in a single run | S.gold >= 1000 at any point (track peak) |
+| ACH_MINIMALIST | Minimalist Victory | Win a boss fight using only 3 words or fewer in the forge | Boss fight won with wordCount <= 3 |
+
+### Achievement Tracking Requirements
+
+**New PStats fields needed:**
+```javascript
+PStats.achievements = {
+  ACH_PERFECT_STRIKE: false,
+  ACH_LEGENDARY_FORGE: false,  // Renamed from MASTER_WORDSMITH
+  ACH_ULTIMATE_WEAPON: false,
+  ACH_RAINBOW_WARRIOR: false,
+  ACH_PURE_ELEMENT: false,
+  ACH_FAMILY_REUNION: false,
+  ACH_ECHO_CHAMBER: false,
+  ACH_WORDS_OF_POWER: false,
+  ACH_MULTIPLIER_MADNESS: false,
+  ACH_WELL_READ: false,
+  ACH_SILENT_VICTORY: false,
+  ACH_NATURES_WRATH: false,
+  ACH_HOARDER: false,
+  ACH_TREASURE_HUNTER: false,
+  ACH_MINIMALIST: false
+};
+```
+
+**New run tracking needed:**
+- `S.elementsUsedThisRun` (Set) - Track unique elements used
+- `S.highestGoldReached` - Track peak gold for Treasure Hunter
+
+**Combat tracking needed:**
+- Check exact damage on each combat resolution
+- Track rereadCount, W value, multiplier from calc() breakdown
+- Track word count in forge
+
+### Implementation Notes for Tech Subagent
+
+1. **Perfect Strike**: Check `c.heroDmg === safeEnemy.hp` in combat resolution (before hp update)
+2. **Echo Chamber**: Access `ctx.rereadCount` from calc() or expose via lastCombatResult
+3. **Ultimate Weapon**: Already tracked via `ultimateWeaponForged` flag
+4. **Element tracking**: Count unique elements in `S.elementsUsedThisRun` on each forge
+5. **Pure Element**: Check all words in forge array have same element (filter nulls)
+6. **Multiplier check**: Extract final multiplier from calc() breakdown
+7. **Boss victories**: Check `S.enemy.boss === true` when evaluating Minimalist
+
+---
+
 ## Open Questions
 
 - [ ] Belle Lettres capstone "Knowledge Eternal" - needs testing for balance
 - [ ] Talent count: Current 50 vs proposed 59 in rebalance plan
 - [ ] Ascension system implementation priority
+- [ ] Achievement balance testing: Are any achievements too easy/hard?
 
 ---
 
@@ -229,4 +319,5 @@ Play 6 T2 words → infinite loop → ULTIMATE WEAPON VICTORY
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2024-12-20 | Add 15 new Steam achievement designs | Design Subagent |
 | 2024-12-20 | Initial creation from docs restructure | Documentation Team |

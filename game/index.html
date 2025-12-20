@@ -103,6 +103,8 @@
   </symbol>
 </svg>
 
+<!-- Game Container: Fixed 1920x1080 render resolution, CSS-scaled to fit screen -->
+<div id="game-container">
 <div id="flame-bg"></div>
 <canvas id="fx-canvas"></canvas>
 
@@ -142,7 +144,9 @@
   </div>
 </div>
 
-<!-- In-Game Notification Toast -->
+<!-- Toast Notification Container (stacking support) -->
+<div id="toast-container"></div>
+<!-- Single game toast for unlock notifications -->
 <div id="game-toast" class="hidden"></div>
 
 <div id="battle-view">
@@ -456,8 +460,9 @@
       <button id="main-quit-btn" style="padding:8px 20px;font-size:12px;border-radius:8px;background:#1f1215;border:1px solid #7f1d1d;color:#fca5a5;margin-top:8px">Quit Game</button>
     </div>
     <!-- Footer -->
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151;display:flex;flex-direction:column;gap:6px;align-items:center">
       <button id="wishlist-btn" style="padding:8px 20px;font-size:12px;border-radius:8px;background:linear-gradient(135deg,#1a4a7a,#0f2d4a);border:1px solid rgba(59,130,246,0.5);color:#dbeafe;box-shadow:0 0 6px rgba(59,130,246,0.3)">☆ Wishlist on Steam</button>
+      <button id="discord-btn" style="padding:4px 12px;font-size:10px;border-radius:6px;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);color:#7289da;opacity:0.7;transition:opacity 0.2s">Join Discord</button>
     </div>
   </div>
 </div>
@@ -564,12 +569,12 @@
       <button id="pause-achievements" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Achievements & Stats</button>
       <button id="pause-graphics" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Settings</button>
       <button id="pause-credits" style="padding:8px 24px;border-radius:8px;background:#111827;border:1px solid #374151">Credits</button>
-      <button id="pause-exit" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close Menu</button>
       <button id="pause-quit-btn" style="padding:8px 20px;font-size:12px;border-radius:8px;background:#1f1215;border:1px solid #7f1d1d;color:#fca5a5;margin-top:8px">Quit Game</button>
     </div>
     <!-- Footer -->
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151;display:flex;flex-direction:column;gap:6px;align-items:center">
       <button id="pause-wishlist-btn" style="padding:8px 20px;font-size:12px;border-radius:8px;background:linear-gradient(135deg,#1a4a7a,#0f2d4a);border:1px solid rgba(59,130,246,0.5);color:#dbeafe;box-shadow:0 0 6px rgba(59,130,246,0.3)">☆ Wishlist on Steam</button>
+      <button id="pause-discord-btn" style="padding:4px 12px;font-size:10px;border-radius:6px;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);color:#7289da;opacity:0.7;transition:opacity 0.2s">Join Discord</button>
     </div>
   </div>
 </div>
@@ -682,6 +687,8 @@
 <footer id="demo-footer">
   <span>Wordy Weapon™ Demo · © 2025 Andrew Amisola · All Rights Reserved</span>
 </footer>
+
+</div><!-- End game-container -->
 
 <!-- Tone.js for generative music system -->
 <script src="Tone.min.js"></script>

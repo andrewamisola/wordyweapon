@@ -2,6 +2,33 @@
 // Full build (set to true to re-enable demo restrictions)
 const IS_DEMO = false;
 
+// === FIXED RENDER RESOLUTION ===
+// Game renders at 1080p, then scales to fit any screen (letterboxed)
+const GAME_WIDTH = 1920;
+const GAME_HEIGHT = 1080;
+
+// Detect if running in Electron (uses setZoomFactor for scaling)
+const IS_ELECTRON = typeof process !== 'undefined' && process.versions && process.versions.electron;
+
+// Scale game container to fit viewport (browser only - Electron uses setZoomFactor)
+function scaleGame() {
+  if (IS_ELECTRON) return; // Electron handles scaling via main.js setZoomFactor
+
+  const container = document.getElementById('game-container');
+  if (!container) return;
+
+  const scaleX = window.innerWidth / GAME_WIDTH;
+  const scaleY = window.innerHeight / GAME_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
+
+  container.style.transform = `scale(${scale})`;
+  container.style.transformOrigin = 'center center';
+}
+
+// Initialize scaling on load and resize
+window.addEventListener('resize', scaleGame);
+window.addEventListener('DOMContentLoaded', scaleGame);
+
 // === 136 BPM RHYTHMIC TIMING ===
 const RHYTHM = {
   BEAT: 441.2,        // 1/4 note (ms)
@@ -180,6 +207,7 @@ function openBugReport() {
 const DEMO_ROUND_LIMIT = 18;
 const DEMO_HERO_LIMIT = 2; // Demo-only lock count; ignored for full build
 const STEAM_WISHLIST_URL = 'https://store.steampowered.com/app/4248130';
+const DISCORD_URL = 'https://discord.gg/wordyweapon';
 
 // === DEBUG TOOL ===
 // Call from console: DEBUG.unlockAll() or DEBUG.maxOut()
@@ -529,16 +557,22 @@ function fmtBig(n) {
 // === FX ENGINE (CANVAS) ===
 const fxCanvas = document.getElementById('fx-canvas');
 const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
-let fxWidth = window.innerWidth;
-let fxHeight = window.innerHeight;
+// Fixed render dimensions - canvas always renders at 1080p regardless of screen size
+let fxWidth = GAME_WIDTH;
+let fxHeight = GAME_HEIGHT;
 
-// Resize canvas to match viewport
+// Initialize canvas at fixed resolution (no DPI scaling needed - CSS transform handles display scaling)
 function resizeFxCanvas() {
-  if (!fxCanvas) return;
-  fxWidth = window.innerWidth;
-  fxHeight = window.innerHeight;
-  fxCanvas.width = fxWidth;
-  fxCanvas.height = fxHeight;
+  if (!fxCanvas || !fxCtx) return;
+  fxWidth = GAME_WIDTH;
+  fxHeight = GAME_HEIGHT;
+
+  // Fixed resolution - always 1920x1080, CSS transform scales to screen
+  fxCanvas.width = GAME_WIDTH;
+  fxCanvas.height = GAME_HEIGHT;
+
+  // Reset transform to identity (no DPI scaling needed with fixed resolution)
+  fxCtx.setTransform(1, 0, 0, 1, 0, 0);
 }
 window.addEventListener('resize', resizeFxCanvas);
 if (fxCanvas) resizeFxCanvas();
@@ -617,11 +651,13 @@ class LightningBolt {
     ctx.globalAlpha = this.life * (0.8 + Math.random() * 0.2);
     ctx.stroke();
 
-    // Glow
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = this.color;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+    // Glow (skip in low-FX mode for performance)
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = this.color;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
@@ -799,7 +835,7 @@ class ParticleTrail {
       // Type specific behavior
       if (this.type === 'fire') { p.y -= 1; p.size *= 0.95; } // Rise and shrink
       if (this.type === 'water') { p.y += 0.5; } // Drip
-      if (this.type === 'light') { ctx.shadowBlur = 10; ctx.shadowColor = '#fff'; }
+      if (this.type === 'light' && !gfxSettings.lowFx) { ctx.shadowBlur = 10; ctx.shadowColor = '#fff'; }
 
       ctx.globalAlpha = Math.max(0, p.life);
       ctx.beginPath();
@@ -889,9 +925,11 @@ class EnergyBeam {
     ctx.globalAlpha = this.opacity * 0.7; // More transparent overall
     ctx.globalCompositeOperation = 'lighter';
 
-    // Heavy blur for intangible feel
-    ctx.shadowBlur = 40;
-    ctx.shadowColor = this.color;
+    // Heavy blur for intangible feel (skip in low-FX mode)
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = this.color;
+    }
 
     // Draw cone shape
     const drawLength = length * this.easeInOutCubic(Math.min(1, this.phase === 'in' ? this.progress : 1));
@@ -904,10 +942,12 @@ class EnergyBeam {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Extra glow layer for more blur
-    ctx.shadowBlur = 60;
-    ctx.globalAlpha = this.opacity * 0.4;
-    ctx.fill();
+    // Extra glow layer for more blur (skip in low-FX mode)
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 60;
+      ctx.globalAlpha = this.opacity * 0.4;
+      ctx.fill();
+    }
 
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -972,15 +1012,17 @@ class WaterStream {
       ctx.fill();
     });
 
-    // Add shimmer
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = '#88ccff';
-    this.particles.slice(-5).forEach(p => {
-      ctx.globalAlpha = Math.max(0, p.life * 0.3);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    // Add shimmer (skip in low-FX mode)
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#88ccff';
+      this.particles.slice(-5).forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.life * 0.3);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
 
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
@@ -1219,9 +1261,11 @@ class WindGust {
     ctx.strokeStyle = this.color;
     ctx.lineCap = 'round';
 
-    // Heavy blur for intangible/gaseous feel
-    ctx.shadowBlur = 30;
-    ctx.shadowColor = this.color;
+    // Heavy blur for intangible/gaseous feel (skip in low-FX mode)
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = this.color;
+    }
 
     let allDone = true;
     this.streaks.forEach(streak => {
@@ -8253,28 +8297,112 @@ function applyAudioSettings() {
 // Load audio settings on script load
 loadAudioSettings();
 
-// === IN-GAME TOAST NOTIFICATION ===
-function showToast(title, msg, btnText = 'OK', onClose = null) {
-  const toast = document.getElementById('game-toast');
-  if (!toast) return;
+// === IN-GAME TOAST NOTIFICATION SYSTEM ===
 
-  toast.innerHTML = `
-    ${title ? `<div class="toast-title">${title}</div>` : ''}
-    <div class="toast-msg">${msg}</div>
-    ${btnText ? `<button class="toast-btn">${btnText}</button>` : ''}
+// Toast notification state
+const TOAST_STATE = {
+  container: null,
+  activeToasts: [],
+  nextId: 0
+};
+
+// Initialize toast container (called on page load)
+function initToastContainer() {
+  if (TOAST_STATE.container) return;
+
+  // Create container if it doesn't exist
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    // Append to game-container for proper scaling, fallback to body
+    const gameContainer = document.getElementById('game-container');
+    (gameContainer || document.body).appendChild(container);
+  }
+  TOAST_STATE.container = container;
+}
+
+// Helper: Calculate auto-dismiss duration based on word count
+function calculateToastDuration(text) {
+  const words = text.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w.length > 0).length;
+  const baseTime = 2000; // 2 seconds minimum
+  const wordTime = 500; // 500ms per word
+  return Math.min(baseTime + (words * wordTime), 10000); // Max 10 seconds
+}
+
+// Helper: Get icon for toast type
+function getToastIcon(type) {
+  switch(type) {
+    case 'success': return icon('sparkle');
+    case 'error': return icon('skull');
+    case 'warning': return icon('lightning');
+    case 'info': return icon('coin');
+    default: return icon('coin');
+  }
+}
+
+// Remove a toast from the DOM
+function removeToast(toastEl) {
+  // Remove from active toasts array
+  const id = parseInt(toastEl.dataset.toastId);
+  TOAST_STATE.activeToasts = TOAST_STATE.activeToasts.filter(t => t.id !== id);
+
+  // Animate out
+  toastEl.classList.add('hiding');
+  setTimeout(() => {
+    if (toastEl.parentNode) {
+      toastEl.parentNode.removeChild(toastEl);
+    }
+  }, RHYTHM.HALF);
+}
+
+// Main toast function - blocking toast with button
+function showToast(title, msg, btnText = 'OK', onClose = null, type = 'info') {
+  initToastContainer();
+
+  const toastId = TOAST_STATE.nextId++;
+  const toastEl = document.createElement('div');
+  toastEl.className = `toast ${type}`;
+  toastEl.dataset.toastId = toastId;
+
+  // Build HTML
+  const iconHtml = getToastIcon(type);
+  toastEl.innerHTML = `
+    <div class="toast-content">
+      <div class="toast-icon">${iconHtml}</div>
+      <div class="toast-body">
+        ${title ? `<div class="toast-title">${title}</div>` : ''}
+        <div class="toast-msg">${msg}</div>
+        ${btnText ? `<button class="toast-btn">${btnText}</button>` : ''}
+      </div>
+    </div>
   `;
 
-  toast.classList.remove('hidden');
-  requestAnimationFrame(() => toast.classList.add('show'));
+  // Add to container
+  TOAST_STATE.container.appendChild(toastEl);
+  TOAST_STATE.activeToasts.push({ id: toastId, element: toastEl });
 
-  const btn = toast.querySelector('.toast-btn');
+  // Trigger entrance animation
+  requestAnimationFrame(() => {
+    toastEl.classList.add('show');
+  });
+
+  // Button click handler
+  const btn = toastEl.querySelector('.toast-btn');
   if (btn) {
-    btn.onclick = () => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.classList.add('hidden'), RHYTHM.HALF);
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      removeToast(toastEl);
       if (onClose) onClose();
     };
   }
+
+  // Allow clicking anywhere on toast to dismiss
+  toastEl.onclick = () => {
+    if (btn) btn.click();
+  };
+
+  return toastEl;
 }
 
 // Chromatic aberration effect for specific word chip
@@ -8318,45 +8446,63 @@ function applyChromaticToWord(word, effectType, isSource = false) {
   }, duration);
 }
 
-// Quick toast that auto-dismisses (dismissable by clicking anywhere or any action)
-function showQuickToast(msg, duration = 2000) {
-  const toast = document.getElementById('game-toast');
-  if (!toast) return;
+// Quick toast that auto-dismisses with progress bar
+function showQuickToast(msg, duration = null, type = 'info') {
+  initToastContainer();
 
-  // Clear any existing timeout and global listener
-  if(toast._dismissTimeout) clearTimeout(toast._dismissTimeout);
-  if(toast._globalDismiss) {
-    document.removeEventListener('click', toast._globalDismiss, true);
+  // Calculate duration based on word count if not specified
+  if (!duration) {
+    duration = calculateToastDuration(msg);
   }
 
-  toast.innerHTML = `<div class="toast-msg">${msg}</div>`;
-  toast.classList.remove('hidden');
-  toast.style.cursor = 'pointer';
-  requestAnimationFrame(() => toast.classList.add('show'));
+  const toastId = TOAST_STATE.nextId++;
+  const toastEl = document.createElement('div');
+  toastEl.className = `toast ${type}`;
+  toastEl.dataset.toastId = toastId;
 
-  // Dismiss function with fade-out
-  const dismiss = () => {
-    if(toast._dismissTimeout) clearTimeout(toast._dismissTimeout);
-    if(toast._globalDismiss) {
-      document.removeEventListener('click', toast._globalDismiss, true);
-      toast._globalDismiss = null;
+  // Build HTML with progress bar
+  const iconHtml = getToastIcon(type);
+  toastEl.innerHTML = `
+    <div class="toast-content">
+      <div class="toast-icon">${iconHtml}</div>
+      <div class="toast-body">
+        <div class="toast-msg">${msg}</div>
+      </div>
+    </div>
+    <div class="toast-progress" style="width: 100%"></div>
+  `;
+
+  // Add to container
+  TOAST_STATE.container.appendChild(toastEl);
+  TOAST_STATE.activeToasts.push({ id: toastId, element: toastEl });
+
+  // Trigger entrance animation
+  requestAnimationFrame(() => {
+    toastEl.classList.add('show');
+
+    // Start progress bar countdown
+    const progressBar = toastEl.querySelector('.toast-progress');
+    if (progressBar) {
+      // Small delay before starting countdown for entrance animation
+      setTimeout(() => {
+        progressBar.style.transition = `width ${duration}ms linear`;
+        progressBar.style.width = '0%';
+      }, 100);
     }
-    toast.classList.remove('show');
-    setTimeout(() => toast.classList.add('hidden'), RHYTHM.BEAT);
-    toast.onclick = null;
+  });
+
+  // Click to dismiss
+  toastEl.onclick = () => {
+    if (dismissTimeout) clearTimeout(dismissTimeout);
+    removeToast(toastEl);
   };
 
-  // Global click anywhere to dismiss (with small delay to avoid immediate dismiss)
-  setTimeout(() => {
-    toast._globalDismiss = () => dismiss();
-    document.addEventListener('click', toast._globalDismiss, true);
-  }, 100);
-
-  // Click on toast to dismiss
-  toast.onclick = dismiss;
-
   // Auto-dismiss after duration
-  toast._dismissTimeout = setTimeout(dismiss, duration);
+  const dismissTimeout = setTimeout(() => {
+    removeToast(toastEl);
+  }, duration + 100); // Add small buffer for progress bar animation
+
+  return toastEl;
 }
 
 // Called once when audio is first needed
@@ -8388,6 +8534,43 @@ function initAudio() {
   initAudioPool('click.ogg');
   initAudioPool('click alt.ogg');
   initHoverSoundPool();
+
+  // Pre-warm Web Audio node types to avoid JIT compilation lag on first use
+  // This creates the same node types used in playSamplePanned() and plays silence
+  try {
+    const warmupBuffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+    const warmupSource = audioCtx.createBufferSource();
+    warmupSource.buffer = warmupBuffer;
+    const warmupGain = audioCtx.createGain();
+    warmupGain.gain.value = 0; // Silent
+    const warmupPanner = audioCtx.createStereoPanner();
+    warmupPanner.pan.value = 0;
+    warmupSource.connect(warmupGain);
+    warmupGain.connect(warmupPanner);
+    warmupPanner.connect(audioCtx.destination);
+    warmupSource.start();
+    warmupSource.stop(audioCtx.currentTime + 0.001);
+  } catch (e) {}
+
+  // Pre-decode panned audio buffers (prevents first-word-placement lag)
+  // These are used with stereo panning on word slot insertion
+  const pannedSamples = [
+    'insert sword bow type.ogg', 'insert bow type.ogg', 'insert blunt.ogg',
+    'insert wand sound.ogg', 'gem.ogg', 'rarity.ogg', 'highlight word.ogg',
+    // Element sounds (played with panning when elemental words placed)
+    'fire-element.ogg', 'water-element.ogg', 'lightning-element.ogg',
+    'holy-element.ogg', 'dark-element.ogg', 'earth-element.ogg',
+    'poison-element.ogg', 'physical-element.ogg'
+  ];
+  pannedSamples.forEach(name => {
+    if (!audioBufferCache[name] && window.location.protocol !== 'file:') {
+      fetch(`sfx/${name}`)
+        .then(r => r.arrayBuffer())
+        .then(buf => audioCtx.decodeAudioData(buf))
+        .then(decoded => { audioBufferCache[name] = decoded; })
+        .catch(() => {});
+    }
+  });
 
   // Track mouse position for panned audio
   document.addEventListener('mousemove', (e) => {
@@ -10377,10 +10560,14 @@ function initParallax() {
   const battleView = document.getElementById('battle-view');
   const forgeView = document.getElementById('forge');
 
-  // Add smooth transitions for parallax
-  const addSmoothTransition = (element, duration = '0.15s') => {
+  // Setup element for GPU-accelerated parallax (prevents blur on high-DPI/high-refresh displays)
+  const setupParallaxElement = (element, duration = '0.15s') => {
     if (element) {
       element.style.transition = `transform ${duration} ease-out`;
+      element.style.willChange = 'transform';
+      element.style.backfaceVisibility = 'hidden';
+      // Force GPU layer with initial transform
+      element.style.transform = 'translate3d(0, 0, 0)';
     }
   };
 
@@ -10389,9 +10576,9 @@ function initParallax() {
     const enemyPortrait = battleView.querySelector('.enemy-portrait');
     const weaponDisplay = document.getElementById('weapon-display');
 
-    addSmoothTransition(heroPortrait);
-    addSmoothTransition(enemyPortrait);
-    addSmoothTransition(weaponDisplay);
+    setupParallaxElement(heroPortrait);
+    setupParallaxElement(enemyPortrait);
+    setupParallaxElement(weaponDisplay);
 
     document.addEventListener('mousemove', (e) => {
       // Skip parallax in Low FX mode
@@ -10401,18 +10588,19 @@ function initParallax() {
       const y = (e.clientY / window.innerHeight - 0.5) * 2; // -1 to 1
 
       // Subtle parallax on hero portrait (moves opposite to cursor)
+      // Use translate3d + integer pixels for GPU compositing without sub-pixel blur
       if (heroPortrait) {
-        heroPortrait.style.transform = `translate(${-x * 4}px, ${-y * 4}px)`;
+        heroPortrait.style.transform = `translate3d(${Math.round(-x * 4)}px, ${Math.round(-y * 4)}px, 0)`;
       }
 
       // Subtle parallax on enemy portrait (moves opposite to cursor)
       if (enemyPortrait) {
-        enemyPortrait.style.transform = `translate(${-x * 4}px, ${-y * 4}px)`;
+        enemyPortrait.style.transform = `translate3d(${Math.round(-x * 4)}px, ${Math.round(-y * 4)}px, 0)`;
       }
 
       // Weapon display moves with cursor (more pronounced)
       if (weaponDisplay) {
-        weaponDisplay.style.transform = `translate(${x * 6}px, ${y * 6}px)`;
+        weaponDisplay.style.transform = `translate3d(${Math.round(x * 6)}px, ${Math.round(y * 6)}px, 0)`;
       }
     });
   }
@@ -20566,8 +20754,8 @@ function initFlameMouseTracking() {
   let cachedFlameBg = null;
   let lastFlameUpdateTime = 0;
   function updateFlamePosition() {
-    // Skip if parallax disabled in settings
-    if (!S.settings?.parallax) {
+    // Skip if parallax disabled in settings or Low FX mode (flame is centered via CSS)
+    if (!S.settings?.parallax || gfxSettings.lowFx) {
       requestAnimationFrame(updateFlamePosition);
       return;
     }
@@ -21139,6 +21327,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadStatsAsync();
   await loadRunAsync();
 
+  // === PRE-WARM SYSTEMS (prevents first-use stutter) ===
+  // Initialize particle manager early so first word placement is smooth
+  if (!blacksmithEmberManager) {
+    blacksmithEmberManager = new BlacksmithEmberManager();
+    blacksmithEmberManager.init();
+  }
+  // Pre-load common audio samples used during word placement (HTML Audio cache)
+  const preloadSamples = [
+    'insert sword bow type.ogg', 'insert bow type.ogg', 'insert blunt.ogg',
+    'insert wand sound.ogg', 'gem.ogg', 'rarity.ogg', 'highlight word.ogg'
+  ];
+  preloadSamples.forEach(name => loadSample(name).catch(() => {}));
+  // Warm up Web Animations API and CSS animations to avoid first-use JIT/shader stutter
+  const warmupEl = document.createElement('div');
+  warmupEl.style.cssText = 'position:absolute;left:-9999px;opacity:0;pointer-events:none';
+  warmupEl.className = 'slot'; // Use slot class to trigger wordPlaced animation path
+  document.body.appendChild(warmupEl);
+  // Trigger multiple animation types to warm up GPU shaders
+  warmupEl.animate([
+    { opacity: 0, transform: 'scale(1)', boxShadow: '0 0 0 rgba(74,222,128,0)' },
+    { opacity: 1, transform: 'scale(1.1)', boxShadow: '0 0 20px rgba(74,222,128,0.6)' },
+    { opacity: 0, transform: 'scale(1)', boxShadow: '0 0 0 rgba(74,222,128,0)' }
+  ], { duration: 10 });
+  warmupEl.classList.add('word-placed'); // Trigger CSS animation
+  setTimeout(() => warmupEl.remove(), 50);
+
+  // Warm up FLIP animation with dummy chip
+  const warmupChip = document.createElement('div');
+  warmupChip.style.cssText = 'position:absolute;left:-9999px;opacity:0';
+  warmupChip.className = 'chip';
+  document.body.appendChild(warmupChip);
+  warmupChip.animate([
+    { transform: 'scale(0.3)', opacity: 0 },
+    { transform: 'scale(1.1)', opacity: 1 },
+    { transform: 'scale(1)', opacity: 1 }
+  ], { duration: 10, easing: 'ease-out' });
+  setTimeout(() => warmupChip.remove(), 50);
+
   // === DEMO MODE UI TOGGLE ===
   // Show/hide UI elements based on IS_DEMO flag
   // Demo elements: splash label, footer, victory screen, wishlist buttons
@@ -21147,6 +21373,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     'demo-label',           // "DEMO" text on splash screen
     'demo-footer',          // Footer with demo copyright
     'wishlist-btn',         // Main menu wishlist button
+    'pause-wishlist-btn',   // Pause menu wishlist button
+    'victory-wishlist-btn', // Victory screen wishlist button
     'victory-overlay'       // Demo victory screen (Round 18 end)
   ];
   const fullGameElements = [
@@ -21463,6 +21691,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     wishlistBtn.onmouseenter=sfxHover;
   }
 
+  // Main menu Discord button (always shown)
+  const discordBtn = document.getElementById('discord-btn');
+  if(discordBtn){
+    discordBtn.onclick = () => {
+      window.open(DISCORD_URL, '_blank');
+    };
+    discordBtn.onmouseenter=sfxHover;
+    // Subtle hover effect
+    discordBtn.addEventListener('mouseenter', () => {
+      discordBtn.style.opacity = '1';
+    });
+    discordBtn.addEventListener('mouseleave', () => {
+      discordBtn.style.opacity = '0.7';
+    });
+  }
+
+  // Pause menu Discord button (always shown)
+  const pauseDiscordBtn = document.getElementById('pause-discord-btn');
+  if(pauseDiscordBtn){
+    pauseDiscordBtn.onclick = () => {
+      window.open(DISCORD_URL, '_blank');
+    };
+    pauseDiscordBtn.onmouseenter=sfxHover;
+    // Subtle hover effect
+    pauseDiscordBtn.addEventListener('mouseenter', () => {
+      pauseDiscordBtn.style.opacity = '1';
+    });
+    pauseDiscordBtn.addEventListener('mouseleave', () => {
+      pauseDiscordBtn.style.opacity = '0.7';
+    });
+  }
+
   const pauseBtn=document.getElementById('pause-btn');
   if(pauseBtn){
     pauseBtn.onclick=()=>openPauseMenu(isShopOpen()?"shop":"run");
@@ -21562,8 +21822,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   $("#pause-credits").onmouseenter=sfxHover;
   $("#credits-close").onclick=()=>{document.getElementById('credits-overlay').classList.remove('show');playSfxBack();};
   $("#credits-close").onmouseenter=sfxHover;
-  $("#pause-exit").onclick=()=>closePauseMenu();
-  $("#pause-exit").onmouseenter=sfxHover;
   // Return to title screen
   $("#pause-title").onclick=()=>{
     if (S.roundIndex && S.roundIndex > 0) {

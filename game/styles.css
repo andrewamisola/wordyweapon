@@ -16,23 +16,37 @@
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text}
-body{font-family:var(--font-sans);background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),radial-gradient(circle at 80% 0,rgba(76,152,255,0.05),transparent 28%),linear-gradient(135deg,#0a0f17,#080a0f 40%,#0c0f19);color:#e5e7eb;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-x:hidden;background-blend-mode:overlay}
 
-/* Note: Removed CSS zoom media queries - Electron handles window scaling in main.js.
-   CSS zoom causes issues with position:fixed elements and canvas rendering. */
+/* Body: Black background for letterboxing, centers game container */
+body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0;padding:0}
 
-/* FX Canvas */
+/* Game Container: Fixed 1080p resolution, CSS-scaled to fit screen */
+#game-container {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),radial-gradient(circle at 80% 0,rgba(76,152,255,0.05),transparent 28%),linear-gradient(135deg,#0a0f17,#080a0f 40%,#0c0f19);
+  background-blend-mode:overlay;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  /* transform applied by JS scaleGame() */
+}
+
+/* FX Canvas: Fixed 1080p resolution inside container */
 #fx-canvas {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 1920px;
+  height: 1080px;
   pointer-events: none;
   z-index: 10000; /* Above overlays for combat effects */
 }
 
-/* Visual Filters: Paper Grain + Ink Vignette */
+/* Visual Filters: Paper Grain + Ink Vignette (outside container, covers viewport) */
 .screen-overlay {
   position: fixed;
   inset: 0;
@@ -284,12 +298,14 @@ body{font-family:var(--font-sans);background:radial-gradient(circle at 20% 20%,r
 
   transition: opacity var(--quarter-beat) ease;
 }
-#flame-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
+#flame-bg{position:absolute;top:0;left:0;width:1920px;height:1080px;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
 #flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:filter var(--half-beat) ease,opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
 /* Orange/yellow glow - bigger, behind, more feathered, wider aspect */
-#flame-bg::after{width:120vw;height:70vh;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(20,90%,45%) 35%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
+/* Fixed pixel values: 120vw->2304px, 70vh->756px (based on 1920x1080) */
+#flame-bg::after{width:2304px;height:756px;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(20,90%,45%) 35%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
 /* Red core - smaller, on top, tighter blur, wider aspect */
-#flame-bg::before{width:70vw;height:50vh;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(5,85%,40%) 45%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
+/* Fixed pixel values: 70vw->1344px, 50vh->540px (based on 1920x1080) */
+#flame-bg::before{width:1344px;height:540px;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(5,85%,40%) 45%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
 /* Purple flame for pre-boss shop */
 #flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%)}
 #flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%)}
@@ -365,14 +381,415 @@ body:has(#achievements-overlay.show) #header{display:none}
 .sound-slider-row input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:#fbbf24;border-radius:50%;cursor:pointer;box-shadow:0 2px 6px #0005}
 .sound-slider-row .vol-value{font-size:10px;color:#6b7280;width:30px;text-align:right}
 
-/* In-Game Toast Notification - centered on screen */
-#game-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) translateY(20px);background:rgba(251,191,36,0.55);border:1px solid rgba(180,130,20,0.5);border-radius:6px;padding:6px 18px;color:#1a1a1a;font-size:13px;text-align:center;z-index:2000;box-shadow:0 4px 16px #0004;opacity:0;transition:opacity var(--beat) ease,transform var(--half-beat) ease;pointer-events:none}
-#game-toast.show{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
-#game-toast.hidden{display:none}
-#game-toast .toast-title{font-size:15px;font-weight:700;color:#7c2d12;margin-bottom:6px}
-#game-toast .toast-msg{color:#1a1a1a;line-height:1.4}
-#game-toast .toast-btn{margin-top:12px;padding:6px 20px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:6px;color:#111;font-weight:600;cursor:pointer;transition:all var(--half-beat)}
-#game-toast .toast-btn:hover{background:linear-gradient(135deg,#fcd34d,#fbbf24);transform:translateY(-1px)}
+/* ======================================
+   TOAST NOTIFICATION SYSTEM - "EMBER NOTICE"
+   Complete redesign: Clean, modern dark fantasy
+   Focused on readability and subtle forge aesthetics
+   ====================================== */
+
+/* Toast container - positioned top-right inside game-container */
+#toast-container {
+  position: absolute;
+  top: 80px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 380px;
+}
+
+/* Individual toast notification - clean elevated card */
+.toast {
+  position: relative;
+  background: linear-gradient(145deg,
+    rgba(24, 28, 36, 0.97),
+    rgba(16, 20, 28, 0.98));
+  backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  pointer-events: auto;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  overflow: hidden;
+
+  /* Entrance animation state - fade only, no slide (avoids overflow clipping) */
+  opacity: 0;
+  transform: scale(0.95);
+  transition:
+    opacity 0.3s ease-out,
+    transform 0.3s ease-out,
+    box-shadow var(--quarter-beat) ease,
+    border-color var(--quarter-beat) ease;
+}
+
+/* Subtle inner glow accent */
+.toast::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(251, 191, 36, 0.04),
+    transparent 60%
+  );
+  pointer-events: none;
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity var(--half-beat) ease;
+}
+
+.toast:hover::before {
+  opacity: 1;
+}
+
+/* Toast entrance animation - fade in and scale up */
+.toast.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Icon entrance - gentle pop */
+.toast.show .toast-icon {
+  animation: toastIconPop calc(var(--beat) * 1.2) cubic-bezier(0.34, 1.56, 0.64, 1) var(--quarter-beat);
+  animation-fill-mode: backwards;
+}
+
+@keyframes toastIconPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Toast exit animation - quick fade out */
+.toast.hiding {
+  opacity: 0;
+  transform: scale(0.95);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+/* Toast content layout */
+.toast-content {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  z-index: 1;
+}
+
+/* Toast icon - modern minimal badge */
+.toast-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 191, 36, 0.12);
+  border-radius: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  position: relative;
+  transition:
+    transform var(--quarter-beat) ease,
+    background var(--quarter-beat) ease,
+    border-color var(--quarter-beat) ease;
+}
+
+.toast-icon svg {
+  width: 18px;
+  height: 18px;
+  color: #fbbf24;
+  fill: #fbbf24;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  transition: transform var(--quarter-beat) ease;
+}
+
+.toast:hover .toast-icon {
+  transform: scale(1.05);
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.toast:hover .toast-icon svg {
+  transform: scale(1.05);
+}
+
+/* Toast text area */
+.toast-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.01em;
+}
+
+.toast-msg {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  max-width: 100%;
+  word-wrap: break-word;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Toast button - clean modern style */
+.toast-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  background: linear-gradient(135deg,
+    rgba(251, 191, 36, 0.15),
+    rgba(245, 158, 11, 0.15));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition: all var(--quarter-beat) ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 0.5px 0 rgba(251, 191, 36, 0.2);
+}
+
+.toast-btn:hover {
+  background: linear-gradient(135deg,
+    rgba(251, 191, 36, 0.24),
+    rgba(245, 158, 11, 0.24));
+  border-color: rgba(251, 191, 36, 0.5);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 8px rgba(251, 191, 36, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 0.5px 0 rgba(251, 191, 36, 0.3);
+}
+
+.toast-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Type-specific accent colors - left border and icon styling */
+
+/* Success variant - green */
+.toast.success {
+  border-left: 3px solid #4ade80;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(74, 222, 128, 0.08),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.toast.success .toast-icon {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+.toast.success .toast-icon svg {
+  color: #4ade80;
+  fill: #4ade80;
+}
+
+.toast.success:hover .toast-icon {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+/* Error variant - red */
+.toast.error {
+  border-left: 3px solid #f87171;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(248, 113, 113, 0.08),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.toast.error .toast-icon {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+.toast.error .toast-icon svg {
+  color: #f87171;
+  fill: #f87171;
+}
+
+.toast.error:hover .toast-icon {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+/* Warning variant - amber/gold */
+.toast.warning {
+  border-left: 3px solid #fbbf24;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(251, 191, 36, 0.08),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.toast.warning .toast-icon {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.toast.warning .toast-icon svg {
+  color: #fbbf24;
+  fill: #fbbf24;
+}
+
+.toast.warning:hover .toast-icon {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+/* Info variant - blue */
+.toast.info {
+  border-left: 3px solid #60a5fa;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(96, 165, 250, 0.08),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.toast.info .toast-icon {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+.toast.info .toast-icon svg {
+  color: #60a5fa;
+  fill: #60a5fa;
+}
+
+.toast.info:hover .toast-icon {
+  background: rgba(96, 165, 250, 0.18);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+/* Hover effect - subtle lift and glow */
+.toast:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Type-specific hover enhancements */
+.toast.success:hover {
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(74, 222, 128, 0.08),
+    0 0 0 1px rgba(74, 222, 128, 0.12),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+.toast.error:hover {
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(248, 113, 113, 0.08),
+    0 0 0 1px rgba(248, 113, 113, 0.12),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+.toast.warning:hover {
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(251, 191, 36, 0.08),
+    0 0 0 1px rgba(251, 191, 36, 0.12),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+.toast.info:hover {
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(96, 165, 250, 0.08),
+    0 0 0 1px rgba(96, 165, 250, 0.12),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Progress bar - clean minimal design */
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    #fbbf24 0%,
+    #f59e0b 100%);
+  border-radius: 0 0 12px 12px;
+  transition: width linear;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+  z-index: 2;
+}
+
+/* Type-specific progress bars */
+.toast.success .toast-progress {
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+}
+
+.toast.error .toast-progress {
+  background: linear-gradient(90deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+}
+
+.toast.info .toast-progress {
+  background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+}
+
+/* Legacy support - keep old ID for backward compatibility */
+#game-toast {
+  display: none;
+}
+
+/* Fallback styles for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  .toast {
+    background: linear-gradient(145deg,
+      rgba(24, 28, 36, 1),
+      rgba(16, 20, 28, 1)) !important;
+  }
+}
 #battle-view{display:flex;gap:40px;width:100%;max-width:1000px;margin-bottom:12px;align-items:center;justify-content:center;position:relative;z-index:5}
 .portrait-container{flex:0 0 280px}
 .portrait{background:#0d1117;border-radius:12px;padding:16px;border:2px solid #2a2f38;position:relative;overflow:hidden;cursor:pointer;transition:border-color var(--half-beat) ease,box-shadow var(--half-beat) ease}
@@ -435,7 +852,7 @@ body:has(#achievements-overlay.show) #header{display:none}
 #weapon-display{text-align:center;overflow:visible!important;position:relative;z-index:1}
 #weapon-aura{position:absolute;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%, -50%);z-index:-1;border-radius:50%;filter:blur(20px);opacity:0.6;pointer-events:none;transition:background var(--beat) ease}
 .weapon-canvas{position:relative;transition:transform var(--half-beat),filter var(--half-beat);filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));perspective:800px;overflow:visible!important;transform:translateY(-3px)}
-.weapon-layered{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform var(--half-beat) ease,filter var(--half-beat) ease;--tilt-x:0deg;--tilt-y:0deg;transform:rotateX(var(--tilt-x)) rotateY(var(--tilt-y));}
+.weapon-layered{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform var(--half-beat) ease,filter var(--half-beat) ease;--tilt-x:0deg;--tilt-y:0deg;transform:rotateX(var(--tilt-x)) rotateY(var(--tilt-y));will-change:transform;backface-visibility:hidden}
 .weapon-layered[data-parallax-enabled="false"]{transform:none}
 .weapon-layered:hover{filter:drop-shadow(0 10px 24px rgba(0,0,0,0.55));}
 .weapon-layer{position:absolute;inset:0;pointer-events:none;width:100%;height:100%;}
@@ -3089,6 +3506,7 @@ body.low-fx #flame-bg::before,
 body.low-fx #flame-bg::after {
   animation: none !important;
   filter: blur(30px) !important; /* Reduced blur = less GPU */
+  transform: translate(-50%, -50%) scale(var(--flame-scale)) !important; /* Center without mouse offset */
 }
 
 body.low-fx .god-rays {

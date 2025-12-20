@@ -10,10 +10,10 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // No custom GPU flags - let Electron use defaults for best compatibility
 
-// Base game dimensions (16:10 aspect ratio for wider default view)
-const BASE_WIDTH = 1280;
-const BASE_HEIGHT = 800;
-const MAX_SCALE = 1.5;
+// Base game dimensions (16:9 aspect ratio to match game content)
+const BASE_WIDTH = 1920;
+const BASE_HEIGHT = 1080;
+const MAX_SCALE = 1.0; // Don't exceed native resolution
 const SERVER_PORT = 45678; // Local server port for serving game files
 
 let mainWindow;
@@ -96,18 +96,21 @@ ipcMain.handle('steam-unlock-achievement', (event, id) => unlockSteamAchievement
 ipcMain.handle('steam-is-achievement-unlocked', (event, id) => isSteamAchievementUnlocked(id));
 
 // Update content scaling when window size changes (especially for fullscreen on 4K)
-// NOTE: resizeFxCanvas is already called by script.js via window resize listener - no need to call it here
+// Uses Electron's setZoomFactor for reliable scaling
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  // Inject CSS to ensure content is centered and no scrollbars appear
-  mainWindow.webContents.executeJavaScript(`
-    (function() {
-      // Reset any zoom and ensure proper centering
-      document.body.style.zoom = '';
-      document.body.style.overflow = 'hidden';
-    })();
-  `).catch(() => {}); // Ignore errors if page not ready
+  const [windowWidth, windowHeight] = mainWindow.getContentSize();
+
+  // Calculate zoom factor to fit game (1920x1080) into window
+  const scaleX = windowWidth / BASE_WIDTH;
+  const scaleY = windowHeight / BASE_HEIGHT;
+  const zoomFactor = Math.min(scaleX, scaleY);
+
+  // Apply zoom factor - this scales all content uniformly
+  mainWindow.webContents.setZoomFactor(zoomFactor);
+
+  console.log(`Window: ${windowWidth}x${windowHeight}, Zoom: ${zoomFactor.toFixed(3)}`);
 }
 
 // MIME types for serving files
@@ -132,7 +135,8 @@ const MIME_TYPES = {
 
 // Start local HTTP server to serve game files (enables Tone.js fetch)
 function startLocalServer(callback) {
-  const gameDir = path.join(__dirname, 'game');
+  // Use shared game folder at project root (one level up from electron/)
+  const gameDir = path.join(__dirname, '..', 'game');
 
   localServer = http.createServer((req, res) => {
     // Remove query strings and decode URI
@@ -187,10 +191,10 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    minWidth: 1000,
-    minHeight: 625,  // Maintains 16:10 aspect at minimum size
+    minWidth: 960,
+    minHeight: 540,  // Maintains 16:9 aspect at minimum size (half of 1080p)
     backgroundColor: '#0a0a0a',
-    icon: path.join(__dirname, 'game', 'icon.png'),
+    icon: path.join(__dirname, '..', 'game', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,  // Required for preload to use require('electron')
@@ -201,8 +205,8 @@ function createWindow() {
     show: false
   });
 
-  // Lock aspect ratio to 16:10 (1.6)
-  mainWindow.setAspectRatio(16 / 10);
+  // Lock aspect ratio to 16:9 (matches game content)
+  mainWindow.setAspectRatio(16 / 9);
 
   // Load from local server instead of file://
   mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/index.html`);

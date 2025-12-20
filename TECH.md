@@ -44,20 +44,22 @@ npm run build-all      # All platforms
 ### Folder Structure
 ```
 wordyweapon/
-├── game/                  # Source files (edit here)
+├── game/                  # Source files (SINGLE SOURCE OF TRUTH)
 │   ├── index.html
 │   ├── script.js
 │   ├── styles.css
 │   ├── assets/            # SVG portraits
 │   └── sfx/               # Audio (ogg format)
-├── electron/              # Desktop wrapper
-│   ├── main.js
+├── electron/              # Desktop wrapper (uses ../game/)
+│   ├── main.js            # Points to ../game for dev
 │   ├── preload.js
-│   └── package.json
+│   └── package.json       # Build scripts copy game/ for dist
 └── builds/                # Output (don't edit)
     ├── itch/
     └── steam/
 ```
+
+**Note**: Electron dev mode uses the shared `game/` folder via `path.join(__dirname, '..', 'game')`. Build scripts copy `game/` into `electron/game/` for self-contained distribution packages.
 
 ---
 
@@ -129,6 +131,8 @@ Global state object `S` tracks:
 ## Steam Integration
 
 ### Achievement IDs
+
+#### Existing Achievements
 ```
 ACH_FIRST_VICTORY      - First boss defeated
 ACH_WORDSMITH_MASTER   - 100+ damage single hit
@@ -137,9 +141,39 @@ ACH_BOSS_SLAYER        - Defeat all 5 chapter bosses
 ACH_APPRENTICE_SMITH   - Clear on Apprentice
 ACH_ADEPT_FORGER       - Clear on Adept
 ACH_MASTER_BLACKSMITH  - Clear on Master
-ACH_BOSS_[name]        - Per-boss achievements
-ACH_HERO_[name]        - Per-hero win achievements
+ACH_BOSS_[name]        - Per-boss achievements (6 total)
+ACH_HERO_[name]        - Per-hero win achievements (6 total)
 ```
+
+#### New Achievements (Design Phase - Not Yet Implemented)
+```
+# Precision & Mastery
+ACH_PERFECT_STRIKE        - Deal exact damage = enemy HP
+ACH_LEGENDARY_FORGE       - All 6 slots filled with T3 words only
+ACH_ULTIMATE_WEAPON       - Trigger infinite loop victory (⚠️ needs testing)
+
+# Element & Synergy
+ACH_RAINBOW_WARRIOR       - Use all 8 elements in one run
+ACH_PURE_ELEMENT          - Win using only one element type
+ACH_FAMILY_REUNION        - Use 4+ words from same element family
+
+# Talent Mastery
+ACH_ECHO_CHAMBER          - Trigger 10+ REREADs in one combat
+ACH_WORDS_OF_POWER        - Win with 100+ W value
+ACH_MULTIPLIER_MADNESS    - Win with 10x+ damage multiplier
+
+# Hero Challenges
+ACH_WELL_READ             - Belle victory using only Body & Soul
+ACH_SILENT_VICTORY        - Caesura win with only Dark/Poison
+ACH_NATURES_WRATH         - Reed reaches Round 15+
+
+# Economy & Strategy
+ACH_HOARDER               - Fill Word Bank to max (24 words)
+ACH_TREASURE_HUNTER       - Accumulate 1000+ gold in one run
+ACH_MINIMALIST            - Win boss fight with 3 or fewer words
+```
+
+See DESIGN.md for full achievement specifications and unlock conditions.
 
 ### Steam Cloud Keys
 - `wordy_weapon_stats` - Persistent stats (PStats)
@@ -192,6 +226,27 @@ requestAnimationFrame(() => {
 - No scroll/touch listeners missing passive: true
 - will-change on flame background effects
 
+### FIXED (2024-12-20) - Fullscreen Scaling & Canvas Performance
+
+**Issue**: Elemental FX dropped to <10 FPS in fullscreen on Windows (4K displays). Game didn't scale proportionally.
+
+**Root Cause**: Game tried to render at native resolution (e.g., 4K) instead of fixed resolution with scaling.
+
+**Fix Applied - Fixed 1080p Resolution with Electron Zoom**:
+
+1. **Game renders at fixed 1920x1080** regardless of window/screen size
+2. **Electron uses `setZoomFactor()`** to scale content uniformly (`electron/main.js`)
+3. **Browser builds use CSS transform** for scaling (`game/script.js` scaleGame())
+4. **Letterboxing** via black body background and centered game container
+
+**Files Modified**:
+- `electron/main.js`: Changed BASE_WIDTH/HEIGHT to 1920x1080, aspect ratio to 16:9, updateContentScale() uses setZoomFactor()
+- `game/script.js`: Added GAME_WIDTH/HEIGHT constants, IS_ELECTRON detection, scaleGame() for browser builds, resizeFxCanvas() uses fixed dimensions
+- `game/styles.css`: Added #game-container (fixed 1920x1080), body letterboxing, fixed flame-bg dimensions
+- `game/index.html`: Added game-container wrapper div
+
+**Performance Result**: Consistent 60 FPS at any resolution including 4K fullscreen
+
 ### CSS Improvements Needed
 ```css
 .particle, .spark, .ember, .orb {
@@ -233,7 +288,8 @@ requestAnimationFrame(() => {
 ## Platform Differences
 
 ### Electron (Desktop)
-- Window: 1280x800 base, 1.5x max scale
+- Fixed 1920x1080 render resolution, scaled via setZoomFactor()
+- Window: 16:9 aspect ratio locked, min 960x540
 - Local HTTP server for Tone.js
 - Steamworks.js bridge via preload.js
 
@@ -241,6 +297,33 @@ requestAnimationFrame(() => {
 - No Steam integration
 - localStorage only
 - Full Tone.js support
+
+---
+
+## UI Elements - Demo vs Full Build
+
+### Wishlist Button
+- **Location**: Main menu footer, Pause menu footer, Victory screen
+- **Visibility**: Only shown when `IS_DEMO = true`
+- **Behavior**: Opens Steam wishlist page in new tab
+- **Implementation**: Added to `demoElements` array in script.js (~line 21292-21299)
+  - `wishlist-btn` (main menu)
+  - `pause-wishlist-btn` (pause menu)
+  - `victory-wishlist-btn` (victory screen)
+
+### Discord Button
+- **Location**: Main menu footer, Pause menu footer
+- **Visibility**: Always shown (both demo and full builds)
+- **Styling**: Subtle/lowkey design
+  - Small font (10px)
+  - Semi-transparent (opacity 0.7, 1.0 on hover)
+  - Muted Discord purple colors (rgba(88,101,242))
+  - Positioned below Wishlist button when both visible
+- **URL**: Placeholder `https://discord.gg/wordyweapon` (update when real invite created)
+- **Implementation**:
+  - HTML: index.html lines 463, 576
+  - Event handlers: script.js lines 21511-21541
+  - URL constant: script.js line 210
 
 ---
 
@@ -267,4 +350,13 @@ requestAnimationFrame(() => {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2025-12-20 | Fixed flame background position in Low FX mode: center transform + skip mouse tracking | Tech Subagent |
+| 2025-12-20 | Fixed Electron first-word-placement lag: pre-warm Web Audio node types (BufferSource, Gain, StereoPanner) | Tech Subagent |
+| 2025-12-20 | Fixed first-word-placement stutter: pre-warm BlacksmithEmberManager and preload audio samples | Tech Subagent |
+| 2025-12-20 | Fixed parallax blur on 4K 120Hz: use translate3d + integer pixels + will-change | Tech Subagent |
+| 2025-12-20 | Consolidated codebase: Electron now uses shared game/ folder, deleted duplicate electron/game/ | Manager |
+| 2025-12-20 | Fixed wishlist buttons visibility: added pause-wishlist-btn and victory-wishlist-btn to demoElements | Manager |
+| 2025-12-20 | Removed duplicate "Close Menu" button from pause menu | Manager |
+| 2024-12-20 | Fixed 1080p resolution + Electron setZoomFactor for 4K fullscreen | Tech Subagent |
+| 2024-12-20 | Add Discord button (always visible) and restrict Wishlist to demo-only | Tech Subagent |
 | 2024-12-20 | Initial creation from docs restructure | Documentation Team |

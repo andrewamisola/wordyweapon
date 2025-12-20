@@ -196,6 +196,117 @@ Visual effects, CSS styling, hero/enemy portraits, talent icons, audio direction
 - Low FX toggle
 - Volume controls (Master/Music/SFX)
 
+### Toast Notification System - "Ember Notice"
+
+**Design Concept**: Modern, clean toast notifications with subtle dark fantasy forge accents. Focused on readability and unobtrusive communication.
+
+**Visual Philosophy**:
+- Clean elevated card design with glassmorphic backdrop
+- Minimal ornamentation - let content speak
+- Subtle forge theme through golden accents and glows
+- High readability with excellent contrast
+- Modern rounded corners (12px) instead of medieval aesthetic
+- Refined, polished appearance
+
+**Visual Features**:
+- Clean gradient background (darker grey tones)
+- Enhanced backdrop blur (16px) with saturation boost
+- Subtle inset highlight for depth
+- Minimal 1px border with low opacity
+- 3px colored left border for type indication
+- Modern rounded icon badge (8px border-radius) instead of circular seal
+- Thin 2px progress bar (down from 3px)
+- Subtle radial glow on hover (top-right origin)
+
+**Animation System**:
+1. **Entrance** (1.5 beats):
+   - Smooth slide from right with slight upward motion
+   - No scale change - just translate
+   - Smooth cubic-bezier easing for polished feel
+   - Icon pops in with gentle bounce (delayed 0.25 beat)
+   - Less dramatic than previous "stamp" effect
+
+2. **Hover**:
+   - Lifts up 2px
+   - Border brightens slightly
+   - Subtle inner glow fades in
+   - Icon scales 1.05x (minimal, refined)
+
+3. **Exit** (0.5 beat):
+   - Quick slide right with slight upward motion
+   - Fast fade out
+   - Clean, efficient dismissal
+
+**Typography**:
+- Title: EB Garamond, 15px (down from 16px), bold (700), subtle shadow
+- Message: Gill Sans, 12.5px (down from 13px), lighter color (#cbd5e1)
+- Button: Gill Sans, 11.5px (down from 12px), bold (700), uppercase, 0.6px letter spacing
+- All text shadows reduced for cleaner appearance
+
+**Color System**:
+- **Base Border**: rgba(255,255,255,0.1) - neutral white with low opacity
+- **Success**: #4ade80 (green) with 3px left border
+- **Error**: #f87171 (red) with 3px left border
+- **Warning**: #fbbf24 (amber) with 3px left border
+- **Info**: #60a5fa (blue) with 3px left border
+- **Icon backgrounds**: 12% opacity of type color
+- **Icon borders**: 20-25% opacity of type color
+
+**Progress Bars**:
+- Default: Gold gradient (#fbbf24 → #f59e0b) - simplified from 3-color
+- Success: Green gradient (#4ade80 → #22c55e)
+- Error: Red gradient (#f87171 → #ef4444)
+- Info: Blue gradient (#60a5fa → #3b82f6)
+- Reduced glow intensity for subtlety
+
+**Button Design** - Clean modern style:
+- Single gradient background (simplified)
+- 1px border (down from 1.5px)
+- Minimal shadows with subtle inset highlight
+- Reduced text shadow
+- Hover: Lifts 1px (down from 2px), border intensifies
+- Active: Pressed effect with inset shadow
+
+**Icon Design** - Modern badge:
+- 32px square badge with 8px border-radius (was 28px circle)
+- 18px SVG icon (up from 16px for better visibility)
+- Rounded square feels more modern and UI-friendly
+- Type-specific background colors at 12% opacity
+- Subtle border at 20% opacity
+
+**Layout**:
+- Position: Top-right (80px from top, 24px from right)
+- Max width: 380px (down from 400px)
+- Stacking gap: 10px (down from 12px for tighter stack)
+- Internal padding: 14px × 16px (slightly reduced)
+- Icon size: 32px square with 8px radius, 18px SVG
+- Content gap: 12px (down from 14px)
+- Body uses flex-column with 4px gap for tighter spacing
+
+**Rhythm-Based Timing**:
+- Entrance: 1.5 beats (662ms) - slower, more refined
+- Icon pop delay: 0.25 beat (110ms) - quicker
+- Icon pop duration: 1.2 beats (529ms)
+- Exit: 0.5 beat (221ms)
+- Hover transitions: 0.25 beat (110ms)
+
+**Accessibility**:
+- Excellent contrast ratios for WCAG AA compliance
+- Clear visual hierarchy with proper spacing
+- Clickable anywhere to dismiss
+- Auto-dismiss with visible progress indicator
+- Positioned away from combat UI
+- Readable at a glance without visual clutter
+
+**Design Improvements Over Previous Version**:
+- Removed ornate "forge scroll" decorations
+- Cleaner, more modern aesthetic
+- Better readability with improved typography
+- Faster visual comprehension
+- Less visual weight and distraction
+- More professional, polished appearance
+- Easier to scan multiple toasts
+
 ---
 
 ## Implementation Status
@@ -207,6 +318,7 @@ Visual effects, CSS styling, hero/enemy portraits, talent icons, audio direction
 | Talent Icons | Planned | 50+ needed |
 | VFX | Done | Particle systems working |
 | Audio | Done | Tone.js + samples |
+| Toast Notifications | Done | "Ember Notice" v2 - stacking, progress bar, auto-dismiss |
 
 ---
 
@@ -214,4 +326,7 @@ Visual effects, CSS styling, hero/enemy portraits, talent icons, audio direction
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2025-12-20 | Implemented "Ember Notice" v2 toast system in game/styles.css and game/script.js | Manager |
+| 2025-12-20 | Complete redesign of toast notification system - "Ember Notice" v2 (clean, modern, readable) | Art Subagent |
+| 2024-12-20 | Complete redesign of toast notification system - "Forge Scroll" aesthetic | Art Subagent |
 | 2024-12-20 | Initial creation from docs restructure | Documentation Team |
