@@ -387,6 +387,8 @@ body:has(#victory-overlay.show) #header{display:none}
 body:has(#pause-menu.show) #header{display:none}
 /* Hide header when achievements/stats overlay is open */
 body:has(#achievements-overlay.show) #header{display:none}
+/* Hide header when shop is open (shop has its own controls) */
+body:has(#shop-overlay.show) #header{display:none}
 #title{font-size:24px;font-weight:bold;position:absolute;left:50%;transform:translateX(-50%);text-transform:uppercase;letter-spacing:0.2em}
 #stats-pills{display:flex;gap:8px;z-index:1}
 .stat-pill{padding:4px 10px;border-radius:999px;background:linear-gradient(135deg,#111827,#0b1220);border:1px solid var(--border-soft);font-size:11px;box-shadow:0 3px 10px #0007,inset 0 0 0 1px #1f2937;color:#e5e7eb;font-family:var(--font-sans)}
@@ -3633,3 +3635,79 @@ body.low-fx .crate-reel.spinning .crate-reel-strip {
     background: linear-gradient(135deg, #1f2937, #111827) !important;
   }
 }
+
+/* ========================================
+   DEBUG PERFORMANCE OVERLAY (F3 to toggle)
+   ======================================== */
+#debug-overlay {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid #4ade80;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  color: #e5e7eb;
+  z-index: 999999;
+  min-width: 180px;
+  pointer-events: auto;
+}
+#debug-overlay.hidden {
+  display: none;
+}
+#debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #374151;
+}
+#debug-header span {
+  color: #4ade80;
+  font-weight: bold;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+#debug-copy-log {
+  padding: 2px 8px;
+  font-size: 9px;
+  background: #1f2937;
+  border: 1px solid #4ade80;
+  border-radius: 4px;
+  color: #4ade80;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#debug-copy-log:hover {
+  background: #4ade80;
+  color: #000;
+}
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.6;
+}
+.debug-row span:first-child {
+  color: #9ca3af;
+}
+.debug-row span:last-child {
+  color: #fff;
+  font-weight: 500;
+}
+#debug-fps { color: #4ade80 !important; }
+#debug-frame-time { color: #fbbf24 !important; }
+#debug-log-status {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #374151;
+  font-size: 9px;
+  color: #6b7280;
+  text-align: center;
+}
+/* Color coding for performance issues */
+.debug-warn { color: #fbbf24 !important; }
+.debug-bad { color: #ef4444 !important; }

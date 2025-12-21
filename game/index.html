@@ -689,6 +689,25 @@
   <span>Wordy Weapon™ Demo · © 2025 Andrew Amisola · All Rights Reserved</span>
 </footer>
 
+<!-- Debug Performance Overlay (F3 to toggle) -->
+<div id="debug-overlay" class="hidden">
+  <div id="debug-header">
+    <span>PERFORMANCE (F3)</span>
+    <button id="debug-copy-log">Copy Log</button>
+  </div>
+  <div id="debug-stats">
+    <div class="debug-row"><span>FPS:</span><span id="debug-fps">--</span></div>
+    <div class="debug-row"><span>Frame:</span><span id="debug-frame-time">--</span></div>
+    <div class="debug-row"><span>FPS Range:</span><span id="debug-fps-range">--</span></div>
+    <div class="debug-row"><span>Avg Frame:</span><span id="debug-avg-frame">--</span></div>
+    <div class="debug-row"><span>Memory:</span><span id="debug-memory">--</span></div>
+    <div class="debug-row"><span>Particles:</span><span id="debug-particles">--</span></div>
+    <div class="debug-row"><span>DOM Nodes:</span><span id="debug-dom">--</span></div>
+    <div class="debug-row"><span>Scene:</span><span id="debug-scene">--</span></div>
+  </div>
+  <div id="debug-log-status"></div>
+</div>
+
 </div><!-- End game-container -->
 
 <!-- Tone.js for generative music system -->

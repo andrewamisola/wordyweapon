@@ -21441,6 +21441,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateContinueButtons();
   if(contBtn){
     contBtn.onclick = async ()=>{
+      // Load the saved run data first (clearRunState may have wiped current state)
+      const loaded = await loadRunAsync();
+      if(!loaded){
+        console.warn('No valid save found');
+        return;
+      }
+
       if(mm)mm.classList.remove('show');
       document.body.classList.remove('menu-active');
       // Start music engine when continuing a run (also initializes Tone.js if needed)
@@ -21937,3 +21944,218 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Without this call, the inventory and event handlers may not set up if this script loads after
 // the DOM has already completed parsing.
 init();
+
+// ========================================
+// DEBUG PERFORMANCE MONITOR (F3 to toggle)
+// ========================================
+(function() {
+  const debugOverlay = document.getElementById('debug-overlay');
+  const debugCopyBtn = document.getElementById('debug-copy-log');
+  if (!debugOverlay) return;
+
+  // Performance tracking state
+  let debugEnabled = false;
+  let frameCount = 0;
+  let lastTime = performance.now();
+  let lastFpsUpdate = performance.now();
+  let fps = 0;
+  let minFps = Infinity;
+  let maxFps = 0;
+  let frameTimes = [];
+  let performanceLog = [];
+  let logInterval = null;
+  let animFrameId = null;
+
+  // DOM element refs
+  const fpsEl = document.getElementById('debug-fps');
+  const frameTimeEl = document.getElementById('debug-frame-time');
+  const fpsRangeEl = document.getElementById('debug-fps-range');
+  const avgFrameEl = document.getElementById('debug-avg-frame');
+  const memoryEl = document.getElementById('debug-memory');
+  const particlesEl = document.getElementById('debug-particles');
+  const domEl = document.getElementById('debug-dom');
+  const sceneEl = document.getElementById('debug-scene');
+  const logStatusEl = document.getElementById('debug-log-status');
+
+  // Get current scene name
+  function getCurrentScene() {
+    if (document.querySelector('#splash-screen.show')) return 'Splash';
+    if (document.querySelector('#main-menu.show')) return 'MainMenu';
+    if (document.querySelector('#hero-select-overlay.show')) return 'HeroSelect';
+    if (document.querySelector('#shop-overlay.show')) return 'Shop';
+    if (document.querySelector('#combat-overlay.show')) return 'Combat';
+    if (document.querySelector('#talent-overlay.show')) return 'Talents';
+    if (document.querySelector('#victory-overlay.show')) return 'Victory';
+    if (document.querySelector('#loss-overlay.show')) return 'Loss';
+    if (document.querySelector('#pause-menu.show')) return 'Pause';
+    return 'Gameplay';
+  }
+
+  // Count active particles
+  function countParticles() {
+    let count = 0;
+    if (typeof sparkManager !== 'undefined' && sparkManager && sparkManager.sparks) {
+      count += sparkManager.sparks.length;
+    }
+    if (typeof emberManager !== 'undefined' && emberManager && emberManager.embers) {
+      count += emberManager.embers.length;
+    }
+    count += document.querySelectorAll('.aura-particle, .flame-particle, .health-shard').length;
+    return count;
+  }
+
+  // Get memory info (Chrome/Electron only)
+  function getMemoryMB() {
+    if (performance.memory) {
+      return (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
+    }
+    return '--';
+  }
+
+  // Update display
+  function updateDebugDisplay(frameTime) {
+    const currentFps = Math.round(fps);
+
+    if (currentFps > 0 && currentFps < 1000) {
+      minFps = Math.min(minFps, currentFps);
+      maxFps = Math.max(maxFps, currentFps);
+    }
+
+    frameTimes.push(frameTime);
+    if (frameTimes.length > 60) frameTimes.shift();
+    const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+
+    fpsEl.textContent = currentFps;
+    fpsEl.className = currentFps < 30 ? 'debug-bad' : currentFps < 55 ? 'debug-warn' : '';
+
+    frameTimeEl.textContent = frameTime.toFixed(1) + ' ms';
+    frameTimeEl.className = frameTime > 33 ? 'debug-bad' : frameTime > 18 ? 'debug-warn' : '';
+
+    fpsRangeEl.textContent = (minFps === Infinity ? '--' : minFps) + ' - ' + (maxFps === 0 ? '--' : maxFps);
+    avgFrameEl.textContent = avgFrameTime.toFixed(1) + ' ms';
+    memoryEl.textContent = getMemoryMB() + ' MB';
+    particlesEl.textContent = countParticles();
+    domEl.textContent = document.querySelectorAll('*').length;
+    sceneEl.textContent = getCurrentScene();
+  }
+
+  // Main update loop
+  function debugLoop(now) {
+    if (!debugEnabled) return;
+
+    frameCount++;
+    const frameTime = now - lastTime;
+    lastTime = now;
+
+    if (now - lastFpsUpdate >= 500) {
+      fps = frameCount * 1000 / (now - lastFpsUpdate);
+      frameCount = 0;
+      lastFpsUpdate = now;
+    }
+
+    updateDebugDisplay(frameTime);
+    animFrameId = requestAnimationFrame(debugLoop);
+  }
+
+  // Log snapshot every 2 seconds
+  function logSnapshot() {
+    const snapshot = {
+      time: new Date().toISOString().substr(11, 8),
+      scene: getCurrentScene(),
+      fps: Math.round(fps),
+      minFps: minFps === Infinity ? 0 : minFps,
+      maxFps: maxFps,
+      avgFrame: (frameTimes.length > 0 ? frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length : 0).toFixed(1),
+      memory: getMemoryMB(),
+      particles: countParticles(),
+      dom: document.querySelectorAll('*').length
+    };
+    performanceLog.push(snapshot);
+    if (performanceLog.length > 60) performanceLog.shift();
+    logStatusEl.textContent = `Logging: ${performanceLog.length} snapshots`;
+  }
+
+  // Generate log text for pasting
+  function generateLogText() {
+    let text = '=== WORDY WEAPON PERFORMANCE LOG ===\n';
+    text += `Generated: ${new Date().toISOString()}\n`;
+    text += `Platform: ${navigator.platform}\n`;
+    text += `UserAgent: ${navigator.userAgent.substring(0, 100)}\n`;
+    text += `Screen: ${window.screen.width}x${window.screen.height} @ ${window.devicePixelRatio}x DPR\n`;
+    text += `Window: ${window.innerWidth}x${window.innerHeight}\n\n`;
+
+    text += 'TIME     | SCENE       | FPS | MIN | MAX | AVG ms | MEM MB | PART | DOM\n';
+    text += '-'.repeat(75) + '\n';
+
+    performanceLog.forEach(s => {
+      text += `${s.time} | ${s.scene.padEnd(11)} | ${String(s.fps).padStart(3)} | ${String(s.minFps).padStart(3)} | ${String(s.maxFps).padStart(3)} | ${String(s.avgFrame).padStart(6)} | ${String(s.memory).padStart(6)} | ${String(s.particles).padStart(4)} | ${s.dom}\n`;
+    });
+
+    text += '\n=== SUMMARY ===\n';
+    if (performanceLog.length > 0) {
+      const avgFps = performanceLog.reduce((a, s) => a + s.fps, 0) / performanceLog.length;
+      const overallMin = Math.min(...performanceLog.map(s => s.minFps).filter(v => v > 0));
+      const overallMax = Math.max(...performanceLog.map(s => s.maxFps));
+      const avgMem = performanceLog.reduce((a, s) => a + parseFloat(s.memory || 0), 0) / performanceLog.length;
+      const maxParticles = Math.max(...performanceLog.map(s => s.particles));
+      text += `Avg FPS: ${avgFps.toFixed(1)}\n`;
+      text += `FPS Range: ${overallMin || 0} - ${overallMax}\n`;
+      text += `Avg Memory: ${avgMem.toFixed(1)} MB\n`;
+      text += `Max Particles: ${maxParticles}\n`;
+      text += `Samples: ${performanceLog.length} (2s intervals)\n`;
+
+      // Flag any issues
+      const lowFpsCount = performanceLog.filter(s => s.fps < 30).length;
+      const stutterCount = performanceLog.filter(s => parseFloat(s.avgFrame) > 33).length;
+      if (lowFpsCount > 0) text += `\n⚠️ LOW FPS (<30): ${lowFpsCount} samples\n`;
+      if (stutterCount > 0) text += `⚠️ STUTTER (>33ms): ${stutterCount} samples\n`;
+    }
+
+    return text;
+  }
+
+  // Toggle debug overlay with F3
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F3') {
+      e.preventDefault();
+      debugEnabled = !debugEnabled;
+      debugOverlay.classList.toggle('hidden', !debugEnabled);
+
+      if (debugEnabled) {
+        minFps = Infinity;
+        maxFps = 0;
+        frameTimes = [];
+        performanceLog = [];
+        lastTime = performance.now();
+        lastFpsUpdate = performance.now();
+        frameCount = 0;
+
+        animFrameId = requestAnimationFrame(debugLoop);
+        logInterval = setInterval(logSnapshot, 2000);
+        logStatusEl.textContent = 'Logging started...';
+      } else {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        if (logInterval) clearInterval(logInterval);
+        logStatusEl.textContent = '';
+      }
+    }
+  });
+
+  // Copy log button
+  debugCopyBtn.addEventListener('click', () => {
+    const logText = generateLogText();
+    navigator.clipboard.writeText(logText).then(() => {
+      debugCopyBtn.textContent = 'Copied!';
+      setTimeout(() => { debugCopyBtn.textContent = 'Copy Log'; }, 1500);
+    }).catch(() => {
+      const textarea = document.createElement('textarea');
+      textarea.value = logText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      debugCopyBtn.textContent = 'Copied!';
+      setTimeout(() => { debugCopyBtn.textContent = 'Copy Log'; }, 1500);
+    });
+  });
+})();
