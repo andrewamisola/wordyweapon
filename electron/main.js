@@ -51,9 +51,9 @@ function calculateSmartBaseZoom(display) {
 
   // Comfort multiplier based on estimated screen size
   let comfortMultiplier;
-  if (diagonalInches <= 14) {
-    // Small laptop: scale down slightly (0.85 at 10", 1.0 at 14")
-    comfortMultiplier = 0.85 + (diagonalInches - 10) * 0.0375;
+  if (diagonalInches <= 15) {
+    // Small laptop (13-15"): slight boost for readability
+    comfortMultiplier = 1.25;
   } else if (diagonalInches <= 27) {
     // Desktop monitor: neutral zone
     comfortMultiplier = 1.0;
@@ -66,16 +66,16 @@ function calculateSmartBaseZoom(display) {
   }
 
   // Clamp comfort multiplier
-  comfortMultiplier = Math.max(0.7, Math.min(3.0, comfortMultiplier));
+  comfortMultiplier = Math.max(0.9, Math.min(3.0, comfortMultiplier));
 
-  // Calculate base zoom (never exceed what fits the screen)
-  const baseZoom = Math.min(fitScale, 1.0) * comfortMultiplier;
+  // Calculate base zoom - use fitScale with comfort multiplier
+  const baseZoom = fitScale * comfortMultiplier;
 
   console.log(`Display: ${physicalWidth}x${physicalHeight} @ ${scaleFactor}x scale`);
   console.log(`Estimated diagonal: ${diagonalInches.toFixed(1)}" | Comfort: ${comfortMultiplier.toFixed(2)}`);
   console.log(`Smart base zoom: ${baseZoom.toFixed(3)}`);
 
-  return Math.max(0.5, Math.min(3.0, baseZoom));
+  return Math.max(0.7, Math.min(3.0, baseZoom));
 }
 
 // === STEAMWORKS INTEGRATION ===

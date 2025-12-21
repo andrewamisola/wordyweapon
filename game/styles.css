@@ -12,8 +12,8 @@
   --quarter-beat: 0.1103s;   /* 1/16 note */
   --eighth-beat: 0.0551s;    /* 1/32 note */
   --bar: 1.7647s;            /* 1 measure (4 beats) */
-  /* UI Scale: 10% larger for better readability */
-  --ui-scale: 1.1;
+  /* UI Scale: 20% larger for better readability on smaller screens */
+  --ui-scale: 1.2;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
@@ -1269,6 +1269,9 @@ body.is-dragging #bank .chip{pointer-events:none}
 .mod-badge.ultimate{background:linear-gradient(135deg,#fbbf24,#f97316,#ef4444);color:#000;display:inline-block;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:bold;font-family:var(--font-mono);text-shadow:0 0 2px rgba(255,255,255,0.5);animation:ultimate-pulse 0.5s ease-in-out infinite alternate}
 @keyframes ultimate-pulse{0%{box-shadow:0 0 10px #fbbf24,0 0 20px #f97316}100%{box-shadow:0 0 20px #fbbf24,0 0 40px #f97316,0 0 60px #ef4444}}
 #buttons{display:flex;justify-content:center;gap:10px;margin-top:14px;align-items:center}
+#forfeit-btn{position:absolute;bottom:12px;right:20px;padding:6px 14px;font-size:11px;background:linear-gradient(135deg,#7f1d1d,#450a0a);border:1px solid #dc262655;border-radius:6px;color:#fca5a5;cursor:pointer;opacity:0.7;transition:all 0.2s ease;letter-spacing:0.05em}
+#forfeit-btn:hover{opacity:1;background:linear-gradient(135deg,#991b1b,#7f1d1d);border-color:#dc2626;box-shadow:0 0 8px rgba(220,38,38,0.3)}
+#forfeit-btn:active{transform:scale(0.96)}
 #forge-btn, #hero-select-btn, #combat-continue, #exit-shop-btn, #start-game-btn, #victory-endless-btn, #pause-new{
   background:linear-gradient(135deg,#22543d,#1a3328);
   border-color:#4ade8055;

@@ -8040,6 +8040,38 @@ function showLossScreen(heroName, roundReached, xpGained, leveledUp, newLevel){
   }
 }
 
+// Execute forfeit - called after confirmation modal
+function executeForfeit() {
+  // Update stats
+  S.losses++;
+  S.streak = 0;
+  S.heroSelected = false;
+  clearRunSave();
+
+  // Award XP to hero for this run (same as loss)
+  let xpGained = 0;
+  let leveledUp = false;
+  let newLevel = 1;
+  const heroName = S.hero?.name || 'Hero';
+  if (S.hero && S.hero.name) {
+    xpGained = calcRunXP(S.roundIndex, false);
+    const result = awardHeroXP(S.hero.name, xpGained);
+    leveledUp = result.leveledUp;
+    newLevel = result.newLevel;
+    S.lastRunXP = { xp: xpGained, ...result };
+  }
+
+  // Stop music/sfx
+  stopAllRarityDrones();
+  if (musicEngine && musicEngine.initialized) {
+    musicEngine.triggerLoseEffect();
+  }
+
+  // Show loss screen
+  clrSel();
+  showLossScreen(heroName, S.roundIndex, xpGained, leveledUp, newLevel);
+}
+
 function renderStats(){
   const box=document.getElementById('stats-container');
   if(!box) return;
@@ -10143,6 +10175,41 @@ function getMusicEngine() {
     musicEngine = new MusicEngine();
   }
   return musicEngine;
+}
+
+// Helper to wait until the next beat (for beat-synced animations)
+// Returns immediately if music isn't playing
+async function waitForNextBeat() {
+  const engine = musicEngine;
+  if (!engine || !engine.playing) return;
+
+  const { progress } = engine.getBeatInfo();
+  // progress is 0-1 within current beat, wait for remainder
+  const msUntilNextBeat = (1 - progress) * RHYTHM.BEAT;
+
+  // Only wait if we're more than 20% into the beat (avoid tiny waits)
+  if (msUntilNextBeat > RHYTHM.BEAT * 0.2 && msUntilNextBeat < RHYTHM.BEAT * 0.95) {
+    await dly(msUntilNextBeat);
+  }
+}
+
+// Helper to wait for next quarter beat (for more responsive beat-sync on clicks)
+// Catches the nearest 1/4 beat subdivision
+async function waitForNextQuarterBeat() {
+  const engine = musicEngine;
+  if (!engine || !engine.playing) return;
+
+  const { progress } = engine.getBeatInfo();
+  // Quarter beat subdivisions: 0, 0.25, 0.5, 0.75, 1.0
+  const quarterProgress = progress * 4; // 0-4 range
+  const nextQuarter = Math.ceil(quarterProgress);
+  const progressToNext = (nextQuarter - quarterProgress) / 4; // Back to 0-1 range
+  const msUntilNextQuarter = progressToNext * RHYTHM.BEAT;
+
+  // Only wait if more than 5% away (avoid tiny waits)
+  if (msUntilNextQuarter > RHYTHM.BEAT * 0.05 && msUntilNextQuarter < RHYTHM.BEAT * 0.24) {
+    await dly(msUntilNextQuarter);
+  }
 }
 
 // Helper to safely start Tone.js and music engine (called on first user interaction with gameplay)
@@ -15621,12 +15688,12 @@ function calc(opts={}){
 
     // --- THRESHOLD PHASE (REREAD-count based) ---
 
-    // Crescendo: 6+ REREADs → REREAD ALL again
+    // Crescendo: 6+ REREADs → REREAD ALL again (ONCE per forge)
     // Only counts NON-Crescendo rereads for threshold - prevents 2-talent infinite loops
-    // Players need 3+ talents to sustain feedback (other sources must add rereads)
+    // Fires once like Chain Reaction - reaching Ultimate Weapon requires multiple synergies
     const nonCrescendoRereads = totalRereadCount - crescendoRereads;
-    if(hasTalent('crescendo') && nonCrescendoRereads >= 6 && !triggeredThresholds.has('crescendo_' + loopIteration)){
-      triggeredThresholds.add('crescendo_' + loopIteration);
+    if(hasTalent('crescendo') && nonCrescendoRereads >= 6 && !triggeredThresholds.has('crescendo')){
+      triggeredThresholds.add('crescendo');
       const newRereads = rereadAllWords('Crescendo');
       crescendoRereads += newRereads; // Track Crescendo's contribution
       totalRereadCount += newRereads;
@@ -16792,7 +16859,9 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
       if(talent.desc){
         const descLower = talent.desc.toLowerCase();
         const isWordCountTalent = talent.category === 'word_count_bonus';
-        if(descLower.includes('per round')){
+        // Exclude talents with specific handlers from generic pattern matching
+        const hasSpecificHandler = ['momentum', 'word_historian', 'reverberation'].includes(talent.id);
+        if(descLower.includes('per round') && !hasSpecificHandler){
           const round = S.roundIndex || 1;
           const match = talent.desc.match(/\+(\d+\.?\d*)/);
           if(match){
@@ -17057,6 +17126,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
     rerollBtn.className = "talent-reroll-btn" + (hasRerolled ? " used" : "");
     rerollBtn.textContent = hasRerolled ? "Rerolled" : "Reroll";
     rerollBtn.disabled = hasRerolled;
+    rerollBtn.title = "See new talents (disables upgrades)";
+
+    // Reference to upgrade button (set later) so reroll can disable it
+    let upgradeBtnRef = null;
 
     rerollBtn.onclick = async () => {
       if(hasRerolled) return;
@@ -17066,6 +17139,14 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
       rerollBtn.disabled = true;
       rerollBtn.classList.add("used");
       rerollBtn.textContent = "Rerolled";
+
+      // Disable upgrade button - reroll means no upgrades
+      if (upgradeBtnRef) {
+        upgradeBtnRef.disabled = true;
+        upgradeBtnRef.classList.add("used");
+        upgradeBtnRef.textContent = "Upgrades Disabled";
+        upgradeBtnRef.title = "You chose to reroll - upgrades are no longer available";
+      }
 
       // Play reroll sound
       try{
@@ -17094,13 +17175,15 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
 
     rerollContainer.appendChild(rerollBtn);
 
-    // Add upgrade button - only show if player has at least one talent
+    // Add upgrade button - only show if player has at least one talent AND hasn't rerolled
     const hasTalentsToUpgrade = S.talents && S.talents.length > 0;
     if (hasTalentsToUpgrade) {
       const upgradeBtn = document.createElement("button");
-      upgradeBtn.className = "talent-skip-btn talent-upgrade-btn";
-      upgradeBtn.textContent = `⬆ Upgrade`;
-      upgradeBtn.title = `Upgrade one of your existing talents`;
+      upgradeBtnRef = upgradeBtn; // Store reference so reroll can disable it
+      upgradeBtn.className = "talent-skip-btn talent-upgrade-btn" + (hasRerolled ? " used" : "");
+      upgradeBtn.textContent = hasRerolled ? "Upgrades Disabled" : `⬆ Upgrade`;
+      upgradeBtn.disabled = hasRerolled;
+      upgradeBtn.title = hasRerolled ? "You chose to reroll - upgrades are no longer available" : `Upgrade one of your existing talents`;
 
       upgradeBtn.onclick = async () => {
         // Fade out current talent choice cards
@@ -17678,6 +17761,20 @@ async function showCombat(r,words,rewards){
   window.lastCombatResult=safeResult; // Store for afterCombat
   window.lastCombatRewards=safeRewards; // Store rewards for display
 
+  // Calculate animation speed multiplier based on REREAD count
+  // More REREADs = faster tally to avoid long waits
+  let animSpeedMult = 1.0;
+  if (safeResult.ultimateWeaponForged) {
+    animSpeedMult = 8.0; // 8x faster for ultimate weapon
+  } else if (safeResult.totalRereadCount > 20) {
+    animSpeedMult = 5.0;  // 5x faster for 20+ rereads
+  } else if (safeResult.totalRereadCount > 10) {
+    animSpeedMult = 3.0;  // 3x faster for 10+ rereads
+  } else if (safeResult.totalRereadCount > 5) {
+    animSpeedMult = 2.0;  // 2x faster for 5+ rereads
+  }
+  const minDelay = 50; // Minimum delay floor to prevent jank
+
   const ov=$("#combat-overlay");
   const cw=$("#combat-words");
   const total=$("#combat-total");
@@ -17890,6 +17987,9 @@ async function showCombat(r,words,rewards){
     // Initialize HP bar state
     updateHPBarDamageState(barEnemy, null, 0);
 
+    // Wait for next beat to start tally in sync with music
+    await waitForNextBeat();
+
     for(let i=0;i<wordEls.length;i++){
       const w=words[i],el=wordEls[i];
       const triggerCount = w.retriggerCount || 1;
@@ -17898,7 +17998,19 @@ async function showCombat(r,words,rewards){
       for(let triggerIdx = 0; triggerIdx < triggerCount; triggerIdx++){
         const isRetrigger = triggerIdx > 0;
 
-        await dly(isRetrigger ? 250 : 400);
+        // Dynamic speed ramp: starts at 1x, accelerates quickly as tally progresses
+        const progress = triggersCompleted / totalTriggers;
+        let dynamicSpeed = 1.0;
+        if (progress > 0.4) dynamicSpeed = 8.0;
+        else if (progress > 0.25) dynamicSpeed = 4.0;
+        else if (progress > 0.1) dynamicSpeed = 2.0;
+        // Cap at the max allowed by REREAD count
+        dynamicSpeed = Math.min(dynamicSpeed, animSpeedMult);
+
+        // Use RHYTHM constants for beat-synced timing
+        // First trigger: full beat, Retrigger: half beat
+        const baseDelay = isRetrigger ? RHYTHM.HALF : RHYTHM.BEAT;
+        await dly(Math.max(minDelay, baseDelay / dynamicSpeed));
 
         if(triggerIdx === 0){
           el.classList.add("show");
@@ -18065,7 +18177,7 @@ async function showCombat(r,words,rewards){
           }
         }
 
-        await dly(RHYTHM.HALF);
+        await dly(Math.max(minDelay, RHYTHM.HALF / dynamicSpeed));
         el.classList.remove("impact");
 
         // Only build weapon progress on first trigger
@@ -18097,7 +18209,7 @@ async function showCombat(r,words,rewards){
       }
     }
 
-    await dly(RHYTHM.BEAT);
+    await dly(Math.max(minDelay, RHYTHM.BEAT / animSpeedMult));
     flames.style.opacity="0.5";
 
     total.textContent=`${fmtBig(r.heroDmg)} DAMAGE!`;
@@ -21211,10 +21323,14 @@ async function showCrateReelAnimation(crate) {
     }
   };
 
-  // Add click handler to each reel
+  // Add click handler to each reel (beat-synced)
   reels.forEach((reelData, index) => {
     reelData.element.style.cursor = 'pointer';
-    reelData.clickHandler = () => revealReel(index);
+    reelData.clickHandler = async () => {
+      // Wait for next quarter beat before revealing (responsive but rhythmic)
+      await waitForNextQuarterBeat();
+      revealReel(index);
+    };
     reelData.element.addEventListener('click', reelData.clickHandler);
   });
 
@@ -21223,21 +21339,24 @@ async function showCrateReelAnimation(crate) {
     if (stoppedReels.size < reels.length) playPageFlipSound();
   }, 150);
 
-  // Wait for initial spin phase
+  // Wait for initial spin phase (sync to beat)
+  await waitForNextBeat();
   await dly(RHYTHM.BEAT * 2);
 
-  // Auto-reveal reels one by one if not clicked (with longer delays)
+  // Auto-reveal reels one by one if not clicked (beat-synced)
   for (let i = 0; i < reels.length; i++) {
-    // Wait between auto-reveals
-    const autoRevealStart = Date.now();
-    while (Date.now() - autoRevealStart < 1200) {
+    // Wait between auto-reveals (about 3 beats, checking for player clicks)
+    const autoRevealBeats = 3;
+    for (let beat = 0; beat < autoRevealBeats; beat++) {
       if (stoppedReels.has(i)) break; // Player clicked this reel
       if (stoppedReels.size === reels.length) break; // All done
-      await dly(RHYTHM.EIGHTH);
+      await waitForNextBeat();
+      await dly(RHYTHM.BEAT);
     }
 
-    // Auto-reveal if not already stopped
+    // Auto-reveal on the beat if not already stopped
     if (!stoppedReels.has(i)) {
+      await waitForNextBeat();
       revealReel(i);
     }
   }
@@ -21571,10 +21690,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Clear all localStorage and reload
         localStorage.clear();
         location.reload();
+      } else if(confirmAction === 'forfeit') {
+        // Forfeit current run and cash out XP
+        hideConfirmModal();
+        executeForfeit();
+        return;
       }
       hideConfirmModal();
     };
     confirmYes.onmouseenter = sfxHover;
+  }
+
+  // Forfeit button in forge
+  const forfeitBtnInit = document.getElementById('forfeit-btn');
+  if(forfeitBtnInit) {
+    forfeitBtnInit.onclick = () => {
+      const xpPreview = S.hero ? calcRunXP(S.roundIndex, false) : 0;
+      showConfirmModal('Forfeit Run?', `End this run and receive ${xpPreview} XP.`, 'forfeit');
+    };
+    forfeitBtnInit.onmouseenter = sfxHover;
   }
 
   // Main menu quit button
