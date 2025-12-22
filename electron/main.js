@@ -193,8 +193,11 @@ const MIME_TYPES = {
 
 // Start local HTTP server to serve game files (enables Tone.js fetch)
 function startLocalServer(callback) {
-  // Use shared game folder at project root (one level up from electron/)
-  const gameDir = path.join(__dirname, '..', 'game');
+  // In packaged app: game is inside asar at __dirname/game
+  // In development: game is one level up at __dirname/../game
+  const gameDir = app.isPackaged
+    ? path.join(__dirname, 'game')
+    : path.join(__dirname, '..', 'game');
 
   localServer = http.createServer((req, res) => {
     // Remove query strings and decode URI
@@ -252,7 +255,9 @@ function createWindow() {
     minWidth: 1280,
     minHeight: 720,  // 720p minimum to prevent UI elements getting cut off
     backgroundColor: '#0a0a0a',
-    icon: path.join(__dirname, '..', 'game', 'icon.png'),
+    icon: app.isPackaged
+      ? path.join(__dirname, 'game', 'icon.png')
+      : path.join(__dirname, '..', 'game', 'icon.png'),
     fullscreen: true,  // Start in fullscreen by default
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
