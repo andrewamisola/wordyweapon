@@ -423,9 +423,6 @@ const DEBUG = {
   }
 };
 
-// Expose to window for console access
-window.DEBUG = DEBUG;
-
 // === CONSTANTS ===
 const E={PHYS:0,POISON:1,FIRE:2,WATER:3,LIGHT:4,DARK:5,EARTH:6,LIGHTNING:7},
 EN=["Physical","Poison","Fire","Water","Light","Dark","Earth","Lightning"],
@@ -608,7 +605,8 @@ class LightningBolt {
   }
 
   generate(x1, y1, x2, y2, displace) {
-    if (displace < 2) {
+    // Increased threshold from 2 to 5 = fewer segments = better performance
+    if (displace < 5) {
       this.segments.push({ x1, y1, x2, y2 });
     } else {
       let midX = (x1 + x2) / 2;
@@ -624,6 +622,15 @@ class LightningBolt {
     if (this.life <= 0) return false;
 
     ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = this.life * (0.8 + Math.random() * 0.2);
+
+    // Glow pass FIRST (only in normal FX mode) - reduced blur for performance
+    if (!gfxSettings.lowFx) {
+      ctx.shadowBlur = 8; // Reduced from 15
+      ctx.shadowColor = this.color;
+    }
+
+    // Single stroke with glow applied
     ctx.beginPath();
     this.segments.forEach(s => {
       ctx.moveTo(s.x1, s.y1);
@@ -631,16 +638,11 @@ class LightningBolt {
     });
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 2 + Math.random() * 2;
-    ctx.globalAlpha = this.life * (0.8 + Math.random() * 0.2);
     ctx.stroke();
 
-    // Glow (skip in low-FX mode for performance)
-    if (!gfxSettings.lowFx) {
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = this.color;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
+    // Reset shadow immediately
+    ctx.shadowBlur = 0;
+
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
@@ -1334,10 +1336,9 @@ function playElementalEffect(fromSlot, targetElement, word) {
   // Physical element has no special FX (just dust puff from slot)
   switch (type) {
     case 'lightning':
-      // Flash white then color
+      // Flash white then color (reduced from 3 bolts to 2 for performance)
       addFxAnimation(new LightningBolt(x1, y1, x2, y2, '#ffffff'));
       setTimeout(() => addFxAnimation(new LightningBolt(x1, y1, x2, y2, color)), RHYTHM.EIGHTH);
-      setTimeout(() => addFxAnimation(new LightningBolt(x1, y1, x2, y2, color)), RHYTHM.QUARTER);
       break;
     case 'light':
       addFxAnimation(new EnergyBeam(x1, y1, x2, y2, color, false));
@@ -7712,9 +7713,15 @@ function drawSkillTreeLines(heroName, nodes) {
   svg.style.overflow = 'visible';
 
   // Build node position map using offsetLeft/offsetTop (unaffected by transform)
+  // Query all skill nodes once and build a Map for O(1) lookup
+  const skillElements = new Map();
+  grid.querySelectorAll('[data-skill]').forEach(el => {
+    skillElements.set(el.dataset.skill, el);
+  });
+
   const nodePositions = {};
   nodes.forEach(node => {
-    const el = grid.querySelector(`[data-skill="${node.id}"]`);
+    const el = skillElements.get(node.id);
     if (el) {
       // Use offset position relative to grid - this is unaffected by CSS transforms
       nodePositions[node.id] = {
@@ -8520,6 +8527,248 @@ function showQuickToast(msg, duration = null, type = 'info') {
   return toastEl;
 }
 
+// Pre-warm expensive operations during splash screen
+// This runs before the user clicks ENTER to reduce first-interaction stutter
+function preWarmGame() {
+  const warmStart = performance.now();
+
+  // 1. Pre-create a hidden chip to warm up CSS/layout calculations
+  const warmupContainer = document.createElement('div');
+  warmupContainer.style.cssText = 'position:absolute;left:-9999px;visibility:hidden';
+  document.body.appendChild(warmupContainer);
+
+  // Create a few dummy chips to warm the browser's style calculator
+  const dummyWord = { id: 'warmup', name: 'Warmup', type: 'elemental', elem: 0, rarity: 1 };
+  for (let i = 0; i < 5; i++) {
+    const chip = mkChip(dummyWord, false, false);
+    warmupContainer.appendChild(chip);
+  }
+
+  // Force layout calculation
+  void warmupContainer.offsetHeight;
+
+  // Clean up
+  warmupContainer.remove();
+
+  // 2. Initialize bank state tracker
+  _lastBankState = { hasItem: false, hasNoun: false };
+
+  // 3. Pre-warm particle managers if they exist
+  if (typeof sparkManager !== 'undefined' && sparkManager && sparkManager.init) {
+    sparkManager.init();
+  }
+  if (typeof blacksmithEmberManager !== 'undefined' && blacksmithEmberManager && blacksmithEmberManager.init) {
+    blacksmithEmberManager.init();
+  }
+
+  console.log(`[PERF] Pre-warm completed in ${(performance.now() - warmStart).toFixed(1)}ms`);
+}
+
+// === REAL LOADING SCREEN ===
+// Preload and decode all audio, warm all systems, then enable ENTER button
+async function preloadAllSystems(onProgress) {
+  const loadStart = performance.now();
+  const tasks = [];
+  let completed = 0;
+  let total = 0;
+
+  const updateProgress = (task) => {
+    completed++;
+    console.log(`[PRELOAD] ${task} (${completed}/${total})`);
+    if (onProgress) onProgress(completed, total, task);
+  };
+
+  // === 1. Initialize particle managers ===
+  if (!blacksmithEmberManager) {
+    blacksmithEmberManager = new BlacksmithEmberManager();
+    blacksmithEmberManager.init();
+  }
+  if (typeof sparkManager !== 'undefined' && sparkManager && sparkManager.init) {
+    sparkManager.init();
+  }
+
+  // === 2. Pre-load HTML Audio samples ===
+  const htmlAudioSamples = [
+    'insert sword bow type.ogg', 'insert bow type.ogg', 'insert blunt.ogg',
+    'insert wand sound.ogg', 'gem.ogg', 'rarity.ogg', 'highlight word.ogg',
+    'click.ogg', 'click alt.ogg', 'buy_crate.ogg'
+  ];
+  htmlAudioSamples.forEach(name => {
+    total++;
+    tasks.push(
+      loadSample(name)
+        .then(() => updateProgress(`HTML Audio: ${name}`))
+        .catch(() => updateProgress(`HTML Audio: ${name} (failed)`))
+    );
+  });
+
+  // === 3. Pre-decode Web Audio buffers (for panned playback) ===
+  // Only if not file:// protocol (fetch required)
+  if (window.location.protocol !== 'file:') {
+    // Create a temporary AudioContext for decoding (will be replaced by initAudio later)
+    let tempCtx = null;
+    try {
+      tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.warn('[PRELOAD] Could not create AudioContext for pre-decoding');
+    }
+
+    if (tempCtx) {
+      const webAudioSamples = [
+        'insert sword bow type.ogg', 'insert bow type.ogg', 'insert blunt.ogg',
+        'insert wand sound.ogg', 'gem.ogg', 'rarity.ogg', 'highlight word.ogg',
+        'fire-element.ogg', 'water-element.ogg', 'lightning-element.ogg',
+        'holy-element.ogg', 'dark-element.ogg', 'earth-element.ogg',
+        'poison-element.ogg', 'physical-element.ogg'
+      ];
+      webAudioSamples.forEach(name => {
+        total++;
+        tasks.push(
+          fetch(`sfx/${name}`)
+            .then(r => r.arrayBuffer())
+            .then(buf => tempCtx.decodeAudioData(buf))
+            .then(decoded => {
+              audioBufferCache[name] = decoded;
+              updateProgress(`Web Audio: ${name}`);
+            })
+            .catch(() => updateProgress(`Web Audio: ${name} (failed)`))
+        );
+      });
+    }
+  }
+
+  // === 4. Warm up CSS/animations + GPU layer promotion ===
+  total++;
+  tasks.push(new Promise(resolve => {
+    // Create a container with multiple chips to warm GPU compositing layers
+    const warmupContainer = document.createElement('div');
+    warmupContainer.style.cssText = 'position:absolute;left:-9999px;opacity:0;pointer-events:none';
+    document.body.appendChild(warmupContainer);
+
+    // Create several chips with will-change to force GPU layer creation
+    for (let i = 0; i < 5; i++) {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.style.willChange = 'transform, opacity'; // Pre-promote to GPU layer
+      chip.innerHTML = '<div class="chip-name">Warmup</div>';
+      warmupContainer.appendChild(chip);
+    }
+
+    // Force layout calculation to ensure layers are created
+    void warmupContainer.offsetHeight;
+
+    // Run actual animations on these GPU-promoted chips
+    const chips = warmupContainer.querySelectorAll('.chip');
+    let animationsComplete = 0;
+    chips.forEach((chip, i) => {
+      chip.animate([
+        { opacity: 0, transform: 'translateX(-20px) scale(0.8)' },
+        { opacity: 1, transform: 'translateX(0) scale(1.05)' },
+        { opacity: 1, transform: 'translateX(0) scale(1)' }
+      ], { duration: 60, delay: i * 10, fill: 'forwards' }).onfinish = () => {
+        animationsComplete++;
+        if (animationsComplete === chips.length) {
+          warmupContainer.remove();
+          updateProgress('GPU layers + animations');
+          resolve();
+        }
+      };
+    });
+  }));
+
+  // === 5. Warm up chip creation ===
+  total++;
+  tasks.push(new Promise(resolve => {
+    preWarmGame();
+    updateProgress('Chip factory');
+    resolve();
+  }));
+
+  // === 6. NUCLEAR OPTION: Run actual word placement flow hidden offscreen ===
+  // This warms the ENTIRE code path: slot onclick, render(), FLIP, sparks, sounds - everything
+  total++;
+  tasks.push(new Promise(resolve => {
+    // Create a hidden container that mimics the forge
+    const hiddenForge = document.createElement('div');
+    hiddenForge.id = 'warmup-forge';
+    hiddenForge.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;width:1920px;height:1080px';
+    hiddenForge.innerHTML = `
+      <div id="warmup-bank" style="display:flex;gap:8px"></div>
+      <div id="warmup-slots" style="display:flex;gap:8px">
+        <div class="slot" data-slot="adj1"></div>
+        <div class="slot" data-slot="item"></div>
+        <div class="slot" data-slot="noun1"></div>
+      </div>
+    `;
+    document.body.appendChild(hiddenForge);
+
+    const warmupBank = hiddenForge.querySelector('#warmup-bank');
+    const warmupSlots = hiddenForge.querySelectorAll('.slot');
+
+    // Create real chips using mkChip
+    const dummyWords = [
+      { id: 'warmup1', name: 'Fiery', type: 'elemental', elem: 2, rarity: 1 },
+      { id: 'warmup2', name: 'Sword', type: 'weapon', category: 'slash', rarity: 1 },
+      { id: 'warmup3', name: 'Power', type: 'elemental', elem: 0, rarity: 1 }
+    ];
+
+    // Record positions for FLIP
+    const warmupFlipPositions = new Map();
+    dummyWords.forEach((w, i) => {
+      const chip = mkChip(w, false, false);
+      chip.dataset.wordId = w.id;
+      chip.style.willChange = 'transform, opacity';
+      warmupBank.appendChild(chip);
+      const rect = chip.getBoundingClientRect();
+      warmupFlipPositions.set(w.id, { left: rect.left, top: rect.top });
+    });
+
+    // Force layout
+    void hiddenForge.offsetHeight;
+
+    // Simulate placing a word - trigger the animations
+    const chips = warmupBank.querySelectorAll('.chip');
+    chips.forEach((chip, i) => {
+      // Move chip to slot (simulates placement)
+      warmupSlots[i]?.appendChild(chip);
+    });
+
+    // Run FLIP-style animations
+    chips.forEach((chip, i) => {
+      const oldPos = warmupFlipPositions.get(chip.dataset.wordId);
+      if (oldPos) {
+        const newRect = chip.getBoundingClientRect();
+        const deltaX = oldPos.left - newRect.left;
+        const deltaY = oldPos.top - newRect.top;
+
+        chip.animate([
+          { transform: `translate(${deltaX}px, ${deltaY}px)`, opacity: 1 },
+          { transform: 'translate(0, 0)', opacity: 1 }
+        ], { duration: 100, fill: 'forwards' });
+      }
+    });
+
+    // Trigger a spark burst (hidden, silent)
+    if (blacksmithEmberManager) {
+      blacksmithEmberManager.burst(-9999, -9999, 5, ['#ff9933'], false);
+    }
+
+    // Clean up after animations complete
+    setTimeout(() => {
+      hiddenForge.remove();
+      updateProgress('Full placement simulation');
+      resolve();
+    }, 150);
+  }));
+
+  // Wait for all tasks
+  await Promise.all(tasks);
+
+  const elapsed = performance.now() - loadStart;
+  console.log(`[PRELOAD] All systems ready in ${elapsed.toFixed(0)}ms`);
+  return elapsed;
+}
+
 // Called once when audio is first needed
 function initAudio() {
   if (audioCtx) return;
@@ -8727,324 +8976,10 @@ function playSfxSkillUp() {
   });
 }
 
-/**
- * Persistent rarity drone system in E minor
- * Cumulative chord building - each tier adds notes:
- * - Common/Uncommon: E (root only)
- * - Magic: E + B (power chord)
- * - Rare: E + B + D (Em7 no 3rd)
- * - Epic: E + B + D + high E (full voicing)
- * - Legendary: Arpeggiated cello plucks
- */
-
-// Track active drones - only ONE plays at a time (highest rarity wins)
-const activeDrones = {};
-let currentDroneSlot = null;  // Track which slot has the active drone
-
-// Rarity priority (higher = more important)
-const RARITY_PRIORITY = {
-  'adj_common': 1,
-  'adj_uncommon': 2,
-  'adj_magic': 3,
-  'adj_rare': 4,
-  'adj_epic': 5,
-  'adj_legendary': 6
-};
-
-// E minor pentatonic frequencies (safe notes that fit any chord in key)
-const ARP_NOTES = {
-  E3: 164.81, G3: 196.00, A3: 220.00, B3: 246.94, D4: 293.66,
-  E4: 329.63, G4: 392.00, A4: 440.00, B4: 493.88, D5: 587.33,
-  E5: 659.26, G5: 784.00, A5: 880.00, B5: 987.77, D6: 1174.66,
-  E6: 1318.51
-};
-
-// Arpeggio patterns for each rarity - triplet timing for syncopation, all start on root E
-const RARITY_ARP_CONFIG = {
-  'adj_common': {
-    notes: [ARP_NOTES.E3, ARP_NOTES.E4],  // Root octave only
-    tripletDiv: 0.5,   // Half note triplets (3 notes over 4 beats) - very slow
-    volume: 0.006,
-    brightness: 800,
-    delayMix: 0.2
-  },
-  'adj_uncommon': {
-    notes: [ARP_NOTES.E3, ARP_NOTES.B3, ARP_NOTES.E4],  // Root + fifth + octave
-    tripletDiv: 1,     // Quarter note triplets (3 notes over 2 beats)
-    volume: 0.008,
-    brightness: 1200,
-    delayMix: 0.25
-  },
-  'adj_magic': {
-    notes: [ARP_NOTES.E3, ARP_NOTES.G3, ARP_NOTES.B3, ARP_NOTES.E4],  // Em triad rising
-    tripletDiv: 1.5,   // Dotted quarter triplets
-    volume: 0.01,
-    brightness: 1600,
-    delayMix: 0.3
-  },
-  'adj_rare': {
-    notes: [ARP_NOTES.E4, ARP_NOTES.G4, ARP_NOTES.B4, ARP_NOTES.E5],  // Em triad higher octave
-    tripletDiv: 2,     // 8th note triplets (3 notes per beat)
-    volume: 0.01,
-    brightness: 2000,
-    delayMix: 0.35
-  },
-  'adj_epic': {
-    notes: [ARP_NOTES.E4, ARP_NOTES.G4, ARP_NOTES.B4, ARP_NOTES.D5, ARP_NOTES.E5, ARP_NOTES.G5],  // Em7 run
-    tripletDiv: 3,     // Faster 8th triplets
-    volume: 0.012,
-    brightness: 2500,
-    delayMix: 0.4
-  },
-  'adj_legendary': {
-    notes: [ARP_NOTES.E4, ARP_NOTES.G4, ARP_NOTES.A4, ARP_NOTES.B4, ARP_NOTES.D5, ARP_NOTES.E5, ARP_NOTES.G5, ARP_NOTES.E6],  // Full pentatonic climb
-    tripletDiv: 6,     // 16th note triplets (fastest)
-    volume: 0.013,
-    brightness: 3500,
-    delayMix: 0.5
-  }
-};
-
-function startRarityDrone(rarityId, slotKey) {
-  // Rarity arps disabled
-  return;
-
-  if (!audioOn) return;
-  if (!audioCtx) initAudio();
-
-  const config = RARITY_ARP_CONFIG[rarityId];
-  if (!config) return;
-
-  const newPriority = RARITY_PRIORITY[rarityId] || 0;
-
-  // Only ONE arpeggio plays at a time - check if we should replace current
-  if (currentDroneSlot && currentDroneSlot !== slotKey) {
-    const currentDrone = activeDrones[currentDroneSlot];
-    if (currentDrone) {
-      const currentPriority = currentDrone.priority || 0;
-      if (newPriority <= currentPriority) {
-        activeDrones[slotKey] = { type: 'pending', rarityId, priority: newPriority };
-        return;
-      }
-      stopRarityDrone(currentDroneSlot);
-    }
-  }
-
-  stopRarityDrone(slotKey);
-
-  const bpm = (musicEngine && musicEngine.bpm) || 136;
-  const beatMs = 60000 / bpm;
-  // Triplet timing: base is quarter note triplet (3 notes over 2 beats)
-  // tripletDiv multiplies the speed (1 = quarter triplets, 2 = 8th triplets, etc.)
-  const tripletBase = (beatMs * 2) / 3;
-  const noteInterval = tripletBase / config.tripletDiv;
-
-  // Create reverb
-  const createReverb = () => {
-    const convolver = audioCtx.createConvolver();
-    const length = audioCtx.sampleRate * 1.2;
-    const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const data = impulse.getChannelData(ch);
-      for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 1.5) * 0.6;
-      }
-    }
-    convolver.buffer = impulse;
-    return convolver;
-  };
-
-  // Create delay effect synced to triplet grid
-  const delayTime = tripletBase / 1000; // Quarter note triplet delay
-  const delayNode = audioCtx.createDelay(2.0);
-  delayNode.delayTime.value = delayTime;
-  const delayFeedback = audioCtx.createGain();
-  delayFeedback.gain.value = 0.35; // Moderate feedback for rhythmic repeats
-  const delayFilter = audioCtx.createBiquadFilter();
-  delayFilter.type = 'lowpass';
-  delayFilter.frequency.value = 2000; // Darken the delays
-  const delayWet = audioCtx.createGain();
-  delayWet.gain.value = config.delayMix;
-
-  // Delay feedback loop
-  delayNode.connect(delayFilter);
-  delayFilter.connect(delayFeedback);
-  delayFeedback.connect(delayNode);
-  delayNode.connect(delayWet);
-  delayWet.connect(masterGain);
-
-  const reverb = createReverb();
-  const reverbGain = audioCtx.createGain();
-  reverbGain.gain.value = 0.4;
-  reverb.connect(reverbGain);
-  reverbGain.connect(masterGain);
-
-  // High-pass to keep it airy
-  const hipass = audioCtx.createBiquadFilter();
-  hipass.type = 'highpass';
-  hipass.frequency.value = 200;
-  hipass.connect(masterGain);
-  hipass.connect(reverb);
-  hipass.connect(delayNode); // Send to delay too
-
-  let noteIndex = 0;
-
-  const playNote = () => {
-    if (!activeDrones[slotKey]) return;
-
-    // Always rising - loop back to start after reaching top
-    const freq = config.notes[noteIndex % config.notes.length];
-
-    // Ethereal pluck - triangle + sine blend
-    const oscTri = audioCtx.createOscillator();
-    const oscSine = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const lpFilter = audioCtx.createBiquadFilter();
-
-    oscTri.type = 'triangle';
-    oscTri.frequency.value = freq;
-    oscSine.type = 'sine';
-    oscSine.frequency.value = freq;
-
-    lpFilter.type = 'lowpass';
-    lpFilter.frequency.value = config.brightness;
-    lpFilter.Q.value = 0.5;
-
-    const t = audioCtx.currentTime;
-    const noteLength = noteInterval / 1000;
-
-    // Pluck envelope
-    gain.gain.setValueAtTime(0.001, t);
-    gain.gain.exponentialRampToValueAtTime(config.volume, t + 0.008);
-    gain.gain.exponentialRampToValueAtTime(config.volume * 0.4, t + noteLength * 0.4);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + noteLength * 0.9);
-
-    // Mix: more triangle for bell quality
-    const triGain = audioCtx.createGain();
-    const sineGain = audioCtx.createGain();
-    triGain.gain.value = 0.55;
-    sineGain.gain.value = 0.45;
-
-    oscTri.connect(triGain);
-    oscSine.connect(sineGain);
-    triGain.connect(lpFilter);
-    sineGain.connect(lpFilter);
-    lpFilter.connect(gain);
-    gain.connect(hipass);
-
-    oscTri.start(t);
-    oscSine.start(t);
-    oscTri.stop(t + noteLength);
-    oscSine.stop(t + noteLength);
-
-    noteIndex++;
-  };
-
-  // Start immediately
-  playNote();
-
-  // Schedule looping arpeggio
-  const intervalId = setInterval(playNote, noteInterval);
-
-  activeDrones[slotKey] = {
-    type: 'arpeggio',
-    intervalId,
-    reverb,
-    reverbGain,
-    hipass,
-    delayNode,
-    delayFeedback,
-    delayWet,
-    rarityId,
-    priority: newPriority
-  };
-  currentDroneSlot = slotKey;
-}
-
-function stopRarityDrone(slotKey) {
-  const drone = activeDrones[slotKey];
-  if (!drone) return;
-
-  // Handle pending (no audio to stop)
-  if (drone.type === 'pending') {
-    delete activeDrones[slotKey];
-    return;
-  }
-
-  // All active sounds are now arpeggios
-  if (drone.type === 'arpeggio') {
-    clearInterval(drone.intervalId);
-    // Fade out delay wet signal for smooth cutoff
-    if (drone.delayWet) {
-      const now = audioCtx.currentTime;
-      drone.delayWet.gain.setValueAtTime(drone.delayWet.gain.value, now);
-      drone.delayWet.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-    }
-  }
-
-  delete activeDrones[slotKey];
-
-  // If we stopped the current one, find next highest priority pending
-  if (currentDroneSlot === slotKey) {
-    currentDroneSlot = null;
-    activateHighestPriorityDrone();
-  }
-}
-
-// Find and activate the highest priority pending drone
-function activateHighestPriorityDrone() {
-  let highestPriority = 0;
-  let highestSlot = null;
-  let highestRarityId = null;
-
-  for (const [slot, drone] of Object.entries(activeDrones)) {
-    if (drone.type === 'pending' && drone.priority > highestPriority) {
-      highestPriority = drone.priority;
-      highestSlot = slot;
-      highestRarityId = drone.rarityId;
-    }
-  }
-
-  if (highestSlot && highestRarityId) {
-    // Remove the pending entry before starting (startRarityDrone will re-add it)
-    delete activeDrones[highestSlot];
-    startRarityDrone(highestRarityId, highestSlot);
-  }
-}
-
-// Stop all arpeggios (for scene changes, new runs, etc.)
-function stopAllRarityDrones() {
-  const slots = Object.keys(activeDrones);
-  slots.forEach(slotKey => {
-    const drone = activeDrones[slotKey];
-    if (!drone || drone.type === 'pending') {
-      delete activeDrones[slotKey];
-      return;
-    }
-    if (drone.type === 'arpeggio') {
-      clearInterval(drone.intervalId);
-      // Fade out delay
-      if (drone.delayWet) {
-        const now = audioCtx.currentTime;
-        drone.delayWet.gain.setValueAtTime(drone.delayWet.gain.value, now);
-        drone.delayWet.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      }
-    }
-    delete activeDrones[slotKey];
-  });
-  currentDroneSlot = null;
-}
-
-// Legacy function for backwards compatibility - now starts persistent drone
-function playRarityDrone(rarityId) {
-  // Find which slot this rarity word is in
-  for (const [slotKey, word] of Object.entries(S.sel)) {
-    if (word && word.id === rarityId) {
-      startRarityDrone(rarityId, slotKey);
-      return;
-    }
-  }
-}
+// Rarity drone stubs - feature disabled, kept for call site compatibility
+function stopRarityDrone() {}
+function stopAllRarityDrones() {}
+function playRarityDrone() {}
 
 // Magical pentatonic scale for tally sounds (brass trumpet style)
 const MAGIC_SCALE_SEMITONES = [0, 3, 5, 7, 10]; // E minor pentatonic: E, G, A, B, D
@@ -9065,6 +9000,48 @@ function playMagicParseTone(i, totalWords, isRetrigger) {
   const vol = isRetrigger ? 0.14 : 0.10;
 
   playBrassTone(freq, dur, vol);
+}
+
+// Shepard tone: infinitely rising sound effect using octave layering
+// Creates illusion of endless ascent by fading between octave layers
+function playShepardTone(triggerIndex, totalTriggers, isRetrigger) {
+  if (!audioOn) return;
+  if (!audioCtx) initAudio();
+
+  // Use pentatonic scale for musicality
+  const scaleIndex = triggerIndex % MAGIC_SCALE_SEMITONES.length;
+  const semitones = MAGIC_SCALE_SEMITONES[scaleIndex];
+
+  // Shepard tone: layer 3 octaves with volume envelope based on position
+  // As pitch rises within an octave, fade it out while fading in the octave below
+  const cyclePosition = (triggerIndex % 15) / 15; // 0-1 position in cycle (15 notes per full cycle)
+
+  // Base frequency in middle octave (E4 = 330Hz)
+  const baseFreq = MAGIC_BASE_FREQ * Math.pow(2, semitones / 12);
+
+  // Duration and volume
+  const dur = isRetrigger ? 0.30 : 0.25;
+  const baseVol = isRetrigger ? 0.12 : 0.09;
+
+  // Layer 3 octaves with Shepard envelope (bell curve centered on middle)
+  const octaves = [-1, 0, 1]; // One octave below, middle, one above
+  octaves.forEach(octOffset => {
+    const freq = baseFreq * Math.pow(2, octOffset);
+
+    // Shepard envelope: volume based on position in cycle + octave offset
+    // Creates smooth crossfade between octaves
+    const adjustedPos = cyclePosition + (octOffset + 1) / 3;
+    const normalizedPos = adjustedPos % 1;
+
+    // Bell curve envelope: loudest in middle, fades at extremes
+    // Using cos^2 for smooth falloff
+    const envelope = Math.pow(Math.cos((normalizedPos - 0.5) * Math.PI), 2);
+    const vol = baseVol * envelope;
+
+    if (vol > 0.01) { // Only play if audible
+      playBrassTone(freq, dur, vol);
+    }
+  });
 }
 
 // Sample loader and cache (using Audio elements for file:// protocol compatibility)
@@ -10330,12 +10307,17 @@ function playFlipAnimation(container) {
   if (!container || flipPositions.size === 0) return;
   const chips = container.querySelectorAll('.chip[data-word-id]');
 
+  // Pre-promote all chips to GPU layers before animation
+  chips.forEach(chip => {
+    chip.style.willChange = 'transform, opacity';
+  });
+
   chips.forEach(chip => {
     const id = chip.dataset.wordId;
     const oldPos = flipPositions.get(id);
     if (!oldPos) {
       // New chip - pop in with bounce
-      chip.animate([
+      const anim = chip.animate([
         { transform: 'scale(0.3)', opacity: 0 },
         { transform: 'scale(1.1)', opacity: 1, offset: 0.6 },
         { transform: 'scale(0.97)', opacity: 1, offset: 0.8 },
@@ -10345,6 +10327,8 @@ function playFlipAnimation(container) {
         easing: 'ease-out',
         fill: 'forwards'
       });
+      // Clean up will-change after animation to free GPU memory
+      anim.onfinish = () => { chip.style.willChange = ''; };
       return;
     }
 
@@ -10353,7 +10337,12 @@ function playFlipAnimation(container) {
     const deltaY = oldPos.top - newRect.top;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    if (distance < 2) return; // No movement needed
+    if (distance < 2) {
+      // No movement needed, but reveal if hidden during RAF gap
+      chip.style.opacity = '';
+      chip.style.willChange = ''; // Clean up
+      return;
+    }
 
     // Detect if this is a row change (vertical movement > threshold)
     const isRowChange = Math.abs(deltaY) > 25;
@@ -10380,16 +10369,18 @@ function playFlipAnimation(container) {
       const subtleStretch = 1 + (intensity * 0.5);
       const smallOvershoot = Math.min(distance * 0.06, 4);
 
-      chip.animate([
-        { transform: `translate(${deltaX}px, 0) scaleX(1)`, offset: 0 },
-        { transform: `translate(${deltaX * 0.5}px, 0) scaleX(${subtleStretch})`, offset: 0.4 },
-        { transform: `translate(${-smallOvershoot * Math.sign(deltaX)}px, 0) scaleX(${subtleSquash})`, offset: 0.75 },
-        { transform: 'translate(0, 0) scaleX(1)', offset: 1 }
+      // Include opacity: 1 to reveal chip hidden during RAF gap (prevents one-frame flash)
+      const anim = chip.animate([
+        { transform: `translate(${deltaX}px, 0) scaleX(1)`, opacity: 1, offset: 0 },
+        { transform: `translate(${deltaX * 0.5}px, 0) scaleX(${subtleStretch})`, opacity: 1, offset: 0.4 },
+        { transform: `translate(${-smallOvershoot * Math.sign(deltaX)}px, 0) scaleX(${subtleSquash})`, opacity: 1, offset: 0.75 },
+        { transform: 'translate(0, 0) scaleX(1)', opacity: 1, offset: 1 }
       ], {
         duration: duration,
         easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         fill: 'forwards'
       });
+      anim.onfinish = () => { chip.style.willChange = ''; };
       return;
     }
 
@@ -10404,24 +10395,26 @@ function playFlipAnimation(container) {
     const overshootX = isHorizontal ? -Math.sign(deltaX) * overshoot : 0;
     const overshootY = !isHorizontal ? -Math.sign(deltaY) * overshoot : 0;
 
-    chip.animate([
+    // Include opacity: 1 to reveal chip hidden during RAF gap (prevents one-frame flash)
+    const anim = chip.animate([
       // Start: at old position
-      { transform: `translate(${deltaX}px, ${deltaY}px) scale(1, 1)`, offset: 0 },
+      { transform: `translate(${deltaX}px, ${deltaY}px) scale(1, 1)`, opacity: 1, offset: 0 },
       // Anticipation squash (subtle for shorter distances)
-      { transform: `translate(${deltaX}px, ${deltaY}px) scale(${squashX}, ${squashY})`, offset: 0.12 },
+      { transform: `translate(${deltaX}px, ${deltaY}px) scale(${squashX}, ${squashY})`, opacity: 1, offset: 0.12 },
       // Stretch while moving
-      { transform: `translate(${deltaX * 0.35}px, ${deltaY * 0.35}px) scale(${stretchX}, ${stretchY})`, offset: 0.45 },
+      { transform: `translate(${deltaX * 0.35}px, ${deltaY * 0.35}px) scale(${stretchX}, ${stretchY})`, opacity: 1, offset: 0.45 },
       // Overshoot
-      { transform: `translate(${overshootX}px, ${overshootY}px) scale(${stretchX * 0.97}, ${stretchY * 0.97})`, offset: 0.72 },
+      { transform: `translate(${overshootX}px, ${overshootY}px) scale(${stretchX * 0.97}, ${stretchY * 0.97})`, opacity: 1, offset: 0.72 },
       // Impact squash
-      { transform: `translate(0, 0) scale(${squashX}, ${squashY})`, offset: 0.88 },
+      { transform: `translate(0, 0) scale(${squashX}, ${squashY})`, opacity: 1, offset: 0.88 },
       // Settle
-      { transform: 'translate(0, 0) scale(1, 1)', offset: 1 }
+      { transform: 'translate(0, 0) scale(1, 1)', opacity: 1, offset: 1 }
     ], {
       duration: duration,
       easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
       fill: 'forwards'
     });
+    anim.onfinish = () => { chip.style.willChange = ''; };
   });
 
   flipPositions.clear();
@@ -10814,9 +10807,9 @@ function init(){
         // Remove selected class from any highlighted chips
         document.querySelectorAll("#shop-word-bank .chip.selected").forEach(c => c.classList.remove("selected"));
         renderShop();
-        // Play FLIP animation on shop word bank after render
+        // Play FLIP animation on shop word bank after render - defer to avoid layout thrashing
         if (!gfxSettings.lowFx && pendingBankFlip) {
-          playFlipAnimation($("#shop-word-bank"));
+          requestAnimationFrame(() => playFlipAnimation($("#shop-word-bank")));
           pendingBankFlip = false;
         }
         render();
@@ -11413,22 +11406,24 @@ function showHeroSelect(){
 
     // Check if hero is demo-locked
     if (IS_DEMO && currentHeroIndex >= DEMO_HERO_LIMIT) {
-      // Play error sound and shake button
+      // Play error sound and shake button (double-rAF avoids forced reflow)
       const btn = $("#hero-select-btn");
       btn.style.animation = 'none';
-      btn.offsetHeight; // Trigger reflow
-      btn.style.animation = 'shake 0.3s ease';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => btn.style.animation = 'shake 0.3s ease');
+      });
       return;
     }
 
     // Check if hero is unlocked
     if(!PStats.unlockedHeroes) PStats.unlockedHeroes = ['Graham Moor'];
     if(!PStats.unlockedHeroes.includes(h.name)){
-      // Play error sound and shake button
+      // Play error sound and shake button (double-rAF avoids forced reflow)
       const btn = $("#hero-select-btn");
       btn.style.animation = 'none';
-      btn.offsetHeight; // Trigger reflow
-      btn.style.animation = 'shake 0.3s ease';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => btn.style.animation = 'shake 0.3s ease');
+      });
       return;
     }
 
@@ -11699,6 +11694,10 @@ function render(){
   // Safety check: only render if hero and enemy are selected
   if(!S.hero || !S.enemy) return;
 
+  // === PERFORMANCE TRACKING: Render breakdown ===
+  const _renderStart = performance.now();
+  const _rt = {}; // render timings
+
   const h=S.hero;
   const e=S.enemy;
   // Get effective enemy after applying modifiers (e.g., Reed's gem weakness)
@@ -11733,7 +11732,9 @@ function render(){
 
   // Populate hero and enemy element tags on portraits
   // Calculate total damage with multiplier for display
+  const _calcStart = performance.now();
   const c=calc();
+  _rt.calcMs = performance.now() - _calcStart;
   const totalDmg = c.heroDmg || 0;
   // Cache for spark manager intensity (avoids calling calc() every frame)
   S.lastCalcDmg = totalDmg;
@@ -11901,7 +11902,30 @@ function render(){
   const tooltipEl = document.getElementById('inv-breakdown-tooltip');
   if(tooltipEl) tooltipEl.innerHTML = generateInvBreakdown();
 
-  updSlots();renderBank(false);renderConsumables();renderTalents();renderWeapon();updateSlotCalcs();
+  const _slotsStart = performance.now();
+  updSlots();
+  _rt.updSlotsMs = performance.now() - _slotsStart;
+
+  const _bankStart = performance.now();
+  renderBank(false, _fastRemoveWordId);
+  _fastRemoveWordId = null; // Clear after use
+  _rt.renderBankMs = performance.now() - _bankStart;
+
+  const _consStart = performance.now();
+  renderConsumables();
+  _rt.renderConsMs = performance.now() - _consStart;
+
+  const _talStart = performance.now();
+  renderTalents();
+  _rt.renderTalentsMs = performance.now() - _talStart;
+
+  const _weapStart = performance.now();
+  renderWeapon();
+  _rt.renderWeaponMs = performance.now() - _weapStart;
+
+  const _slotCalcStart = performance.now();
+  updateSlotCalcs();
+  _rt.updateSlotCalcsMs = performance.now() - _slotCalcStart;
 
   // Ensure forge button state is always correct at end of render
   const forgeBtn = document.getElementById("forge-btn");
@@ -11909,6 +11933,12 @@ function render(){
     forgeBtn.disabled = !S.sel.item;
   }
 
+  _rt.totalMs = performance.now() - _renderStart;
+
+  // Log render breakdown if debug enabled and this was a slow render (>8ms)
+  if (typeof window.logPerfEvent === 'function' && _rt.totalMs > 8) {
+    window.logPerfEvent('RENDER', _rt);
+  }
 }
 
 function updateHealthBars(){
@@ -11976,10 +12006,11 @@ function updateHealthBars(){
     const edp = document.getElementById('enemy-damage-preview');
     edp.style.width = `${enemyDmgPercent}%`;
     edp.style.display = "block";
-    // Trigger blink animation on the damage preview bar
+    // Trigger blink animation on the damage preview bar (double-rAF avoids forced reflow)
     edp.classList.remove('blink');
-    void edp.offsetWidth; // restart animation
-    edp.classList.add('blink');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => edp.classList.add('blink'));
+    });
 
     // Hide hero damage preview since enemy no longer deals damage
     $("#hero-damage-preview").style.display="none";
@@ -12069,8 +12100,18 @@ function updSlots(){
   // Show "of (the)" label whenever a weapon is selected
   $('#of-label').classList.toggle('hidden', !hasItem);
 
+  // Cache all slots upfront to avoid repeated querySelector calls
+  const slots = {};
+  ["item","adj1","adj2","adj3","adj4","noun1"].forEach(k => {
+    slots[k] = $(`[data-slot="${k}"].slot`);
+  });
+
+  // Batch DOM operations
+  const elemClasses = ['elem-physical','elem-poison','elem-fire','elem-water','elem-light','elem-dark','elem-earth','elem-lightning'];
+  const elemNames = ['physical','poison','fire','water','light','dark','earth','lightning'];
+
   ["item","adj1","adj2","adj3","adj4","noun1"].forEach(k=>{
-    const slot=$(`[data-slot="${k}"].slot`);
+    const slot = slots[k];
     if(!slot) return;
     const w=S.sel[k];
 
@@ -12109,10 +12150,8 @@ function updSlots(){
 
       // --- Element Accent for ALL Slots ---
       // Apply element class for gradient top border accent (matches modal style)
-      const elemClasses = ['elem-physical','elem-poison','elem-fire','elem-water','elem-light','elem-dark','elem-earth','elem-lightning'];
       slot.classList.remove(...elemClasses);
       if (w.elem !== undefined) {
-        const elemNames = ['physical','poison','fire','water','light','dark','earth','lightning'];
         slot.classList.add(`elem-${elemNames[w.elem]}`);
       }
 
@@ -12131,11 +12170,9 @@ function updSlots(){
           else if (rank >= 3) glowColor = '#f4d03f'; // Rare Gold
         }
 
-        // Apply dynamic styles to the slot container (overrides the subtle accent above)
-        slot.style.borderColor = glowColor;
-        slot.style.borderLeftWidth = '';
-        slot.style.boxShadow = `inset 0 0 15px ${glowColor}33, 0 0 15px ${glowColor}66`;
-        slot.style.background = `radial-gradient(circle at 50% 30%, ${glowColor}22 0%, #111827 90%)`;
+        // Use CSS custom property instead of inline styles for better performance
+        slot.style.setProperty('--glow-color', glowColor);
+        slot.classList.add('gem-slot-filled');
       }
 
       // --- Signature Style: Iridescent weapon slot ---
@@ -12157,12 +12194,12 @@ function updSlots(){
       // --- EMPTY SLOT LOGIC ---
 
       // Clean up element accent classes when empty
-      const elemClasses = ['elem-physical','elem-poison','elem-fire','elem-water','elem-light','elem-dark','elem-earth','elem-lightning'];
       slot.classList.remove(...elemClasses);
 
       // Clean up dynamic styles when empty (gem slot)
       if (k === 'noun1') {
-        slot.removeAttribute('style'); // Removes inline styles so CSS takes over (Neutral Shiny)
+        slot.classList.remove('gem-slot-filled');
+        slot.style.removeProperty('--glow-color');
       }
       // Clean up signature style class when weapon slot is empty
       if (k === 'item') {
@@ -12513,7 +12550,11 @@ function generateInvBreakdown(){
   return html;
 }
 
-function renderBank(animate = true){
+// Track last render state for fast-path optimization
+let _lastBankState = { hasItem: false, hasNoun: false };
+let _fastRemoveWordId = null; // Set before render() for fast chip removal
+
+function renderBank(animate = true, fastRemoveWordId = null){
   const bank=$("#bank");
   const hasItem=!!S.sel.item,hasNoun=!!S.sel.noun1;
   const noWeapons=!hasWeapons();
@@ -12523,31 +12564,63 @@ function renderBank(animate = true){
   const shouldAnimate = (animate || hasPendingFlip) && !gfxSettings.lowFx;
   if (hasPendingFlip) pendingBankFlip = false; // Clear the flag
 
+  // === FAST PATH: Just remove one chip if disabled states haven't changed ===
+  // This avoids rebuilding 20+ chips when only one word was placed
+  const stateChanged = (hasItem !== _lastBankState.hasItem) || (hasNoun !== _lastBankState.hasNoun);
+  _lastBankState = { hasItem, hasNoun };
+
+  if (fastRemoveWordId && !stateChanged && !noWeapons) {
+    // Fast path: find and remove just the one chip
+    const chipToRemove = bank.querySelector(`[data-word-id="${fastRemoveWordId}"]`);
+    if (chipToRemove) {
+      if (shouldAnimate) {
+        // Animate removal
+        chipToRemove.style.transform = 'scale(0.8)';
+        chipToRemove.style.opacity = '0';
+        chipToRemove.style.transition = 'transform 0.15s, opacity 0.15s';
+        setTimeout(() => chipToRemove.remove(), 150);
+      } else {
+        chipToRemove.remove();
+      }
+      return; // Skip full rebuild!
+    }
+  }
+
+  // === FULL REBUILD PATH ===
   // Record positions BEFORE DOM change for FLIP animation (skip if already recorded via pendingBankFlip)
   if (shouldAnimate && !hasPendingFlip) {
     recordFlipPositions(bank);
   }
 
   $("#backup-weapon").style.display=noWeapons?"block":"none";
-  bank.innerHTML="";
 
-  // Drag/drop disabled for now
+  // Use DocumentFragment for batch DOM insertion (reduces reflow)
+  const fragment = document.createDocumentFragment();
 
   if(noWeapons&&!S.sel.item){
     const c=mkChip(STICK,false,true);
-    bank.appendChild(c);
+    fragment.appendChild(c);
   }
 
   let sorted = getSortedVisibleBankWords(S.inv, S.sortMode, S.sortAsc);
   sorted.forEach(w=>{
     const disabled=isWordDisabled(w,hasItem,hasNoun);
     const c=mkChip(w,disabled,false);
-    bank.appendChild(c);
+    // Hide chips that will animate (exist in flipPositions) to prevent one-frame flash
+    // They'll be revealed when the FLIP animation starts
+    if (shouldAnimate && flipPositions.has(w.id)) {
+      c.style.opacity = '0';
+    }
+    fragment.appendChild(c);
   });
 
-  // Play FLIP animation AFTER DOM rebuild
+  // Single DOM update: clear and append all at once
+  bank.innerHTML="";
+  bank.appendChild(fragment);
+
+  // Play FLIP animation AFTER DOM rebuild - defer to next frame to avoid layout thrashing
   if (shouldAnimate) {
-    playFlipAnimation(bank);
+    requestAnimationFrame(() => playFlipAnimation(bank));
   }
 }
 
@@ -13913,12 +13986,14 @@ function clickWord(w, clickedChip = null){
   // Delay the render and slot effects to let pop-out animation play
   const delay = (clickedChip && !gfxSettings.lowFx) ? 120 : 0;
 
+  // Cache slot reference and bounding rect before setTimeout to avoid layout reflow during animation
+  const slot = document.querySelector(`[data-slot="${targetSlot}"].slot`);
+  const slotRect = slot ? slot.getBoundingClientRect() : null;
+
   setTimeout(() => {
     // Create dust puff effect at the target slot
     setTimeout(() => {
-      const slot = document.querySelector(`[data-slot="${targetSlot}"].slot`);
-      if(slot){
-        const slotRect = slot.getBoundingClientRect();
+      if(slot && slotRect){
         const dustX = slotRect.left + slotRect.width / 2;
         const dustY = slotRect.top + slotRect.height / 2;
         // Use element-colored anvil sparks
@@ -14037,8 +14112,14 @@ function setupEvents(){
           return;
         }
 
+        // === PERFORMANCE TRACKING: Word Slot Placement ===
+        const slotStart = performance.now();
+        const timings = {};
+
         // SWAP LOGIC: If slot already has a word, remove it first
-        if(S.sel[k] && k !== 'item'){
+        // Track if we're swapping so we know to do a full bank rebuild (not fast path)
+        const isSwapping = !!(S.sel[k] && k !== 'item');
+        if(isSwapping){
           stopRarityDrone(k); // Stop drone if swapping out a rarity adjective
           S.sel[k] = null;
         }
@@ -14057,6 +14138,9 @@ function setupEvents(){
         // Add visual feedback when placing word
         slot.classList.add('word-placed');
         setTimeout(() => slot.classList.remove('word-placed'), RHYTHM.HALF);
+
+        timings.stateMs = performance.now() - slotStart;
+        const soundStart = performance.now();
 
         // Play sounds based on word type and element
         try{
@@ -14098,6 +14182,9 @@ function setupEvents(){
           }
         }catch(err){}
 
+        timings.soundMs = performance.now() - soundStart;
+        const fxStart = performance.now();
+
         // Create anvil sparks at slot position with element colors
         const slotRect = slot.getBoundingClientRect();
         const dustX = slotRect.left + slotRect.width / 2;
@@ -14108,6 +14195,9 @@ function setupEvents(){
         // Trigger elemental FX from slot to weapon
         createAuraAnimation(slot, k, selected);
 
+        timings.fxMs = performance.now() - fxStart;
+        const flipStart = performance.now();
+
         // Set flag for pop-in animation on the placed slot and trigger FLIP
         if (!gfxSettings.lowFx) {
           justPlacedSlot = k;
@@ -14116,7 +14206,26 @@ function setupEvents(){
           pendingBankFlip = true;
         }
 
+        timings.flipMs = performance.now() - flipStart;
+        const renderStart = performance.now();
+
+        // Set fast remove hint for renderBank optimization
+        // Skip fast path when swapping - need full rebuild to add old word back to bank
+        _fastRemoveWordId = isSwapping ? null : (selected.id || null);
         render();
+
+        timings.renderMs = performance.now() - renderStart;
+        timings.totalMs = performance.now() - slotStart;
+
+        // Log performance event
+        if (typeof window.logPerfEvent === 'function') {
+          window.logPerfEvent('WORD_SLOT', {
+            word: selected.text || selected.id || 'unknown',
+            slot: k,
+            lowFx: gfxSettings.lowFx,
+            ...timings
+          });
+        }
 
         // Onboarding hook
         if (ONBOARD.active) {
@@ -14238,22 +14347,24 @@ function renderWeapon(target="#weapon-svg"){
     layers.adj4.innerHTML = s.adj4 ? tmpl.adj4.replace(/ADJ4COLOR/g,adj4Col) : "";
   }
 
-  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
+  // Pre-baked soft shadow gradient (no CSS blur filter needed)
+  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}40 0%, ${baseCol}30 15%, ${baseCol}18 30%, ${baseCol}08 45%, transparent 65%)`;
 
   // Use the new #weapon-aura element for background glow (for main weapon and combat weapon)
+  // Pre-baked soft gradient with feathered edges (no CSS blur filter needed)
   if(target==="#weapon-svg"){
     const aura = document.getElementById("weapon-aura");
     if(aura){
       // Use noun color (gemCol) or base color
       const color = (s.noun1 && s.noun1.elem !== undefined) ? gemCol : baseCol;
-      aura.style.background = `radial-gradient(circle, ${color}66 0%, transparent 70%)`;
+      aura.style.background = `radial-gradient(circle, ${color}50 0%, ${color}40 10%, ${color}30 20%, ${color}20 35%, ${color}10 50%, ${color}08 60%, ${color}04 70%, ${color}02 80%, transparent 90%)`;
     }
   } else if(target==="#combat-weapon-svg"){
     const aura = document.getElementById("combat-weapon-aura");
     if(aura){
       // Use noun color (gemCol) or base color
       const color = (s.noun1 && s.noun1.elem !== undefined) ? gemCol : baseCol;
-      aura.style.background = `radial-gradient(circle, ${color}66 0%, transparent 70%)`;
+      aura.style.background = `radial-gradient(circle, ${color}50 0%, ${color}40 10%, ${color}30 20%, ${color}20 35%, ${color}10 50%, ${color}08 60%, ${color}04 70%, ${color}02 80%, transparent 90%)`;
     }
   }
 
@@ -14302,11 +14413,12 @@ function renderWeaponProgress(target, progress){
     const hadContent = layer.innerHTML.trim() !== '';
     const willHaveContent = content && content.trim() !== '';
     layer.innerHTML = content || '';
-    // Trigger slam animation when content appears for the first time
+    // Trigger slam animation when content appears for the first time (double-rAF avoids forced reflow)
     if(!hadContent && willHaveContent){
       layer.classList.remove('slam-in');
-      void layer.offsetWidth; // Force reflow
-      layer.classList.add('slam-in');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => layer.classList.add('slam-in'));
+      });
     }
   }
 
@@ -14318,7 +14430,8 @@ function renderWeaponProgress(target, progress){
   if(tmpl.adj4) setLayerWithSlam(layers.adj4, (progress >= 0.6 && s.adj4) ? tmpl.adj4.replace(/ADJ4COLOR/g, adj4Col) : '');
   if(tmpl.gem) setLayerWithSlam(layers.gem, (progress >= 0.8 && s.noun1) ? tmpl.gem.replace(/GEMCOLOR/g, gemCol) : '');
   if(layers.glow) layers.glow.style.background = progress >= 1.0 ? `radial-gradient(circle at 50% 35%, ${gemCol!=="transparent"?gemCol:baseCol}55, transparent 70%)` : 'none';
-  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}55, transparent 60%)`;
+  // Pre-baked soft shadow gradient (no CSS blur filter needed)
+  if(layers.shadow) layers.shadow.style.background = `radial-gradient(circle at 50% 10%, ${baseCol}40 0%, ${baseCol}30 15%, ${baseCol}18 30%, ${baseCol}08 45%, transparent 65%)`;
 }
 
 function buildWeaponNameParts(){
@@ -16163,19 +16276,6 @@ async function forge(){
     }
   }
 
-  // Append summary line at the end with the math shown as subdued subtext
-  // Round values to avoid floating point display issues (e.g., 658.3999999999)
-  const displayBaseAP = Number.isInteger(c.baseAP) ? c.baseAP : parseFloat(c.baseAP.toFixed(1));
-  const displayWordCount = Number.isInteger(c.wordCount) ? c.wordCount : parseFloat(c.wordCount.toFixed(1));
-  words.push({
-    name: `${Math.round(c.heroDmg)} AP total`,
-    value: `${displayBaseAP} [AP] x ${displayWordCount} words`,
-    rarity: 3,
-    intensity: 1.5,
-    valueClass: 'math-subtext',
-    tooltip: `${displayBaseAP} [AP] x ${displayWordCount} words`
-  });
-
   // Calculate rewards before combat for display purposes
   const rewards = {
     gold: 0,
@@ -17128,8 +17228,9 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
     rerollBtn.disabled = hasRerolled;
     rerollBtn.title = "See new talents (disables upgrades)";
 
-    // Reference to upgrade button (set later) so reroll can disable it
+    // References to upgrade button and "or" connector (set later) so reroll can disable/hide them
     let upgradeBtnRef = null;
+    let orConnectorRef = null;
 
     rerollBtn.onclick = async () => {
       if(hasRerolled) return;
@@ -17140,7 +17241,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
       rerollBtn.classList.add("used");
       rerollBtn.textContent = "Rerolled";
 
-      // Disable upgrade button - reroll means no upgrades
+      // Disable upgrade button and hide "or" connector - reroll means no upgrades
+      if (orConnectorRef) {
+        orConnectorRef.style.display = "none";
+      }
       if (upgradeBtnRef) {
         upgradeBtnRef.disabled = true;
         upgradeBtnRef.classList.add("used");
@@ -17178,6 +17282,15 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
     // Add upgrade button - only show if player has at least one talent AND hasn't rerolled
     const hasTalentsToUpgrade = S.talents && S.talents.length > 0;
     if (hasTalentsToUpgrade) {
+      // Add "or" connector between Reroll and Upgrade buttons
+      const orConnector = document.createElement("span");
+      orConnector.className = "connector-phrase";
+      orConnector.textContent = "or";
+      orConnector.style.cssText = "margin: 0 12px; color: #6b7280; font-size: 14px;";
+      if (hasRerolled) orConnector.style.display = "none"; // Hide if already rerolled
+      orConnectorRef = orConnector; // Store reference so reroll can hide it
+      rerollContainer.appendChild(orConnector);
+
       const upgradeBtn = document.createElement("button");
       upgradeBtnRef = upgradeBtn; // Store reference so reroll can disable it
       upgradeBtn.className = "talent-skip-btn talent-upgrade-btn" + (hasRerolled ? " used" : "");
@@ -17940,42 +18053,29 @@ async function showCombat(r,words,rewards){
 
     await dly(RHYTHM.HALF);
 
-    words.forEach(w=>{
+    words.forEach(w =>{
       const div=document.createElement("div");
       div.className="combat-word";
       if(w.tooltip){
         div.setAttribute("title", w.tooltip);
       }
       const rc=TC[w.rarity] || "";
-      const valueClass = w.valueClass ? ` combat-word-value ${w.valueClass}` : "combat-word-value";
       // Add retrigger count display if word is retriggered
       const retriggerText = w.retriggerCount && w.retriggerCount > 1 ? `<div class="combat-word-retrigger"><span class="mod-badge reread">×${w.retriggerCount}</span></div>` : '';
       // Apply italic style for "of the" connector
       const italicClass = w.italic ? ' italic' : '';
-      div.innerHTML=`<div class="combat-word-name ${rc}${italicClass}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${retriggerText}${w.value?`<div class="${valueClass}">${w.value}</div>`:''}`;
+      div.innerHTML=`<div class="combat-word-name ${rc}${italicClass}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${retriggerText}`;
       cw.appendChild(div);
     });
 
     const wordEls=[...cw.querySelectorAll(".combat-word")];
-
-    // Determine vortex intensity based on highest rarity word in weapon
-    const allSelectedWords = [S.sel.item, S.sel.adj1, S.sel.adj2, S.sel.adj3, S.sel.adj4, S.sel.noun1].filter(Boolean);
-    const maxRarity = Math.max(...allSelectedWords.map(w => w.rarity || 0));
-    let vortexIntensity = 0;
-    if (maxRarity >= 3) {
-      // T3 (Rare/Epic/Legendary) - full vortex
-      vortexIntensity = 2;
-    } else if (maxRarity >= 2) {
-      // T2 (Uncommon/Magic) - light vortex
-      vortexIntensity = 1;
-    }
-    // T1 and below - no extra effects
 
     // === Progressive HP Bar Animation (Preview-then-Shatter) ===
     // During tally: keep HP bar FULL, grow a red preview bar to show damage
     // After tally: shatter effect, then reveal actual remaining HP
     const totalTriggers = words.reduce((sum, w) => sum + (w.retriggerCount || 1), 0);
     let triggersCompleted = 0;
+    let globalToneIndex = 0; // Rising tone counter that continues across all passes (for Shepard effect)
     const barOuter = barEnemy.parentElement; // Get the .bar-outer container for shake effect
     const barPreview = document.getElementById('bar-enemy-preview');
     // Keep enemy HP bar at 100% during tally
@@ -17990,13 +18090,18 @@ async function showCombat(r,words,rewards){
     // Wait for next beat to start tally in sync with music
     await waitForNextBeat();
 
-    for(let i=0;i<wordEls.length;i++){
-      const w=words[i],el=wordEls[i];
-      const triggerCount = w.retriggerCount || 1;
+    // Build pass schedule - words drop out as their reread counts exhaust
+    const passes = buildRereadPasses(words);
+    const wordShown = new Array(words.length).fill(false); // Track first appearance
 
-      // Play word animation the number of times based on retrigger count
-      for(let triggerIdx = 0; triggerIdx < triggerCount; triggerIdx++){
-        const isRetrigger = triggerIdx > 0;
+    for(let passIdx = 0; passIdx < passes.length; passIdx++){
+      const wordsInPass = passes[passIdx];
+
+      for(let wordIdx of wordsInPass){
+        const w = words[wordIdx];
+        const el = wordEls[wordIdx];
+        const isFirstAppearance = !wordShown[wordIdx];
+        const isRetrigger = !isFirstAppearance;
 
         // Dynamic speed ramp: starts at 1x, accelerates quickly as tally progresses
         const progress = triggersCompleted / totalTriggers;
@@ -18008,20 +18113,23 @@ async function showCombat(r,words,rewards){
         dynamicSpeed = Math.min(dynamicSpeed, animSpeedMult);
 
         // Use RHYTHM constants for beat-synced timing
-        // First trigger: full beat, Retrigger: half beat
+        // First appearance: full beat, Retriggers: half beat
         const baseDelay = isRetrigger ? RHYTHM.HALF : RHYTHM.BEAT;
         await dly(Math.max(minDelay, baseDelay / dynamicSpeed));
 
-        if(triggerIdx === 0){
+        if(isFirstAppearance){
           el.classList.add("show");
+          wordShown[wordIdx] = true;
         } else {
           // Add retrigger visual effect
           el.classList.add("retrigger");
         }
 
-        // Play magical pentatonic tone sequence + click sound + element sound for each word
+        // Play rising Shepard tone - continues ascending across all passes
+        // Uses globalToneIndex which increments each trigger for infinite rising effect
         try{
-          playMagicParseTone(i, wordEls.length, isRetrigger);
+          playShepardTone(globalToneIndex, totalTriggers, isRetrigger);
+          globalToneIndex++;
           // Add alternating click sound
           const clickSound = useClickAlt ? 'click alt.ogg' : 'click.ogg';
           playSample(clickSound, 0.5);
@@ -18180,8 +18288,8 @@ async function showCombat(r,words,rewards){
         await dly(Math.max(minDelay, RHYTHM.HALF / dynamicSpeed));
         el.classList.remove("impact");
 
-        // Only build weapon progress on first trigger
-        if(triggerIdx === 0 && progressSeen < relevantCount){
+        // Only build weapon progress on first appearance of each word
+        if(isFirstAppearance && progressSeen < relevantCount){
           progressSeen++;
           const progressRatio = progressSeen / Math.max(relevantCount, 1);
           renderWeaponProgress(weaponHost, progressRatio >= 1 ? 1.0 : progressRatio);
@@ -18215,9 +18323,9 @@ async function showCombat(r,words,rewards){
     total.textContent=`${fmtBig(r.heroDmg)} DAMAGE!`;
     total.classList.add("show");
 
-    // Play a final magical note + boom to conclude the arpeggio
+    // Play a final resolution note + boom to conclude
     try{
-      playMagicParseTone(wordEls.length, wordEls.length, false);
+      playShepardTone(globalToneIndex + 1, totalTriggers, false);
       playSample('boom.ogg', 0.8);
     }catch(err){}
 
@@ -19014,9 +19122,9 @@ function renderShopCrates(){
         crate.price = S.cratePrices[crate.type];
 
         renderShop();
-        // Play FLIP animation on shop word bank after render (new words pop in)
+        // Play FLIP animation on shop word bank after render (new words pop in) - defer to avoid layout thrashing
         if (!gfxSettings.lowFx) {
-          playFlipAnimation($("#shop-word-bank"));
+          requestAnimationFrame(() => playFlipAnimation($("#shop-word-bank")));
         }
         render();
 
@@ -19173,9 +19281,9 @@ function renderShopWordBank(animate = true){
     cont.innerHTML = '<div class="dim" style="padding:10px;font-size:11px">No words in inventory</div>';
   }
 
-  // Play FLIP animation after DOM is rebuilt
+  // Play FLIP animation after DOM is rebuilt - defer to avoid layout thrashing
   if (animate && !gfxSettings.lowFx) {
-    playFlipAnimation(cont);
+    requestAnimationFrame(() => playFlipAnimation(cont));
   }
 }
 
@@ -19432,6 +19540,24 @@ function clrSel(){stopAllRarityDrones();S.sel={item:null,adj1:null,adj2:null,adj
 function shuf(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function dly(ms){return new Promise(r=>setTimeout(r,ms))}
 function anim(el,f,t,d,fmt=v=>Math.round(v)){return new Promise(res=>{const st=performance.now(),tick=n=>{const p=Math.min((n-st)/d,1);el.textContent=fmt(f+(t-f)*p);p<1?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
+
+// Build REREAD pass schedule: loops through weapon phrase, exhausting words as their reread counts deplete
+// Returns array of arrays, each containing word indices for that pass
+function buildRereadPasses(words) {
+  const remaining = words.map(w => w.retriggerCount || 1);
+  const passes = [];
+  while (remaining.some(r => r > 0)) {
+    const pass = [];
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i] > 0) {
+        pass.push(i);
+        remaining[i]--;
+      }
+    }
+    if (pass.length > 0) passes.push(pass);
+  }
+  return passes;
+}
 
 // Update enemy HP bar color based on remaining HP percentage
 function updateHPBarState(barEl, barOuter, hpPercent){
@@ -21406,43 +21532,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadStatsAsync();
   await loadRunAsync();
 
-  // === PRE-WARM SYSTEMS (prevents first-use stutter) ===
-  // Initialize particle manager early so first word placement is smooth
-  if (!blacksmithEmberManager) {
-    blacksmithEmberManager = new BlacksmithEmberManager();
-    blacksmithEmberManager.init();
-  }
-  // Pre-load common audio samples used during word placement (HTML Audio cache)
-  const preloadSamples = [
-    'insert sword bow type.ogg', 'insert bow type.ogg', 'insert blunt.ogg',
-    'insert wand sound.ogg', 'gem.ogg', 'rarity.ogg', 'highlight word.ogg'
-  ];
-  preloadSamples.forEach(name => loadSample(name).catch(() => {}));
-  // Warm up Web Animations API and CSS animations to avoid first-use JIT/shader stutter
-  const warmupEl = document.createElement('div');
-  warmupEl.style.cssText = 'position:absolute;left:-9999px;opacity:0;pointer-events:none';
-  warmupEl.className = 'slot'; // Use slot class to trigger wordPlaced animation path
-  document.body.appendChild(warmupEl);
-  // Trigger multiple animation types to warm up GPU shaders
-  warmupEl.animate([
-    { opacity: 0, transform: 'scale(1)', boxShadow: '0 0 0 rgba(74,222,128,0)' },
-    { opacity: 1, transform: 'scale(1.1)', boxShadow: '0 0 20px rgba(74,222,128,0.6)' },
-    { opacity: 0, transform: 'scale(1)', boxShadow: '0 0 0 rgba(74,222,128,0)' }
-  ], { duration: 10 });
-  warmupEl.classList.add('word-placed'); // Trigger CSS animation
-  setTimeout(() => warmupEl.remove(), 50);
+  // === REAL LOADING SCREEN ===
+  // Get loading UI elements
+  const splashLoading = document.getElementById('splash-loading');
+  const splashBtn = document.getElementById('splash-enter-btn');
+  const loadingText = splashLoading?.querySelector('.loading-text');
 
-  // Warm up FLIP animation with dummy chip
-  const warmupChip = document.createElement('div');
-  warmupChip.style.cssText = 'position:absolute;left:-9999px;opacity:0';
-  warmupChip.className = 'chip';
-  document.body.appendChild(warmupChip);
-  warmupChip.animate([
-    { transform: 'scale(0.3)', opacity: 0 },
-    { transform: 'scale(1.1)', opacity: 1 },
-    { transform: 'scale(1)', opacity: 1 }
-  ], { duration: 10, easing: 'ease-out' });
-  setTimeout(() => warmupChip.remove(), 50);
+  // Start preloading all systems in background
+  // Minimum 800ms display time so user sees the loading screen (even with cached assets)
+  const minDisplayTime = new Promise(resolve => setTimeout(resolve, 800));
+
+  const preloadPromise = preloadAllSystems((completed, total, task) => {
+    // Update loading text with progress
+    if (loadingText) {
+      const percent = Math.round((completed / total) * 100);
+      loadingText.textContent = `Loading... ${percent}%`;
+    }
+  });
+
+  // When BOTH preload completes AND minimum time passes, show the ENTER button
+  Promise.all([preloadPromise, minDisplayTime]).then(() => {
+    if (splashLoading) {
+      splashLoading.style.display = 'none';
+    }
+    if (splashBtn) {
+      splashBtn.style.display = '';
+      // Trigger the appear animation
+      splashBtn.style.opacity = '0';
+      splashBtn.style.transform = 'translateY(10px)';
+      requestAnimationFrame(() => {
+        splashBtn.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+        splashBtn.style.opacity = '1';
+        splashBtn.style.transform = 'translateY(0)';
+      });
+    }
+  });
 
   // === DEMO MODE UI TOGGLE ===
   // Show/hide UI elements based on IS_DEMO flag
@@ -21506,19 +21630,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Splash screen - click button to enter and start audio/music
   const splash = document.getElementById('splash-screen');
-  const splashBtn = document.getElementById('splash-enter-btn');
-  if (splash && splashBtn) {
-    // Start with splash ready immediately (no loading delay)
-    splash.classList.add('ready');
+  const splashEnterBtn = document.getElementById('splash-enter-btn');
+  if (splash && splashEnterBtn) {
+    // Preloading happens above - button appears when ready
+    // Mark splash as ready once preload AND minimum display time complete
+    Promise.all([preloadPromise, minDisplayTime]).then(() => {
+      splash.classList.add('ready');
+    });
 
-    splashBtn.addEventListener('click', async () => {
-      // Block clicks until splash is ready
+    splashEnterBtn.addEventListener('click', async () => {
+      // Block clicks until splash is ready (preload complete)
       if (!splash.classList.contains('ready')) return;
 
       // Disable button to prevent double-clicks
-      splashBtn.disabled = true;
+      splashEnterBtn.disabled = true;
 
       // Initialize audio on this user gesture (for samples/sfx)
+      // Note: buffers are already decoded, this just sets up the context
       initAudio();
 
       // Play rarity sound on enter
@@ -21549,7 +21677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Hover sound for splash button
-    splashBtn.onmouseenter = sfxHover;
+    splashEnterBtn.onmouseenter = sfxHover;
   }
 
   const mm = document.getElementById('main-menu');
@@ -22064,10 +22192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       // Play a fun sound
       playSample('gem.ogg', 0.1);
-      // Add bounce animation
+      // Add bounce animation (double-rAF avoids forced reflow)
       logo.classList.remove('logo-bounce');
-      void logo.offsetWidth; // Force reflow to restart animation
-      logo.classList.add('logo-bounce');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => logo.classList.add('logo-bounce'));
+      });
     });
     // Prevent drag
     logo.addEventListener('dragstart', (e) => e.preventDefault());
@@ -22097,8 +22226,22 @@ init();
   let maxFps = 0;
   let frameTimes = [];
   let performanceLog = [];
+  let eventLog = []; // Custom event log for word slotting, etc.
   let logInterval = null;
   let animFrameId = null;
+
+  // Expose global function for logging custom events (word slotting, etc.)
+  window.logPerfEvent = function(eventType, details) {
+    if (!debugEnabled) return;
+    const event = {
+      time: new Date().toISOString().substr(11, 12),
+      type: eventType,
+      ...details
+    };
+    eventLog.push(event);
+    if (eventLog.length > 100) eventLog.shift();
+    console.log(`[PERF] ${eventType}:`, details);
+  };
 
   // DOM element refs
   const fpsEl = document.getElementById('debug-fps');
@@ -22245,6 +22388,29 @@ init();
       if (stutterCount > 0) text += `⚠️ STUTTER (>33ms): ${stutterCount} samples\n`;
     }
 
+    // Add event log section for word slotting and other custom events
+    if (eventLog.length > 0) {
+      text += '\n=== WORD SLOT EVENTS ===\n';
+      text += 'TIME         | EVENT           | DETAILS\n';
+      text += '-'.repeat(70) + '\n';
+      eventLog.forEach(e => {
+        const details = Object.entries(e)
+          .filter(([k]) => k !== 'time' && k !== 'type')
+          .map(([k, v]) => `${k}=${typeof v === 'number' ? v.toFixed(2) : v}`)
+          .join(', ');
+        text += `${e.time} | ${e.type.padEnd(15)} | ${details}\n`;
+      });
+
+      // Summarize slow events
+      const slowEvents = eventLog.filter(e => e.totalMs && e.totalMs > 16);
+      if (slowEvents.length > 0) {
+        text += `\n⚠️ SLOW SLOT EVENTS (>16ms): ${slowEvents.length}\n`;
+        slowEvents.forEach(e => {
+          text += `  - ${e.time}: ${e.totalMs.toFixed(1)}ms (${e.word || 'unknown'})\n`;
+        });
+      }
+    }
+
     return text;
   }
 
@@ -22260,6 +22426,7 @@ init();
         maxFps = 0;
         frameTimes = [];
         performanceLog = [];
+        eventLog = []; // Clear custom event log
         lastTime = performance.now();
         lastFpsUpdate = performance.now();
         frameCount = 0;

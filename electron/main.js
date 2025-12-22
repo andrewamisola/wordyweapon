@@ -68,8 +68,8 @@ function calculateSmartBaseZoom(display) {
   // Clamp comfort multiplier
   comfortMultiplier = Math.max(0.9, Math.min(3.0, comfortMultiplier));
 
-  // Calculate base zoom - use fitScale with comfort multiplier
-  const baseZoom = fitScale * comfortMultiplier;
+  // Calculate base zoom - use comfort multiplier but never exceed what fits on screen
+  const baseZoom = Math.min(comfortMultiplier, fitScale);
 
   console.log(`Display: ${physicalWidth}x${physicalHeight} @ ${scaleFactor}x scale`);
   console.log(`Estimated diagonal: ${diagonalInches.toFixed(1)}" | Comfort: ${comfortMultiplier.toFixed(2)}`);

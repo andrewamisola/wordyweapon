@@ -321,26 +321,26 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
 
   transition: opacity var(--quarter-beat) ease;
 }
-#flame-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-blur:50px;--flame-blur-outer:90px;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-blur .3s ease,--flame-scale .5s ease;overflow:hidden}
-#flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:filter var(--half-beat) ease,opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
-/* Orange/yellow glow - bigger, behind, more feathered, wider aspect */
-/* Extra gradient stops reduce banding on large displays */
-#flame-bg::after{width:120vw;height:70vh;filter:blur(var(--flame-blur-outer));background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(24,94%,52%) 12%,hsl(22,92%,50%) 22%,hsl(20,90%,45%) 35%,hsl(18,85%,35%) 45%,hsl(15,70%,20%) 55%,transparent 65%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
-/* Red core - smaller, on top, tighter blur, wider aspect */
-#flame-bg::before{width:70vw;height:50vh;filter:blur(var(--flame-blur));background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(2,88%,47%) 15%,hsl(4,86%,43%) 30%,hsl(5,85%,40%) 45%,hsl(6,75%,30%) 55%,hsl(8,60%,18%) 62%,transparent 70%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
-/* Purple flame for pre-boss shop */
-#flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%)}
-#flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%)}
+#flame-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-scale .5s ease;overflow:hidden}
+#flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
+/* Orange/yellow glow - pre-baked soft gradient (no blur filter needed) */
+/* Larger size + gradual fade simulates the blur effect */
+#flame-bg::after{width:180vw;height:110vh;background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(25,94%,53%) 5%,hsl(24,93%,50%) 10%,hsl(23,91%,47%) 15%,hsl(22,88%,43%) 20%,hsl(20,85%,38%) 25%,hsl(18,80%,32%) 30%,hsl(16,70%,25%) 35%,hsl(14,55%,18%) 40%,hsl(12,40%,12%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
+/* Red core - pre-baked soft gradient (no blur filter needed) */
+#flame-bg::before{width:110vw;height:80vh;background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(1,89%,48%) 5%,hsl(2,87%,45%) 10%,hsl(3,85%,42%) 15%,hsl(4,82%,38%) 20%,hsl(5,78%,33%) 25%,hsl(6,70%,27%) 30%,hsl(7,58%,20%) 35%,hsl(8,45%,14%) 40%,hsl(9,30%,9%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
+/* Purple flame for pre-boss shop - pre-baked soft gradient */
+#flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(278,82%,50%) 10%,hsl(275,78%,44%) 20%,hsl(272,72%,36%) 30%,hsl(270,60%,26%) 40%,hsl(268,45%,16%) 48%,rgba(0,0,0,0) 55%)}
+#flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(288,87%,46%) 10%,hsl(286,82%,40%) 20%,hsl(284,75%,33%) 30%,hsl(282,62%,24%) 40%,hsl(280,45%,15%) 48%,rgba(0,0,0,0) 55%)}
 /* Purple pulse for boss dialogue */
-#flame-bg.boss-dialogue-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%);animation:flame-drift-outer 18s ease-in-out infinite, boss-pulse var(--bar) ease-in-out infinite}
-#flame-bg.boss-dialogue-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%);animation:flame-drift-core 12s ease-in-out infinite, boss-pulse var(--bar) ease-in-out infinite 0.5s}
+#flame-bg.boss-dialogue-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(278,82%,50%) 10%,hsl(275,78%,44%) 20%,hsl(272,72%,36%) 30%,hsl(270,60%,26%) 40%,hsl(268,45%,16%) 48%,rgba(0,0,0,0) 55%);animation:flame-drift-outer 18s ease-in-out infinite, boss-pulse var(--bar) ease-in-out infinite}
+#flame-bg.boss-dialogue-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(288,87%,46%) 10%,hsl(286,82%,40%) 20%,hsl(284,75%,33%) 30%,hsl(282,62%,24%) 40%,hsl(280,45%,15%) 48%,rgba(0,0,0,0) 55%);animation:flame-drift-core 12s ease-in-out infinite, boss-pulse var(--bar) ease-in-out infinite 0.5s}
 @keyframes boss-pulse{0%,100%{opacity:var(--flame-opacity)}50%{opacity:calc(var(--flame-opacity) * 1.6)}}
 /* Purple flame for chapter boss battle (no pulse) */
-#flame-bg.boss-battle-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(270,80%,45%) 35%,transparent 65%)}
-#flame-bg.boss-battle-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(285,85%,40%) 45%,transparent 70%)}
-/* Blue flame for shop mode */
-#flame-bg.shop-mode::after{background:radial-gradient(ellipse,hsl(200,90%,55%) 0%,hsl(210,85%,45%) 35%,transparent 65%)}
-#flame-bg.shop-mode::before{background:radial-gradient(ellipse,hsl(220,95%,60%) 0%,hsl(230,90%,50%) 45%,transparent 70%)}
+#flame-bg.boss-battle-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(278,82%,50%) 10%,hsl(275,78%,44%) 20%,hsl(272,72%,36%) 30%,hsl(270,60%,26%) 40%,hsl(268,45%,16%) 48%,rgba(0,0,0,0) 55%)}
+#flame-bg.boss-battle-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(288,87%,46%) 10%,hsl(286,82%,40%) 20%,hsl(284,75%,33%) 30%,hsl(282,62%,24%) 40%,hsl(280,45%,15%) 48%,rgba(0,0,0,0) 55%)}
+/* Blue flame for shop mode - pre-baked soft gradient */
+#flame-bg.shop-mode::after{background:radial-gradient(ellipse,hsl(200,90%,55%) 0%,hsl(203,87%,50%) 10%,hsl(206,82%,44%) 20%,hsl(208,75%,36%) 30%,hsl(210,62%,26%) 40%,hsl(212,45%,16%) 48%,rgba(0,0,0,0) 55%)}
+#flame-bg.shop-mode::before{background:radial-gradient(ellipse,hsl(220,95%,60%) 0%,hsl(223,92%,54%) 10%,hsl(226,87%,47%) 20%,hsl(228,78%,38%) 30%,hsl(230,65%,28%) 40%,hsl(232,48%,18%) 48%,rgba(0,0,0,0) 55%)}
 /* Flame texture scroll animation */
 @keyframes flame-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 /* Core drifts one direction */
@@ -896,7 +896,7 @@ body:has(#shop-overlay.show) #header{display:none}
 .details-content{font-size:12px}
 #vs-center{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:16px;position:relative;z-index:10!important}
 #weapon-display{text-align:center;overflow:visible!important;position:relative;z-index:1}
-#weapon-aura{position:absolute;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%, -50%);z-index:-1;border-radius:50%;filter:blur(20px);opacity:0.6;pointer-events:none;transition:background var(--beat) ease}
+#weapon-aura{position:absolute;top:50%;left:50%;width:400px;height:400px;transform:translate(-50%, -50%);z-index:-1;border-radius:50%;opacity:0.6;pointer-events:none;transition:background var(--beat) ease}
 .weapon-canvas{position:relative;transition:transform var(--half-beat),filter var(--half-beat);filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));perspective:800px;overflow:visible!important;transform:translateY(-3px)}
 .weapon-layered{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform var(--half-beat) ease,filter var(--half-beat) ease;--tilt-x:0deg;--tilt-y:0deg;transform:rotateX(var(--tilt-x)) rotateY(var(--tilt-y));will-change:transform;backface-visibility:hidden}
 .weapon-layered[data-parallax-enabled="false"]{transform:none}
@@ -920,7 +920,7 @@ body:has(#shop-overlay.show) #header{display:none}
   50%{opacity:0.8;transform:scale(1.1) translateY(-10px);filter:brightness(1.3)}
   100%{opacity:0;transform:scale(0.3) translateY(-40px);filter:brightness(1.5) blur(4px)}
 }
-.weapon-shadow{position:absolute;inset:0;filter:blur(10px);opacity:0.25;transform:translateZ(-20px);background:radial-gradient(circle at 50% 10%, rgba(0,0,0,0.35), transparent 65%);}
+.weapon-shadow{position:absolute;inset:-15px;opacity:0.25;transform:translateZ(-20px);background:radial-gradient(circle at 50% 10%, rgba(0,0,0,0.35), transparent 65%);}
 /* .weapon-glow removed - now using #weapon-aura for background glow */
 #weapon-display .weapon-canvas{width:120px;height:150px;margin:0 auto;}
 #weapon-name{font-size:12px;color:#f4d03f;margin-top:8px;min-height:20px;text-shadow:0 1px 3px rgba(244,208,63,0.3)}
@@ -1049,6 +1049,7 @@ body:has(#shop-overlay.show) #header{display:none}
 .slot[data-slot="noun1"]:not(.filled){background:radial-gradient(circle at 50% 30%,#374151 0%,#111827 80%);border:2px dashed #6b7280;box-shadow:inset 0 0 20px rgba(255,255,255,0.05),0 0 10px rgba(0,0,0,0.5);position:relative;overflow:hidden;color:#9ca3af}
 .slot[data-slot="noun1"]:not(.filled)::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,100,100,0.08) 0%,rgba(255,200,100,0.08) 25%,rgba(100,255,150,0.08) 50%,rgba(100,150,255,0.08) 75%,rgba(200,100,255,0.08) 100%);opacity:0.6;pointer-events:none}
 .slot[data-slot="noun1"]:not(.filled)::after{content:"";position:absolute;top:-100%;left:-100%;width:300%;height:300%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,0.1),rgba(255,200,150,0.15),rgba(150,255,200,0.1),rgba(150,200,255,0.15),rgba(255,150,255,0.1),transparent);animation:iridescent 4s linear infinite;pointer-events:none}
+.slot.gem-slot-filled{border-color:var(--glow-color);border-left-width:2px;box-shadow:inset 0 0 15px color-mix(in srgb, var(--glow-color) 20%, transparent), 0 0 15px color-mix(in srgb, var(--glow-color) 40%, transparent);background:radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--glow-color) 13%, transparent) 0%, #111827 90%)}
 .chip.dragging{transform:scale(0.7);opacity:0.6;cursor:grabbing!important}
 body.is-dragging .tooltip{display:none!important}
 body.is-dragging #bank .chip{pointer-events:none}
@@ -1489,6 +1490,32 @@ body.is-dragging #bank .chip{pointer-events:none}
   box-shadow:0 0 15px rgba(245,193,92,0.2), 0 2px 8px rgba(0,0,0,0.4);
 }
 
+/* Loading indicator on splash screen */
+.splash-loading{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  opacity:1;
+}
+.loading-spinner{
+  width:24px;
+  height:24px;
+  border:2px solid rgba(245,193,92,0.2);
+  border-top-color:#f5c15c;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+.loading-text{
+  font-size:12px;
+  color:#9ca3af;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+}
+
 /* Main Menu Title - Glowing expanding effect */
 .main-menu-title{
   font-family:var(--font-display);
@@ -1538,13 +1565,13 @@ body:has(#shop-overlay.show) #forge,body:has(#shop-overlay.show) #battle-view,
 body:has(#pause-menu.show) #forge,body:has(#pause-menu.show) #battle-view,
 body:has(#victory-overlay.show) #forge,body:has(#victory-overlay.show) #battle-view,
 body:has(#achievements-overlay.show) #forge,body:has(#achievements-overlay.show) #battle-view{display:none!important}
-/* Blue flame for shop */
-body:has(#shop-overlay.show) #flame-bg::after{background:radial-gradient(ellipse,hsl(200,90%,55%) 0%,hsl(210,85%,45%) 35%,transparent 65%)}
-body:has(#shop-overlay.show) #flame-bg::before{background:radial-gradient(ellipse,hsl(220,95%,60%) 0%,hsl(230,90%,50%) 45%,transparent 70%)}
+/* Blue flame for shop - pre-baked soft gradient */
+body:has(#shop-overlay.show) #flame-bg::after{background:radial-gradient(ellipse,hsl(200,90%,55%) 0%,hsl(203,87%,50%) 10%,hsl(206,82%,44%) 20%,hsl(208,75%,36%) 30%,hsl(210,62%,26%) 40%,hsl(212,45%,16%) 48%,rgba(0,0,0,0) 55%)}
+body:has(#shop-overlay.show) #flame-bg::before{background:radial-gradient(ellipse,hsl(220,95%,60%) 0%,hsl(223,92%,54%) 10%,hsl(226,87%,47%) 20%,hsl(228,78%,38%) 30%,hsl(230,65%,28%) 40%,hsl(232,48%,18%) 48%,rgba(0,0,0,0) 55%)}
 
-/* Rainbow iridescent flame for victory - centered, ignores mouse offset */
-body:has(#victory-overlay.show) #flame-bg::after{background:radial-gradient(ellipse,hsl(320,80%,60%) 0%,hsl(280,70%,50%) 35%,transparent 65%);animation:victoryFlameHue 4s ease-in-out infinite, victoryDriftOuter 18s ease-in-out infinite;transform:translate(-50%,-50%) scale(var(--flame-scale))}
-body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ellipse,hsl(40,90%,60%) 0%,hsl(20,85%,50%) 45%,transparent 70%);animation:victoryFlameHue2 4s ease-in-out infinite, victoryDriftCore 12s ease-in-out infinite;transform:translate(-50%,-50%) scale(var(--flame-scale))}
+/* Rainbow iridescent flame for victory - pre-baked soft gradient, hue-rotate is cheap */
+body:has(#victory-overlay.show) #flame-bg::after{background:radial-gradient(ellipse,hsl(320,80%,60%) 0%,hsl(310,75%,52%) 10%,hsl(300,68%,44%) 20%,hsl(290,58%,34%) 30%,hsl(280,45%,24%) 40%,hsl(275,32%,15%) 48%,rgba(0,0,0,0) 55%);animation:victoryFlameHue 4s ease-in-out infinite, victoryDriftOuter 18s ease-in-out infinite;transform:translate(-50%,-50%) scale(var(--flame-scale))}
+body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ellipse,hsl(40,90%,60%) 0%,hsl(35,87%,54%) 10%,hsl(30,82%,46%) 20%,hsl(25,74%,37%) 30%,hsl(20,62%,27%) 40%,hsl(15,45%,17%) 48%,rgba(0,0,0,0) 55%);animation:victoryFlameHue2 4s ease-in-out infinite, victoryDriftCore 12s ease-in-out infinite;transform:translate(-50%,-50%) scale(var(--flame-scale))}
 @keyframes victoryDriftCore{0%,100%{transform:translate(-50%,-50%) scale(var(--flame-scale))}50%{transform:translate(calc(-50% + 30px),calc(-50% - 20px)) scale(calc(var(--flame-scale) * 1.08))}}
 @keyframes victoryDriftOuter{0%,100%{transform:translate(-50%,-50%) scale(var(--flame-scale))}50%{transform:translate(calc(-50% - 40px),calc(-50% + 25px)) scale(calc(var(--flame-scale) * 1.12))}}
 @keyframes victoryFlameHue{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(60deg)}}
@@ -1652,7 +1679,7 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
 #combat-container{position:relative;overflow:visible!important}
 #combat-flames{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;opacity:0;transition:opacity var(--half-beat)}
 #combat-weapon-container{position:relative;width:140px;height:180px;margin:0 auto 16px;z-index:1;overflow:visible!important}
-#combat-weapon-aura{position:absolute;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%, -50%);z-index:-1;border-radius:50%;filter:blur(20px);opacity:0.6;pointer-events:none;transition:background var(--beat) ease}
+#combat-weapon-aura{position:absolute;top:50%;left:50%;width:400px;height:400px;transform:translate(-50%, -50%);z-index:-1;border-radius:50%;opacity:0.6;pointer-events:none;transition:background var(--beat) ease}
 #combat-weapon-container .weapon-canvas{width:100%;height:100%;}
 #combat-words{display:flex;justify-content:center;align-items:center;gap:8px;min-height:60px;margin-bottom:16px;flex-wrap:wrap}
 .combat-word{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:8px;background:#1a1d24;font-size:15px;opacity:0;transform:scale(1.8);transition:none}
@@ -1671,7 +1698,6 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
 .combat-word-name{font-weight:bold}
 .combat-word-retrigger{font-size:10px;color:#ff6633;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
 .combat-word-value{font-size:20px;font-weight:bold;margin-top:4px}
-.combat-word-value.math-subtext{font-size:12px;font-weight:600;color:#9ca3af;font-style:italic}
 
 /* Combat Intro Dialogue */
 #combat-intro-dialogue{
@@ -3575,8 +3601,12 @@ html.screen-shake{
 body.low-fx #flame-bg::before,
 body.low-fx #flame-bg::after {
   animation: none !important;
-  filter: blur(30px) !important; /* Reduced blur = less GPU */
+  /* No blur filter needed - gradients are pre-baked with soft edges */
   transform: translate(-50%, -50%) scale(var(--flame-scale)) !important; /* Center without mouse offset */
+}
+
+body.low-fx #dither-overlay {
+  display: none; /* SVG noise filter is expensive */
 }
 
 body.low-fx .god-rays {
