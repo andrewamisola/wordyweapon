@@ -2350,8 +2350,8 @@ const SECRET_CHAPTER_BOSS = {
   name: 'The Silent Knight',
   desc: 'The K is silent. So is he.',
   dialogue: ["...", "......"],
-  weak: [E.LIGHTNING],
-  res: [E.PHYS, E.EARTH, E.DARK],
+  weak: [],
+  res: [E.PHYS, E.POISON, E.FIRE, E.WATER, E.LIGHT, E.DARK, E.EARTH, E.LIGHTNING],
   isSecretBoss: true,
   hpMultiplier: 1.5, // 50% more HP than normal chapter bosses
   ability: {
@@ -17080,7 +17080,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2){
       const orConnector = document.createElement("span");
       orConnector.className = "connector-phrase";
       orConnector.textContent = "or";
-      orConnector.style.cssText = "margin: 0 12px; color: #6b7280; font-size: 14px;";
+      orConnector.style.cssText = "margin: 0 12px; color: #6b7280; font-size: 14px; align-self: center;";
       if (hasRerolled) orConnector.style.display = "none"; // Hide if already rerolled
       orConnectorRef = orConnector; // Store reference so reroll can hide it
       rerollContainer.appendChild(orConnector);

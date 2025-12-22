@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Wordy Weapon - Achievement Icon Generator</title>
+  <style>
+    body { background: #1a1a2e; color: #eee; font-family: system-ui; padding: 20px; }
+    h1 { color: #fbbf24; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .card { background: #252540; padding: 15px; border-radius: 8px; }
+    .card h3 { margin: 0 0 10px 0; font-size: 14px; color: #fbbf24; }
+    .icons { display: flex; gap: 10px; align-items: center; }
+    .icons svg { border-radius: 8px; }
+    .label { font-size: 11px; color: #888; text-align: center; }
+    button { background: #fbbf24; color: #000; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 5px; }
+    button:hover { background: #f59e0b; }
+    #download-all { font-size: 18px; padding: 15px 30px; margin: 20px 0; }
+    canvas { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Achievement Icon Generator</h1>
+  <p>256x256 icons - Colorful (achieved) + Grayscale (unachieved)</p>
+  <button id="download-all">Download All Icons (ZIP)</button>
+  <div class="grid" id="grid"></div>
+  <canvas id="canvas" width="256" height="256"></canvas>
+
+<script>
+const ACHIEVEMENTS = [
+  // Victory
+  { id: 'ACH_FIRST_VICTORY', name: 'First Victory', icon: 'sword', colors: ['#60a5fa', '#3b82f6'] },
+
+  // Difficulty
+  { id: 'ACH_APPRENTICE_SMITH', name: 'Apprentice Smith', icon: 'hammer', colors: ['#78716c', '#57534e'] },
+  { id: 'ACH_ADEPT_FORGER', name: 'Adept Forger', icon: 'hammer', colors: ['#60a5fa', '#3b82f6'] },
+  { id: 'ACH_MASTER_BLACKSMITH', name: 'Master Blacksmith', icon: 'hammer', colors: ['#fbbf24', '#d97706'] },
+
+  // Secret Boss
+  { id: 'ACH_BOSS_SILENT_KNIGHT', name: 'Silent Knight', icon: 'shield', colors: ['#9ca3af', '#6b7280'] },
+];
+
+const ICONS = {
+  sword: `<path d="M70,180 L100,150 L85,135 L55,165 Z" fill="BG"/>
+          <path d="M100,150 L190,60 L200,70 L110,160 Z" fill="FG"/>
+          <path d="M190,60 L205,45 L215,55 L200,70 Z" fill="#fff"/>
+          <circle cx="92" cy="158" r="12" fill="FG"/>`,
+
+  crown: `<path d="M40,170 L55,100 L85,125 L128,70 L171,125 L201,100 L216,170 Z" fill="FG"/>
+          <path d="M40,170 L216,170 L206,195 L50,195 Z" fill="BG"/>
+          <circle cx="55" cy="100" r="10" fill="#fff"/>
+          <circle cx="128" cy="70" r="12" fill="#fff"/>
+          <circle cx="201" cy="100" r="10" fill="#fff"/>`,
+
+  infinity: `<path d="M80,128 C60,100 30,100 30,128 C30,156 60,156 80,128 C100,100 130,100 150,128"
+             fill="none" stroke="FG" stroke-width="20" stroke-linecap="round"/>
+             <path d="M176,128 C196,156 226,156 226,128 C226,100 196,100 176,128 C156,156 126,156 106,128"
+             fill="none" stroke="FG" stroke-width="20" stroke-linecap="round"/>`,
+
+  skull: `<ellipse cx="128" cy="110" rx="60" ry="70" fill="#e5e7eb"/>
+          <ellipse cx="128" cy="110" rx="55" ry="65" fill="FG"/>
+          <ellipse cx="105" cy="100" rx="15" ry="20" fill="#1f2937"/>
+          <ellipse cx="151" cy="100" rx="15" ry="20" fill="#1f2937"/>
+          <path d="M100,145 L115,130 L128,145 L141,130 L156,145 L141,160 L115,160 Z" fill="#1f2937"/>`,
+
+  hammer: `<rect x="108" y="50" width="40" height="80" rx="5" fill="FG"/>
+           <rect x="70" y="130" width="116" height="50" rx="8" fill="BG"/>
+           <rect x="118" y="170" width="20" height="60" fill="#8b5a2b"/>`,
+
+  yinyang: `<circle cx="128" cy="128" r="70" fill="#e5e7eb"/>
+            <path d="M128,58 A70,70 0 0,1 128,198 A35,35 0 0,1 128,128 A35,35 0 0,0 128,58 Z" fill="FG"/>
+            <circle cx="128" cy="93" r="12" fill="FG"/>
+            <circle cx="128" cy="163" r="12" fill="#e5e7eb"/>`,
+
+  scissors: `<circle cx="75" cy="180" r="25" fill="none" stroke="FG" stroke-width="12"/>
+             <circle cx="181" cy="180" r="25" fill="none" stroke="FG" stroke-width="12"/>
+             <path d="M95,160 L161,70" stroke="FG" stroke-width="12" stroke-linecap="round"/>
+             <path d="M161,160 L95,70" stroke="FG" stroke-width="12" stroke-linecap="round"/>`,
+
+  mask: `<ellipse cx="128" cy="130" rx="65" ry="55" fill="FG"/>
+         <ellipse cx="128" cy="140" rx="55" ry="40" fill="#1f2937"/>
+         <path d="M128,60 L128,95" stroke="#1f2937" stroke-width="8"/>
+         <circle cx="100" cy="115" r="15" fill="#1f2937"/>
+         <circle cx="156" cy="115" r="15" fill="#1f2937"/>
+         <path d="M100,165 Q128,190 156,165" fill="none" stroke="FG" stroke-width="6"/>`,
+
+  oxy: `<text x="128" y="155" text-anchor="middle" font-size="100" font-weight="bold" fill="FG" font-family="serif">O₂</text>`,
+
+  ellipsis: `<circle cx="70" cy="128" r="20" fill="FG"/>
+             <circle cx="128" cy="128" r="20" fill="FG" opacity="0.7"/>
+             <circle cx="186" cy="128" r="20" fill="FG" opacity="0.4"/>`,
+
+  shield: `<path d="M128,50 L200,80 L200,140 Q200,200 128,220 Q56,200 56,140 L56,80 Z" fill="FG"/>
+           <path d="M128,70 L180,95 L180,140 Q180,185 128,200 Q76,185 76,140 L76,95 Z" fill="BG"/>
+           <path d="M128,100 L128,180" stroke="FG" stroke-width="8"/>
+           <path d="M90,140 L166,140" stroke="FG" stroke-width="8"/>`,
+
+  warrior: `<circle cx="128" cy="90" r="40" fill="FG"/>
+            <path d="M75,130 L70,200 L186,200 L181,130 Q128,160 75,130 Z" fill="BG"/>
+            <rect x="118" y="60" width="20" height="5" fill="#fbbf24"/>`,
+
+  bow: `<path d="M80,60 Q40,128 80,196" fill="none" stroke="FG" stroke-width="10"/>
+        <path d="M80,128 L200,128" stroke="BG" stroke-width="4"/>
+        <path d="M190,115 L210,128 L190,141 Z" fill="FG"/>`,
+
+  book: `<rect x="60" y="70" width="136" height="116" rx="5" fill="BG"/>
+         <rect x="70" y="80" width="116" height="96" fill="FG"/>
+         <rect x="125" y="70" width="6" height="116" fill="BG"/>
+         <path d="M85,110 L115,110 M85,130 L115,130 M85,150 L100,150" stroke="#1f2937" stroke-width="4"/>`,
+
+  light: `<circle cx="128" cy="128" r="35" fill="#fff"/>
+          <circle cx="128" cy="128" r="25" fill="FG"/>
+          ${[0,45,90,135,180,225,270,315].map(a => {
+            const r = 55, len = 25;
+            const x1 = 128 + r * Math.cos(a * Math.PI/180);
+            const y1 = 128 + r * Math.sin(a * Math.PI/180);
+            const x2 = 128 + (r+len) * Math.cos(a * Math.PI/180);
+            const y2 = 128 + (r+len) * Math.sin(a * Math.PI/180);
+            return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="FG" stroke-width="8" stroke-linecap="round"/>`;
+          }).join('')}`,
+
+  dagger: `<path d="M100,190 L128,160 L115,147" fill="BG"/>
+           <path d="M128,160 L165,50 L175,55 L140,165 Z" fill="FG"/>
+           <path d="M165,50 L175,40 L185,50 L175,55 Z" fill="#fff"/>`,
+
+  leaf: `<path d="M128,200 Q80,150 90,100 Q100,50 150,50 Q200,50 200,100 Q200,150 128,200 Z" fill="FG"/>
+         <path d="M128,200 Q140,150 150,100 Q155,75 150,50" fill="none" stroke="BG" stroke-width="6"/>
+         <path d="M140,150 Q160,140 175,100" fill="none" stroke="BG" stroke-width="4"/>
+         <path d="M135,170 Q110,160 100,130" fill="none" stroke="BG" stroke-width="4"/>`,
+
+  chest: `<rect x="55" y="100" width="146" height="90" rx="8" fill="BG"/>
+          <rect x="55" y="80" width="146" height="50" rx="8" fill="FG"/>
+          <rect x="118" y="115" width="20" height="25" rx="3" fill="#fbbf24"/>
+          <circle cx="128" cy="123" r="6" fill="#78350f"/>`,
+
+  coins: `<ellipse cx="100" cy="160" rx="40" ry="30" fill="BG"/>
+          <ellipse cx="100" cy="150" rx="40" ry="30" fill="FG"/>
+          <ellipse cx="156" cy="140" rx="40" ry="30" fill="BG"/>
+          <ellipse cx="156" cy="130" rx="40" ry="30" fill="FG"/>
+          <ellipse cx="128" cy="110" rx="40" ry="30" fill="BG"/>
+          <ellipse cx="128" cy="100" rx="40" ry="30" fill="FG"/>`,
+
+  minimal: `<rect x="88" y="88" width="80" height="80" rx="5" fill="none" stroke="FG" stroke-width="6"/>
+            <text x="128" y="145" text-anchor="middle" font-size="50" font-weight="bold" fill="FG" font-family="monospace">3</text>`,
+};
+
+function createSVG(iconKey, colors, grayscale = false) {
+  let fg = colors[0], bg = colors[1];
+  if (grayscale) {
+    fg = '#6b7280';
+    bg = '#374151';
+  }
+
+  const bgColor = grayscale ? '#1f2937' : '#0f172a';
+  const iconSvg = (ICONS[iconKey] || ICONS.sword)
+    .replace(/FG/g, fg)
+    .replace(/BG/g, bg);
+
+  return `<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${bgColor}"/>
+        <stop offset="100%" stop-color="#000"/>
+      </linearGradient>
+    </defs>
+    <rect width="256" height="256" fill="url(#bg-grad)"/>
+    <g>${iconSvg}</g>
+    <rect x="4" y="4" width="248" height="248" rx="20" fill="none" stroke="${grayscale ? '#374151' : '#4b5563'}" stroke-width="4"/>
+  </svg>`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = ACHIEVEMENTS.map(ach => `
+    <div class="card">
+      <h3>${ach.name}</h3>
+      <div class="icons">
+        <div>
+          <div id="${ach.id}_color">${createSVG(ach.icon, ach.colors, false)}</div>
+          <div class="label">Achieved</div>
+        </div>
+        <div>
+          <div id="${ach.id}_gray">${createSVG(ach.icon, ach.colors, true)}</div>
+          <div class="label">Unachieved</div>
+        </div>
+      </div>
+      <button onclick="downloadPair('${ach.id}', '${ach.icon}', ${JSON.stringify(ach.colors)})">Download Pair</button>
+    </div>
+  `).join('');
+
+  // Set SVG sizes
+  document.querySelectorAll('.icons svg').forEach(svg => {
+    svg.setAttribute('width', '100');
+    svg.setAttribute('height', '100');
+  });
+}
+
+async function svgToJpg(svgString, filename) {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const img = new Image();
+  const blob = new Blob([svgString], {type: 'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+
+  return new Promise((resolve) => {
+    img.onload = () => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.drawImage(img, 0, 0, 256, 256);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob((blob) => {
+        resolve({ filename, blob });
+      }, 'image/jpeg', 0.95);
+    };
+    img.src = url;
+  });
+}
+
+async function downloadPair(id, icon, colors) {
+  const colorSvg = createSVG(icon, colors, false);
+  const graySvg = createSVG(icon, colors, true);
+
+  const colorResult = await svgToJpg(colorSvg, `${id}.jpg`);
+  const grayResult = await svgToJpg(graySvg, `${id}_gray.jpg`);
+
+  // Download both
+  [colorResult, grayResult].forEach(({filename, blob}) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  });
+}
+
+document.getElementById('download-all').onclick = async () => {
+  const files = [];
+
+  for (const ach of ACHIEVEMENTS) {
+    const colorSvg = createSVG(ach.icon, ach.colors, false);
+    const graySvg = createSVG(ach.icon, ach.colors, true);
+
+    files.push(await svgToJpg(colorSvg, `${ach.id}.jpg`));
+    files.push(await svgToJpg(graySvg, `${ach.id}_gray.jpg`));
+  }
+
+  // Download individually (or could use JSZip for a zip file)
+  for (const {filename, blob} of files) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    await new Promise(r => setTimeout(r, 100)); // Small delay between downloads
+  }
+
+  alert('All 44 icons downloaded!');
+};
+
+renderGrid();
+</script>
+</body>
+</html>

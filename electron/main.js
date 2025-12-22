@@ -38,7 +38,23 @@ function calculateSmartBaseZoom(display) {
   const scaleFactor = display.scaleFactor;
 
   // How much the game fits in the work area
-  const fitScale = Math.min(workWidth / BASE_WIDTH, workHeight / BASE_HEIGHT);
+  const fitScaleX = workWidth / BASE_WIDTH;
+  const fitScaleY = workHeight / BASE_HEIGHT;
+
+  // Check if display is taller than 16:9 (like MacBook 16:10)
+  const displayAspect = workWidth / workHeight;
+  const gameAspect = BASE_WIDTH / BASE_HEIGHT; // 16:9 = 1.778
+
+  let fitScale;
+  if (displayAspect < gameAspect) {
+    // Display is taller than 16:9 (like MacBook 16:10)
+    // Use vertical fit directly since we have the height for it
+    fitScale = fitScaleY;
+    console.log(`Taller display detected (${displayAspect.toFixed(2)} < ${gameAspect.toFixed(2)}), using fitScaleY: ${fitScaleY.toFixed(3)}`);
+  } else {
+    // Display is wider than or equal to 16:9 - use minimum (standard behavior)
+    fitScale = Math.min(fitScaleX, fitScaleY);
+  }
 
   // Estimate physical screen size
   let diagonalInches = estimateScreenDiagonal(physicalWidth, physicalHeight, scaleFactor);
@@ -52,7 +68,7 @@ function calculateSmartBaseZoom(display) {
   // Comfort multiplier based on estimated screen size
   let comfortMultiplier;
   if (diagonalInches <= 15) {
-    // Small laptop (13-15"): slight boost for readability
+    // Small laptop (13-15"): boost for readability
     comfortMultiplier = 1.25;
   } else if (diagonalInches <= 27) {
     // Desktop monitor: neutral zone
@@ -68,12 +84,19 @@ function calculateSmartBaseZoom(display) {
   // Clamp comfort multiplier
   comfortMultiplier = Math.max(0.9, Math.min(3.0, comfortMultiplier));
 
-  // Calculate base zoom - use comfort multiplier but never exceed what fits on screen
-  const baseZoom = Math.min(comfortMultiplier, fitScale);
+  // Calculate base zoom
+  let baseZoom;
+  if (diagonalInches <= 15) {
+    // Small laptop: MULTIPLY fitScale by comfort (boost it up)
+    baseZoom = fitScale * comfortMultiplier;
+  } else {
+    // Larger screens: use comfort as a cap
+    baseZoom = Math.min(comfortMultiplier, fitScale);
+  }
 
   console.log(`Display: ${physicalWidth}x${physicalHeight} @ ${scaleFactor}x scale`);
   console.log(`Estimated diagonal: ${diagonalInches.toFixed(1)}" | Comfort: ${comfortMultiplier.toFixed(2)}`);
-  console.log(`Smart base zoom: ${baseZoom.toFixed(3)}`);
+  console.log(`Smart base zoom: ${baseZoom.toFixed(3)} (fitScale: ${fitScale.toFixed(3)})`);
 
   return Math.max(0.7, Math.min(3.0, baseZoom));
 }
