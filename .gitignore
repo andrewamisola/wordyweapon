@@ -10,6 +10,7 @@ npm-debug.log*
 # Electron build outputs
 electron/dist/
 electron/out/
+electron/game/
 
 # IDE
 .idea/
