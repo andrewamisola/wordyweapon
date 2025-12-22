@@ -319,20 +319,20 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
   }
 
-  // Initialize Steam (commented out for local testing)
-  // initSteam();
+  // Initialize Steam
+  initSteam();
 
   // Start server and wait for it to be ready before creating window
   startLocalServer(() => {
     createWindow();
 
-    // Enable Steam overlay (commented out for local testing)
-    // try {
-    //   const steamworks = require('steamworks.js');
-    //   steamworks.electronEnableSteamOverlay();
-    // } catch (e) {
-    //   // Ignore if steamworks not available
-    // }
+    // Enable Steam overlay
+    try {
+      const steamworks = require('steamworks.js');
+      steamworks.electronEnableSteamOverlay();
+    } catch (e) {
+      // Ignore if steamworks not available
+    }
   });
 });
 

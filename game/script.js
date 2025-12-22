@@ -191,238 +191,6 @@ const DEMO_HERO_LIMIT = 2; // Demo-only lock count; ignored for full build
 const STEAM_WISHLIST_URL = 'https://store.steampowered.com/app/4248130';
 const DISCORD_URL = 'https://discord.gg/wordyweapon';
 
-// === DEBUG TOOL ===
-// Call from console: DEBUG.unlockAll() or DEBUG.maxOut()
-const DEBUG = {
-  // Unlock all heroes
-  unlockHeroes: function() {
-    const allHeroes = ['Graham Moor', 'Quivera', 'Belle Lettres', 'Alexandria Constanza', 'Caesura', 'Reed'];
-    PStats.unlockedHeroes = [...allHeroes];
-    saveStats();
-    console.log('✓ All heroes unlocked:', allHeroes);
-    return this;
-  },
-
-  // Unlock all difficulties for all heroes
-  unlockDifficulties: function() {
-    const allHeroes = ['Graham Moor', 'Quivera', 'Belle Lettres', 'Alexandria Constanza', 'Caesura', 'Reed'];
-    if (!PStats.heroDifficultyClears) PStats.heroDifficultyClears = {};
-    allHeroes.forEach(hero => {
-      PStats.heroDifficultyClears[hero] = { 0: 1, 1: 1, 2: 1 };
-    });
-    if (!PStats.difficultyClears) PStats.difficultyClears = {};
-    PStats.difficultyClears = { 0: 1, 1: 1, 2: 1 };
-    saveStats();
-    console.log('✓ All difficulties unlocked for all heroes');
-    return this;
-  },
-
-  // Max out skill trees for all heroes (level 50 + all skill points)
-  maxSkillTrees: function() {
-    const allHeroes = ['Graham Moor', 'Quivera', 'Belle Lettres', 'Alexandria Constanza', 'Caesura', 'Reed'];
-    const maxXP = 359500; // Level 50 XP
-    const maxLevel = 50;
-
-    if (!PStats.heroXP) PStats.heroXP = {};
-    if (!PStats.heroLevel) PStats.heroLevel = {};
-    if (!PStats.heroSkillPoints) PStats.heroSkillPoints = {};
-    if (!PStats.heroSkills) PStats.heroSkills = {};
-
-    allHeroes.forEach(hero => {
-      PStats.heroXP[hero] = maxXP;
-      PStats.heroLevel[hero] = maxLevel;
-      // Give 50 skill points (1 extra for debug to fill entire 50-point tree)
-      PStats.heroSkillPoints[hero] = 50;
-      PStats.heroSkills[hero] = {};
-    });
-    saveStats();
-    console.log('✓ All heroes at Level 50 with 50 skill points');
-    return this;
-  },
-
-  // Auto-allocate all skill points for a hero (fills tree optimally)
-  autoAllocateSkills: function(heroName = null) {
-    const heroes = heroName ? [heroName] : ['Graham Moor', 'Quivera', 'Belle Lettres', 'Alexandria Constanza', 'Caesura', 'Reed'];
-
-    heroes.forEach(hero => {
-      const tree = SKILL_TREES[hero];
-      if (!tree) return;
-
-      initHeroSkills(hero);
-      // Respec first to get all points back
-      respecHeroSkills(hero);
-
-      // Allocate in row order (top to bottom)
-      const sortedNodes = [...tree.nodes].sort((a, b) => {
-        if (a.row !== b.row) return a.row - b.row;
-        return a.col - b.col;
-      });
-
-      let allocated = 0;
-      let passes = 0;
-      const maxPasses = 50; // Safety limit
-
-      while (PStats.heroSkillPoints[hero] > 0 && passes < maxPasses) {
-        passes++;
-        let madeProgress = false;
-
-        for (const node of sortedNodes) {
-          const current = getSkillPoints(hero, node.id);
-          if (current < node.maxPoints && isSkillUnlocked(hero, node.id)) {
-            if (allocateSkillPoint(hero, node.id)) {
-              allocated++;
-              madeProgress = true;
-            }
-          }
-        }
-
-        if (!madeProgress) break;
-      }
-
-      console.log(`✓ ${hero}: Allocated ${allocated} skill points`);
-    });
-
-    saveStats();
-    updateSkillBadges();
-    return this;
-  },
-
-  // Set difficulty to Master (hardest)
-  setMaster: function() {
-    S.difficulty = 2;
-    PStats.preferredDifficulty = 2;
-    saveStats();
-    console.log('✓ Difficulty set to Master');
-    return this;
-  },
-
-  // Give gold
-  addGold: function(amount = 1000) {
-    S.gold = (S.gold || 0) + amount;
-    if (typeof renderGoldUI === 'function') renderGoldUI();
-    console.log(`✓ Added ${amount} gold. Total: ${S.gold}`);
-    return this;
-  },
-
-  // Defeat all bosses (for achievement tracking)
-  defeatAllBosses: function() {
-    PStats.bossDefeats = {
-      'cinna_antony': true,
-      'red_aktins': true,
-      'plague_doctor': true,
-      'oxy': true,
-      'dotdotdot': true
-    };
-    saveStats();
-    console.log('✓ All bosses marked as defeated');
-    return this;
-  },
-
-  // Complete tutorial
-  completeTutorial: function() {
-    PStats.tutorialComplete = true;
-    saveStats();
-    console.log('✓ Tutorial marked complete');
-    return this;
-  },
-
-  // Set high stats for testing
-  setHighStats: function() {
-    PStats.attempts = 100;
-    PStats.victories = 50;
-    PStats.weaponsForged = 500;
-    PStats.bestDamage = 99999;
-    PStats.bestWeaponName = 'DEBUG Legendary Blade';
-    PStats.highestRound = 27;
-    saveStats();
-    console.log('✓ High stats set');
-    return this;
-  },
-
-  // FULL UNLOCK: Everything maxed, hardest difficulty
-  unlockAll: function() {
-    console.log('=== DEBUG: Unlocking Everything ===');
-    this.unlockHeroes();
-    this.unlockDifficulties();
-    this.maxSkillTrees();
-    this.defeatAllBosses();
-    this.completeTutorial();
-    this.setHighStats();
-    console.log('=== Done! Refresh hero select to see changes ===');
-    return this;
-  },
-
-  // FULL UNLOCK + AUTO ALLOCATE + MASTER DIFFICULTY
-  maxOut: function() {
-    console.log('=== DEBUG: Maxing Out Everything ===');
-    this.unlockAll();
-    this.autoAllocateSkills();
-    this.setMaster();
-    console.log('=== Done! All heroes maxed, Master difficulty ===');
-    return this;
-  },
-
-  // Reset everything (for testing fresh start)
-  reset: function() {
-    if (!confirm('Reset ALL progress? This cannot be undone.')) return this;
-    localStorage.removeItem('wordyweapon-stats');
-    localStorage.removeItem('wordyweapon-save');
-    console.log('✓ All progress reset. Refresh the page.');
-    return this;
-  },
-
-  // Show current state
-  status: function() {
-    console.log('=== DEBUG STATUS ===');
-    console.log('Unlocked Heroes:', PStats.unlockedHeroes);
-    console.log('Hero Levels:', PStats.heroLevel);
-    console.log('Hero Skill Points:', PStats.heroSkillPoints);
-    console.log('Difficulty Clears:', PStats.heroDifficultyClears);
-    console.log('Boss Defeats:', PStats.bossDefeats);
-    console.log('Current Difficulty:', DIFF_NAMES[S.difficulty] || 'Unknown');
-    console.log('Current Gold:', S.gold);
-    console.log('Tutorial Complete:', PStats.tutorialComplete);
-    return this;
-  },
-
-  // Jump to a specific round (for testing)
-  jumpToRound: function(round = 9, heroIndex = 0) {
-    // Hide all overlays first
-    const overlays = ['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-overlay','round-intro-overlay','loss-overlay'];
-    overlays.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('show');
-    });
-
-    // Set up hero if needed
-    const hero = HEROES[heroIndex] || HEROES[0];
-    S.hero = hero;
-    S.heroSelected = true;
-
-    // Set round
-    S.roundIndex = round;
-    S.currentChapter = Math.floor((round - 1) / 9);
-
-    // Give lots of gold and good inventory
-    S.gold = 500;
-    S.talents = [];
-    S.talentLevels = {};
-    S.foughtChapterBosses = [];
-    S.chapterBoss = null;
-    S.blockedSlot = null;
-
-    // Fill inventory with T2/T3 words
-    const goodWords = WORDS.filter(w => !w.hiddenInBank && (w.rarity >= 2));
-    S.inv = shuf([...goodWords]).slice(0, 25).map(w => ({...w}));
-
-    // Start the encounter
-    console.log(`✓ Jumping to Round ${round} with ${hero.name}`);
-    console.log(`  Chapter: ${S.currentChapter + 1}, Boss round: ${round % 9 === 0}`);
-    newEnc();
-    return this;
-  }
-};
-
 // === CONSTANTS ===
 const E={PHYS:0,POISON:1,FIRE:2,WATER:3,LIGHT:4,DARK:5,EARTH:6,LIGHTNING:7},
 EN=["Physical","Poison","Fire","Water","Light","Dark","Earth","Lightning"],
@@ -6971,7 +6739,11 @@ const STEAM_ACHIEVEMENTS = {
   HERO_BELLE: 'ACH_HERO_BELLE',
   HERO_ALEXANDRIA: 'ACH_HERO_ALEXANDRIA',
   HERO_CAESURA: 'ACH_HERO_CAESURA',
-  HERO_REED: 'ACH_HERO_REED'
+  HERO_REED: 'ACH_HERO_REED',
+  // Special achievements
+  HOARDER: 'ACH_HOARDER',
+  TREASURE_HUNTER: 'ACH_TREASURE_HUNTER',
+  MINIMALIST: 'ACH_MINIMALIST'
 };
 
 // Unlock a Steam achievement (gracefully fails if Steam not available)
@@ -7043,6 +6815,21 @@ async function checkAndUnlockAchievements() {
   if (heroClears['Alexandria Constanza']) unlockSteamAchievement('HERO_ALEXANDRIA');
   if (heroClears['Caesura']) unlockSteamAchievement('HERO_CAESURA');
   if (heroClears['Reed']) unlockSteamAchievement('HERO_REED');
+}
+
+// Check TREASURE_HUNTER achievement (1000+ gold in one run)
+function checkTreasureHunterAchievement() {
+  if (S.gold >= 1000) {
+    unlockSteamAchievement('TREASURE_HUNTER');
+  }
+}
+
+// Check HOARDER achievement (word bank full at 24)
+function checkHoarderAchievement() {
+  const visibleCount = S.inv ? S.inv.filter(w => !w.hiddenInBank).length : 0;
+  if (visibleCount >= INV_LIMIT) {
+    unlockSteamAchievement('HOARDER');
+  }
 }
 
 // Steam Cloud save/load wrapper functions
@@ -8561,7 +8348,6 @@ function preWarmGame() {
     blacksmithEmberManager.init();
   }
 
-  console.log(`[PERF] Pre-warm completed in ${(performance.now() - warmStart).toFixed(1)}ms`);
 }
 
 // === REAL LOADING SCREEN ===
@@ -8574,7 +8360,6 @@ async function preloadAllSystems(onProgress) {
 
   const updateProgress = (task) => {
     completed++;
-    console.log(`[PRELOAD] ${task} (${completed}/${total})`);
     if (onProgress) onProgress(completed, total, task);
   };
 
@@ -8765,7 +8550,6 @@ async function preloadAllSystems(onProgress) {
   await Promise.all(tasks);
 
   const elapsed = performance.now() - loadStart;
-  console.log(`[PRELOAD] All systems ready in ${elapsed.toFixed(0)}ms`);
   return elapsed;
 }
 
@@ -10692,6 +10476,7 @@ function init(){
       const { totalInterest } = calculateInterest();
       if(totalInterest > 0){
         S.gold += totalInterest;
+        checkTreasureHunterAchievement();
         playSample('gem.ogg', 0.5);
       }
       saveRun();
@@ -10788,6 +10573,7 @@ function init(){
           total += sellPrice;
         });
         S.gold += total;
+        checkTreasureHunterAchievement();
         S.wordsSold = (S.wordsSold || 0) + selectedSellWords.length; // Track total words sold for talents
 
         // Record positions BEFORE removing words for FLIP animation
@@ -16621,6 +16407,7 @@ async function afterCombat(){
     });
 
     S.gold += reward;
+    checkTreasureHunterAchievement();
 
     // [T3] Battle Hardened: Each round survived: +3 base AP (permanent) - scales with level
     if(hasTalent("battle_hardened")){
@@ -16637,6 +16424,11 @@ async function afterCombat(){
       // Track boss defeat for talents
       S.bossesDefeated++;
 
+      // MINIMALIST achievement: Win boss with 3 or fewer words
+      if(forgeWords.length <= 3){
+        unlockSteamAchievement('MINIMALIST');
+      }
+
       const bossLoot = pendingBossLoot || rollBossLootDrops();
       const dropOrder = [];
       if(bossLoot && Array.isArray(bossLoot.words)){
@@ -16651,6 +16443,7 @@ async function afterCombat(){
       const availableSlots = Math.max(0, INV_LIMIT - visibleCount);
       if(availableSlots > 0){
         dropOrder.slice(0, availableSlots).forEach(drop => S.inv.push({ ...drop }));
+        checkHoarderAchievement();
       }
     }
 
@@ -16683,6 +16476,7 @@ async function afterCombat(){
       // Chapter completion bonus - gold only (AP bonus removed since skill tree provides permanent progression)
       const chapterGoldBonus = 25 + (S.currentChapter * 15); // 40g, 55g, 70g...
       S.gold += chapterGoldBonus;
+      checkTreasureHunterAchievement();
 
       // Hide result screen and combat overlay before showing fullscreen chapter celebration
       const resultOverlay = document.getElementById('combat-result');
@@ -19114,6 +18908,7 @@ function renderShopCrates(){
         wordsToAdd.forEach(w => {
           S.inv.push({ ...w });
         });
+        checkHoarderAchievement();
 
         // Increase crate price (25 → 38 → 57 → 86 → 129..., capped at 150)
         // 1.5x scaling makes multiple crates more accessible
@@ -22240,7 +22035,6 @@ init();
     };
     eventLog.push(event);
     if (eventLog.length > 100) eventLog.shift();
-    console.log(`[PERF] ${eventType}:`, details);
   };
 
   // DOM element refs
