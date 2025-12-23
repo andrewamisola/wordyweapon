@@ -306,6 +306,159 @@ PStats.achievements = {
 
 ---
 
+## Ultimate Weapon Build Diversity (TODO)
+
+### Current State
+Only **2 viable paths** to Ultimate Weapon (9 quadrillion damage):
+1. **REREAD Build**: Reread Amplifier (×1.5^REREADs) + REREAD talents
+2. **W Overflow Build**: Overflow (×1.5^W) + W generator talents
+
+**Problem:** Gold, AP, Element, and Chapter builds cannot reach Ultimate Weapon practically.
+
+### Design Goal
+Create **4-6 distinct build archetypes** that can achieve Ultimate Weapon, each requiring 4-6 upgraded talents working in tandem. No single talent should solo-carry.
+
+---
+
+### BUILD 1: REREAD Build (Existing ✓)
+**Core:** Reread Amplifier (×1.5 per REREAD, exponential)
+**Support:** Gemination, Critical Mass, Resonance, Khopesh, Crescendo, Echo Chamber
+
+**Synergy:** REREAD talents stack count → Amplifier multiplies exponentially
+
+---
+
+### BUILD 2: W Overflow Build (Existing ✓)
+**Core:** Overflow (×1.5 per 10 W above 50, exponential)
+**Support:** Echo Chamber, Slow Burn, Momentum, Reverberation, Golden Tongue
+
+**Synergy:** W generators stack W → Overflow multiplies exponentially
+
+---
+
+### BUILD 3: Gold Tycoon Build (NEEDS NEW TALENT)
+
+**Problem:** Compound Interest (×1.15 per 50g) scales too slowly. Need 8000+ gold.
+
+**Proposed New Talent - "Midas Touch" (Rare, Threshold):**
+> Per 100 gold held: ×1.4 (stacks multiplicatively)
+
+**Support talents needed:**
+- Golden Tongue (gold → W, feeds Overflow too)
+- Overkill Dividend (overkill → gold)
+- Tithe (gold spent → W)
+- Compound Interest (existing)
+- **NEW: "Investor" (Common, Generator):** +5 gold per round survived
+
+**Math check:**
+```
+2000 gold / 100 = 20 stacks
+×1.4^20 = 836x (at level 1)
+×1.55^20 = 14,000x (at level 3)
+Combined with base multipliers: achievable at ~3000 gold
+```
+
+---
+
+### BUILD 4: AP Overflow Build (NEEDS NEW TALENT)
+
+**Problem:** No exponential AP scaler exists.
+
+**Proposed New Talent - "Verbosity" (Rare, Threshold):**
+> Per 50 AP above 100: ×1.3 (stacks multiplicatively)
+
+**Support talents needed:**
+- Bibliophile (words → AP)
+- Eloquent/Erudite/Verbose (round scaling AP)
+- Bibliography (bosses → AP)
+- Residual (W bonuses → AP)
+- **NEW: "Lexical Density" (Uncommon, Converter):** Per T3 word: +8 AP
+
+**Math check:**
+```
+500 AP total, 100 base = 400 excess
+400 / 50 = 8 stacks
+×1.3^8 = 8x (needs more support)
+With upgrades and more AP gen: ×1.45^15 = 250x
+Need ~25 stacks at level 3 for viable path
+```
+
+---
+
+### BUILD 5: Elemental Cascade Build (NEEDS NEW TALENT)
+
+**Problem:** Cascade capped at 8 elements (×1.5^8 = 25x max).
+
+**Proposed New Talent - "Prismatic Convergence" (Rare, Threshold):**
+> All 8 Elements in forge: ×3, and each element word grants ×1.2
+
+**Alternative - "Elemental Resonance" (Rare, Converter):**
+> Per element match with enemy weakness: ×1.5 AND REREAD matching words
+
+**Support talents needed:**
+- Cascade (existing)
+- Spectrum (elements → W)
+- Diacope (family → REREAD ALL)
+- Element combo talents (Yin Yang, Magma, Storm, etc.)
+- **NEW: "Chromatic" (Uncommon):** 6+ unique elements: ×2.5
+
+**Synergy:** Hitting all 8 elements unlocks massive multipliers + feeds into REREAD/W builds
+
+---
+
+### BUILD 6: Endurance/Chapter Build (NEEDS NEW TALENT)
+
+**Problem:** Pilgrimage (×1.5 per chapter) requires 50+ chapters alone.
+
+**Proposed New Talent - "Eternal Scholar" (Rare, Threshold):**
+> Per 5 rounds survived: ×1.25 (stacks multiplicatively)
+
+**Support talents needed:**
+- Pilgrimage (existing)
+- Slow Burn (rounds → W)
+- Momentum (rounds → W per word)
+- **NEW: "Veteran's Wisdom" (Uncommon):** Per round: +2 AP per word
+- **NEW: "Compounding Knowledge" (Rare):** Round number × talent count = bonus ×mult
+
+**Math check:**
+```
+Round 50: 50/5 = 10 stacks
+×1.25^10 = 9.3x (level 1)
+×1.375^10 = 23x (level 3)
+Combined with Pilgrimage chapter 6: ×1.625^6 × 23x = 420x
+Still needs W/AP support, but viable as hybrid
+```
+
+---
+
+### Implementation Priority
+
+| Build | New Talents Needed | Complexity | Priority |
+|-------|-------------------|------------|----------|
+| Gold Tycoon | 2 (Midas Touch, Investor) | Low | High |
+| AP Overflow | 2 (Verbosity, Lexical Density) | Medium | Medium |
+| Elemental | 2 (Prismatic Convergence, Chromatic) | Medium | Medium |
+| Endurance | 2-3 (Eternal Scholar, Veteran's Wisdom, Compounding Knowledge) | High | Low |
+
+**Total new talents:** 8-9 talents to enable 4 new build paths
+
+---
+
+### Key Design Principles
+
+1. **No Solo Carries:** Each build needs 4-6 talents working together
+2. **Upgrade Dependency:** Level 3+ required for Ultimate Weapon viability
+3. **Cross-Pollination:** Builds should have some talent overlap (e.g., W generators help multiple builds)
+4. **Distinct Fantasy:** Each build should feel different to play
+   - REREAD: "My words echo infinitely"
+   - W Overflow: "Every word carries immense weight"
+   - Gold: "I'm literally too rich to fail"
+   - AP: "Raw power through vocabulary"
+   - Element: "Master of all elements"
+   - Endurance: "I grow stronger each round"
+
+---
+
 ## Open Questions
 
 - [ ] Belle Lettres capstone "Knowledge Eternal" - needs testing for balance
@@ -319,5 +472,6 @@ PStats.achievements = {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2024-12-23 | Add Ultimate Weapon build diversity plan (6 archetypes, 8-9 new talents proposed) | Design |
 | 2024-12-20 | Add 15 new Steam achievement designs | Design Subagent |
 | 2024-12-20 | Initial creation from docs restructure | Documentation Team |
