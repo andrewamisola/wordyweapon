@@ -609,9 +609,20 @@
         </span>
         <input type="checkbox" id="gfx-lowfx" style="width:18px;height:18px">
       </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:12px">
+        <span style="display:flex;flex-direction:column;gap:2px">
+          <span>UI Scale</span>
+          <span style="font-size:10px;color:#9ca3af">Adjust interface size (85-115%)</span>
+        </span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="gfx-scale" min="85" max="115" value="100" style="width:80px;accent-color:#f4d03f">
+          <span id="gfx-scale-value" style="font-size:12px;min-width:36px;text-align:right">100%</span>
+        </div>
+      </label>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151;display:flex;flex-direction:column;gap:8px;align-items:center">
       <button id="gfx-bug-report" style="padding:8px 20px;border-radius:8px;background:#111827;border:1px solid #374151;font-size:12px;width:160px">Report Bug</button>
+      <button id="gfx-reset-tutorial" style="padding:8px 20px;border-radius:8px;background:#111827;border:1px solid #374151;font-size:12px;width:160px">Reset Tutorial</button>
       <button id="gfx-reset-data" style="padding:8px 20px;border-radius:8px;background:#1f1215;border:1px solid #7f1d1d;color:#fca5a5;font-size:12px;width:160px">Reset Data</button>
     </div>
     <div style="margin-top:16px">
@@ -670,11 +681,11 @@
 
 <!-- Talent Viewer overlay shows acquired talents with full descriptions -->
 <div class="overlay" id="talent-viewer-overlay">
-  <div class="modal" style="min-width:600px;max-width:900px;width:90vw">
-    <div class="modal-title gold" style="text-align:center;letter-spacing:0.15em;margin-bottom:4px">YOUR TALENTS</div>
-    <div id="talent-viewer-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;max-height:65vh;overflow-y:auto;padding:8px 24px"></div>
-    <div style="text-align:center;margin-top:10px">
-      <button id="talent-viewer-close" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
+  <div class="modal" style="min-width:550px;max-width:850px;width:88vw">
+    <div class="modal-title gold" style="text-align:center;letter-spacing:0.12em;margin-bottom:8px;font-size:15px">YOUR TALENTS</div>
+    <div id="talent-viewer-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;max-height:62vh;overflow-y:auto;padding:6px 16px"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button id="talent-viewer-close" style="padding:8px 24px;border-radius:6px;background:#1f2937;border:1px solid #374151;font-size:12px">Close</button>
     </div>
   </div>
 </div>

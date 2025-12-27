@@ -273,10 +273,10 @@ function enemyHp(round) {
 // Block 2 (R7-9): 320, 480, 640       <- Chapter 1 boss
 // Block 3 (R10-12): 1,280, 1,920, 2,560
 // Block 4 (R13-15): 5,120, 7,680, 10,240
-// Block 5 (R16-18): 20,480, 30,720, 40,960 <- Chapter 2 boss
-// Block 6 (R19-21): 81,920, 122,880, 163,840
+// Block 5 (R16-18): 20,480, 30,720, 40,960 <- Chapter 2 boss (victory!)
+// Block 6 (R19-21): 81,920, 122,880, 163,840  <- Endless mode
 // Block 7 (R22-24): 327,680, 491,520, 655,360
-// Block 8 (R25-27): 1.31M, 1.97M, 2.62M  <- Chapter 3 boss (victory!)
+// Block 8 (R25-27): 1.31M, 1.97M, 2.62M  <- Chapter 3 boss
 
 // Get spark colors based on word's element (for anvil spark effects)
 function getElementSparkColors(word) {
@@ -1444,7 +1444,7 @@ function createGrahamTree() {
       { id: `${p}_aggression`, name: "Strength I", type: "minor", maxPoints: 3, row: 1, col: 1,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_recruit`, points: 1}] },
       { id: `${p}_fortitude`, name: "Endurance I", type: "minor", maxPoints: 3, row: 1, col: 3,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_recruit`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_recruit`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_fury1`, name: "Strength II", type: "minor", maxPoints: 3, row: 2, col: 0,
@@ -1452,7 +1452,7 @@ function createGrahamTree() {
       { id: `${p}_precision`, name: "Precision I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_aggression`, points: 2}, {id: `${p}_fortitude`, points: 2}] },
       { id: `${p}_stone1`, name: "Endurance II", type: "minor", maxPoints: 3, row: 2, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_fortitude`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_fortitude`, points: 2}] },
 
       // Row 3: Major nodes
       { id: `${p}_battlecry`, name: "Boss Slayer", type: "major", maxPoints: 2, row: 3, col: 0,
@@ -1472,7 +1472,7 @@ function createGrahamTree() {
       { id: `${p}_edge2`, name: "Precision III", type: "minor", maxPoints: 3, row: 4, col: 3,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_earthshaker`, points: 1}] },
       { id: `${p}_stone2`, name: "Endurance III", type: "minor", maxPoints: 3, row: 4, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_earthshaker`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_earthshaker`, points: 1}] },
 
       // Row 5: Pre-major
       { id: `${p}_wrath`, name: "Gem Focus I", type: "minor", maxPoints: 3, row: 5, col: 0,
@@ -1502,17 +1502,17 @@ function createQuiveraTree() {
     nodes: [
       // Row 0: Start
       { id: `${p}_scout`, name: "Tracking", type: "minor", maxPoints: 1, row: 0, col: 2,
-        desc: "+1 AP to Gem slot", bonusPerPoint: 1, bonusType: "gemAP", requires: [] },
+        desc: "+1 AP to Noun slot", bonusPerPoint: 1, bonusType: "nounAP", requires: [] },
 
       // Row 1: First split
       { id: `${p}_charge`, name: "Agility I", type: "minor", maxPoints: 3, row: 1, col: 1,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_scout`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_scout`, points: 1}] },
       { id: `${p}_grounded`, name: "Focus I", type: "minor", maxPoints: 3, row: 1, col: 3,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_scout`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_volt1`, name: "Agility II", type: "minor", maxPoints: 3, row: 2, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_charge`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_charge`, points: 2}] },
       { id: `${p}_focus`, name: "Aim I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_charge`, points: 2}, {id: `${p}_grounded`, points: 2}] },
       { id: `${p}_stone1`, name: "Focus II", type: "minor", maxPoints: 3, row: 2, col: 4,
@@ -1528,7 +1528,7 @@ function createQuiveraTree() {
 
       // Row 4: Continue branches
       { id: `${p}_volt2`, name: "Agility III", type: "minor", maxPoints: 3, row: 4, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_stormshot`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_stormshot`, points: 1}] },
       { id: `${p}_aim1`, name: "Aim II", type: "minor", maxPoints: 3, row: 4, col: 1,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_stormshot`, points: 1}] },
       { id: `${p}_gilded`, name: "Gilded", type: "minor", maxPoints: 3, row: 4, col: 2,
@@ -1572,7 +1572,7 @@ function createBelleTree() {
       { id: `${p}_radiant`, name: "Insight I", type: "minor", maxPoints: 3, row: 1, col: 1,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_student`, points: 1}] },
       { id: `${p}_shadow`, name: "Wisdom I", type: "minor", maxPoints: 3, row: 1, col: 3,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_student`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_student`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_glow1`, name: "Insight II", type: "minor", maxPoints: 3, row: 2, col: 0,
@@ -1580,7 +1580,7 @@ function createBelleTree() {
       { id: `${p}_channel`, name: "Spell I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_radiant`, points: 2}, {id: `${p}_shadow`, points: 2}] },
       { id: `${p}_shade1`, name: "Wisdom II", type: "minor", maxPoints: 3, row: 2, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_shadow`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_shadow`, points: 2}] },
 
       // Row 3: Major nodes - Light Mastery (left) and Dark Mastery (right)
       { id: `${p}_lightmaster`, name: "Light Mastery", type: "major", maxPoints: 2, row: 3, col: 0,
@@ -1600,7 +1600,7 @@ function createBelleTree() {
       { id: `${p}_spell2`, name: "Spell III", type: "minor", maxPoints: 3, row: 4, col: 3,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_darkmaster`, points: 1}] },
       { id: `${p}_shade2`, name: "Wisdom III", type: "minor", maxPoints: 3, row: 4, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_darkmaster`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_darkmaster`, points: 1}] },
 
       // Row 5: Pre-major
       { id: `${p}_luminous`, name: "Gem Focus I", type: "minor", maxPoints: 3, row: 5, col: 0,
@@ -1630,17 +1630,17 @@ function createAlexandriaTree() {
     nodes: [
       // Row 0: Start
       { id: `${p}_oath`, name: "Devotion", type: "minor", maxPoints: 1, row: 0, col: 2,
-        desc: "+1 AP to Gem slot", bonusPerPoint: 1, bonusType: "gemAP", requires: [] },
+        desc: "+1 AP to Noun slot", bonusPerPoint: 1, bonusType: "nounAP", requires: [] },
 
       // Row 1: First split
       { id: `${p}_blessed`, name: "Faith I", type: "minor", maxPoints: 3, row: 1, col: 1,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_oath`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_oath`, points: 1}] },
       { id: `${p}_valiant`, name: "Valor I", type: "minor", maxPoints: 3, row: 1, col: 3,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_oath`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_halo1`, name: "Faith II", type: "minor", maxPoints: 3, row: 2, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_blessed`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_blessed`, points: 2}] },
       { id: `${p}_judgment`, name: "Zeal I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_blessed`, points: 2}, {id: `${p}_valiant`, points: 2}] },
       { id: `${p}_might1`, name: "Valor II", type: "minor", maxPoints: 3, row: 2, col: 4,
@@ -1656,7 +1656,7 @@ function createAlexandriaTree() {
 
       // Row 4: Continue branches
       { id: `${p}_halo2`, name: "Faith III", type: "minor", maxPoints: 3, row: 4, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_holylight`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_holylight`, points: 1}] },
       { id: `${p}_smite1`, name: "Zeal II", type: "minor", maxPoints: 3, row: 4, col: 1,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_holylight`, points: 1}] },
       { id: `${p}_gilded`, name: "Gilded", type: "minor", maxPoints: 3, row: 4, col: 2,
@@ -1700,7 +1700,7 @@ function createCaesuraTree() {
       { id: `${p}_shadow`, name: "Cunning I", type: "minor", maxPoints: 3, row: 1, col: 1,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_whisper`, points: 1}] },
       { id: `${p}_corrupt`, name: "Malice I", type: "minor", maxPoints: 3, row: 1, col: 3,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_whisper`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_whisper`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_shade1`, name: "Cunning II", type: "minor", maxPoints: 3, row: 2, col: 0,
@@ -1708,7 +1708,7 @@ function createCaesuraTree() {
       { id: `${p}_lethal`, name: "Lethality I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_shadow`, points: 2}, {id: `${p}_corrupt`, points: 2}] },
       { id: `${p}_toxin1`, name: "Malice II", type: "minor", maxPoints: 3, row: 2, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_corrupt`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_corrupt`, points: 2}] },
 
       // Row 3: Major nodes
       { id: `${p}_nightshade`, name: "Dark Mastery", type: "major", maxPoints: 2, row: 3, col: 0,
@@ -1728,7 +1728,7 @@ function createCaesuraTree() {
       { id: `${p}_stab2`, name: "Lethality III", type: "minor", maxPoints: 3, row: 4, col: 3,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_venom`, points: 1}] },
       { id: `${p}_toxin2`, name: "Malice III", type: "minor", maxPoints: 3, row: 4, col: 4,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_venom`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_venom`, points: 1}] },
 
       // Row 5: Pre-major
       { id: `${p}_void`, name: "Gem Focus I", type: "minor", maxPoints: 3, row: 5, col: 0,
@@ -1758,17 +1758,17 @@ function createReedTree() {
     nodes: [
       // Row 0: Start
       { id: `${p}_seedling`, name: "Growth", type: "minor", maxPoints: 1, row: 0, col: 2,
-        desc: "+1 AP to Gem slot", bonusPerPoint: 1, bonusType: "gemAP", requires: [] },
+        desc: "+1 AP to Noun slot", bonusPerPoint: 1, bonusType: "nounAP", requires: [] },
 
       // Row 1: First split
       { id: `${p}_ancient`, name: "Nature I", type: "minor", maxPoints: 3, row: 1, col: 1,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_seedling`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_seedling`, points: 1}] },
       { id: `${p}_flowing`, name: "Flow I", type: "minor", maxPoints: 3, row: 1, col: 3,
         desc: "+0.5 AP to Adjective slot per point", bonusPerPoint: 0.5, bonusType: "adjAP", requires: [{id: `${p}_seedling`, points: 1}] },
 
       // Row 2: Branch expansion
       { id: `${p}_root1`, name: "Nature II", type: "minor", maxPoints: 3, row: 2, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_ancient`, points: 2}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_ancient`, points: 2}] },
       { id: `${p}_primal`, name: "Primal I", type: "minor", maxPoints: 3, row: 2, col: 2,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_ancient`, points: 2}, {id: `${p}_flowing`, points: 2}] },
       { id: `${p}_tide1`, name: "Flow II", type: "minor", maxPoints: 3, row: 2, col: 4,
@@ -1784,7 +1784,7 @@ function createReedTree() {
 
       // Row 4: Continue branches
       { id: `${p}_root2`, name: "Nature III", type: "minor", maxPoints: 3, row: 4, col: 0,
-        desc: "+0.5 AP to Gem slot per point", bonusPerPoint: 0.5, bonusType: "gemAP", requires: [{id: `${p}_terraform`, points: 1}] },
+        desc: "+0.5 AP to Noun slot per point", bonusPerPoint: 0.5, bonusType: "nounAP", requires: [{id: `${p}_terraform`, points: 1}] },
       { id: `${p}_thorn1`, name: "Primal II", type: "minor", maxPoints: 3, row: 4, col: 1,
         desc: "+0.5 AP to Weapon slot per point", bonusPerPoint: 0.5, bonusType: "weaponAP", requires: [{id: `${p}_terraform`, points: 1}] },
       { id: `${p}_gilded`, name: "Gilded", type: "minor", maxPoints: 3, row: 4, col: 2,
@@ -2356,7 +2356,7 @@ const SECRET_CHAPTER_BOSS = {
   hpMultiplier: 1.5, // 50% more HP than normal chapter bosses
   ability: {
     name: 'Wordless',
-    desc: 'Immune if fewer than 6 Words in Forge',
+    desc: 'Immune to words with fewer than 6 letters',
     icon: '🤫'
   }
 };
@@ -2848,7 +2848,7 @@ const TALENTS = [
   {
     id: 'magma_core',
     name: 'Magma Core',
-    desc: '<span class="mod-badge scale">×2</span> if Fire + Earth',
+    desc: 'Fire + Earth in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.FIRE, E.EARTH]) ? 2.0 : 1.0
@@ -2856,7 +2856,7 @@ const TALENTS = [
   {
     id: 'tempest',
     name: 'Tempest',
-    desc: '<span class="mod-badge scale">×2</span> if Lightning + Water',
+    desc: 'Lightning + Water in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHTNING, E.WATER]) ? 2.0 : 1.0
@@ -2865,7 +2865,7 @@ const TALENTS = [
   {
     id: 'eclipse',
     name: 'Umbral Dawn',
-    desc: '<span class="mod-badge scale">×2</span> if Light + Dark',
+    desc: 'Light + Dark in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHT, E.DARK]) ? 2.0 : 1.0
@@ -2873,7 +2873,7 @@ const TALENTS = [
   {
     id: 'necrotoxin',
     name: 'Thanatos',
-    desc: '<span class="mod-badge scale">×2</span> if Dark + Poison',
+    desc: 'Dark + Poison in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.DARK, E.POISON]) ? 2.0 : 1.0
@@ -2881,7 +2881,7 @@ const TALENTS = [
   {
     id: 'blessed_steel',
     name: 'Helios',
-    desc: '<span class="mod-badge scale">×2</span> if Light + Physical',
+    desc: 'Light + Physical in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHT, E.PHYS]) ? 2.0 : 1.0
@@ -2889,7 +2889,7 @@ const TALENTS = [
   {
     id: 'static_earth',
     name: 'Gaia',
-    desc: '<span class="mod-badge scale">×2</span> if Lightning + Earth',
+    desc: 'Lightning + Earth in Forge: <span class="mod-badge scale">×2</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHTNING, E.EARTH]) ? 2.0 : 1.0
@@ -2900,13 +2900,13 @@ const TALENTS = [
   {
     id: 'synecdoche',
     name: 'Synecdoche',
-    desc: '<span class="mod-badge scale">×4</span> when 3+ Words same Element',
+    desc: '4+ Words same Element: <span class="mod-badge scale">×4</span>',
     flavor: "A part representing the whole, or the whole for a part.",
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => {
       const elemental = ctx.allWords.filter(w => w.elem !== undefined);
-      if (elemental.length < 3) return 1.0;
+      if (elemental.length < 4) return 1.0;
       const firstElem = elemental[0].elem;
       if (!elemental.every(w => w.elem === firstElem)) return 1.0;
       return 4;
@@ -2916,7 +2916,7 @@ const TALENTS = [
   {
     id: 'minimalist',
     name: 'Brevity',
-    desc: '<span class="mod-badge scale">×3</span> if 2 Words',
+    desc: 'Exactly 2 Words in Forge: <span class="mod-badge scale">×3</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => ctx.allWords.length === 2 ? 3 : 1.0
@@ -2925,7 +2925,7 @@ const TALENTS = [
   {
     id: 'maximalist',
     name: 'Maximalist',
-    desc: '<span class="mod-badge scale">×2.5</span> if 6 slots filled',
+    desc: 'All 6 slots filled: <span class="mod-badge scale">×2.5</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => ctx.allWords.length >= 6 ? 2.5 : 1.0
@@ -2934,7 +2934,7 @@ const TALENTS = [
   {
     id: 'dual_spec',
     name: 'Dual Spec',
-    desc: '<span class="mod-badge scale">×2</span> if both Hero Strong Elements',
+    desc: "Both Hero's Strong Elements in Forge: <span class=\"mod-badge scale\">×2</span>",
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => {
@@ -2948,7 +2948,7 @@ const TALENTS = [
   {
     id: 'weak_point',
     name: 'Weak Point',
-    desc: '<span class="mod-badge scale">×1.5</span> if hitting Weakness',
+    desc: "Hit Enemy Weakness: <span class=\"mod-badge scale\">×1.5</span>",
     rarity: 'common',
     category: 'multiplier',
     apply: (ctx) => {
@@ -2962,7 +2962,7 @@ const TALENTS = [
   {
     id: 'monolith',
     name: 'Monolith',
-    desc: '<span class="mod-badge scale">×4</span> if all Words T3',
+    desc: 'All Words T3: <span class="mod-badge scale">×4</span>',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => {
@@ -2981,7 +2981,7 @@ const TALENTS = [
   {
     id: 'anaphora',
     name: 'Anaphora',
-    desc: '<span class="mod-badge reread">REREAD</span> First Word',
+    desc: 'First Word in Forge: <span class="mod-badge reread">REREAD</span>',
     flavor: "Repetition of a word at the beginning of successive clauses.",
     rarity: 'rare',
     category: 'retrigger',
@@ -2991,7 +2991,7 @@ const TALENTS = [
   {
     id: 'epistrophe',
     name: 'Epistrophe',
-    desc: '<span class="mod-badge reread">REREAD</span> Last Word',
+    desc: 'Last Word in Forge: <span class="mod-badge reread">REREAD</span>',
     flavor: "Repetition of a word at the end of successive clauses.",
     rarity: 'rare',
     category: 'retrigger',
@@ -3001,7 +3001,7 @@ const TALENTS = [
   {
     id: 'gemination',
     name: 'Gemination',
-    desc: '<span class="mod-badge reread">REREAD</span> if 2+ Words same Tier',
+    desc: '2+ Words same Tier: <span class="mod-badge reread">REREAD</span> all matching',
     flavor: "The doubling of a consonant sound.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3011,7 +3011,7 @@ const TALENTS = [
   {
     id: 'diacope',
     name: 'Diacope',
-    desc: '<span class="mod-badge reread">REREAD ALL</span> if 4 Family Elements',
+    desc: 'All 4 Elements from one Family: <span class="mod-badge reread">REREAD ALL</span>',
     flavor: "Repetition separated by intervening words.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3021,7 +3021,7 @@ const TALENTS = [
   {
     id: 'resonance',
     name: 'Resonance',
-    desc: '<span class="mod-badge reread">REREAD</span> Hero Strong Element Words',
+    desc: "Each Hero's Strong Element Word: <span class=\"mod-badge reread\">REREAD</span>",
     rarity: 'uncommon',
     category: 'retrigger',
     apply: (ctx) => 0
@@ -3030,7 +3030,7 @@ const TALENTS = [
   {
     id: 'amplify',
     name: 'Khopesh',
-    desc: '<span class="mod-badge reread">REREAD</span> Weapon',
+    desc: 'Weapon Slot: <span class="mod-badge reread">REREAD</span>',
     rarity: 'rare',
     category: 'retrigger',
     apply: (ctx) => 0
@@ -3039,7 +3039,7 @@ const TALENTS = [
   {
     id: 'gem_resonance',
     name: 'Gem Resonance',
-    desc: '<span class="mod-badge reread">REREAD</span> Gem',
+    desc: 'Gem Slot filled: <span class="mod-badge reread">REREAD</span>',
     flavor: "The gem echoes with stored power.",
     rarity: 'common',
     category: 'retrigger',
@@ -3049,7 +3049,7 @@ const TALENTS = [
   {
     id: 'execute',
     name: 'Execute',
-    desc: '<span class="mod-badge reread">REREAD ALL</span> if enemy ≤15% HP',
+    desc: 'Enemy survives at ≤15% HP: <span class="mod-badge reread">REREAD ALL</span>',
     rarity: 'uncommon',
     category: 'retrigger',
     apply: (ctx) => 0
@@ -3064,7 +3064,7 @@ const TALENTS = [
   {
     id: 'echo_chamber',
     name: 'Echo Chamber',
-    desc: '<span class="mod-badge word">+5 W</span> per REREAD',
+    desc: 'Each <span class="mod-badge reread">REREAD</span>: <span class="mod-badge word">+5 W</span>',
     flavor: "Words echo through the chamber, amplifying their power.",
     rarity: 'rare',
     category: 'converter',
@@ -3074,7 +3074,7 @@ const TALENTS = [
   {
     id: 'residual',
     name: 'Residual',
-    desc: '<span class="mod-badge add">+0.2 AP</span> per +W bonus',
+    desc: 'Each <span class="mod-badge word">+W</span> bonus: <span class="mod-badge add">+0.2 AP</span>',
     flavor: "The afterglow of powerful words.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3084,7 +3084,7 @@ const TALENTS = [
   {
     id: 'golden_tongue',
     name: 'Golden Tongue',
-    desc: '<span class="mod-badge word">+1 W</span> per Adj per 20 Gold',
+    desc: 'Each Adj: <span class="mod-badge word">+1 W</span> per 20 Gold',
     flavor: "Money speaks volumes.",
     rarity: 'common',
     category: 'converter',
@@ -3104,7 +3104,7 @@ const TALENTS = [
   {
     id: 'echo_profits',
     name: 'Echo Profits',
-    desc: '<span class="mod-badge gold">+2 Gold</span> per REREAD',
+    desc: 'Each <span class="mod-badge reread">REREAD</span>: <span class="mod-badge gold">+2 Gold</span> after victory',
     flavor: "Every echo pays dividends.",
     rarity: 'common',
     category: 'converter',
@@ -3115,7 +3115,7 @@ const TALENTS = [
   {
     id: 'elemental_bounty',
     name: 'Elemental Bounty',
-    desc: '<span class="mod-badge gold">+3 Gold</span> per unique Element',
+    desc: 'Each unique Element: <span class="mod-badge gold">+3 Gold</span> after victory',
     flavor: "Nature rewards diversity.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3130,7 +3130,7 @@ const TALENTS = [
   {
     id: 'treasure_hunter',
     name: 'Treasure Hunter',
-    desc: '<span class="mod-badge gold">+5 Gold</span> per T3 Word',
+    desc: 'Each T3 Word in Forge: <span class="mod-badge gold">+5 Gold</span> after victory',
     flavor: "The rare are worth hunting.",
     rarity: 'common',
     category: 'converter',
@@ -3145,7 +3145,7 @@ const TALENTS = [
   {
     id: 'appraisers_eye',
     name: "Appraiser's Eye",
-    desc: '<span class="mod-badge gold">+5 Gold</span> per Rarity Word',
+    desc: 'Each Rarity Word: <span class="mod-badge gold">+5 Gold</span> after victory',
     flavor: "A trained eye knows true value.",
     rarity: 'common',
     category: 'converter',
@@ -3160,7 +3160,7 @@ const TALENTS = [
   {
     id: 'reread_amplifier',
     name: 'Reread Amplifier',
-    desc: '<span class="mod-badge scale">×1.5</span> per REREAD (stacks)',
+    desc: 'Each <span class="mod-badge reread">REREAD</span>: <span class="mod-badge scale">×1.5</span> (stacks)',
     flavor: "Repetition breeds power.",
     rarity: 'rare',
     category: 'converter',
@@ -3170,7 +3170,7 @@ const TALENTS = [
   {
     id: 'lexicon_growth',
     name: 'Lexicon Growth',
-    desc: '<span class="mod-badge word">+1 W</span> per Word per Boss defeated',
+    desc: 'Each Word per Boss defeated: <span class="mod-badge word">+1 W</span>',
     flavor: "Your vocabulary expands with each victory.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3180,7 +3180,7 @@ const TALENTS = [
   {
     id: 'momentum',
     name: 'Momentum',
-    desc: '<span class="mod-badge word">+0.2 W</span> per Word per Round',
+    desc: 'Each Word: <span class="mod-badge word">+1 W</span> per Round completed',
     flavor: "Victory begets victory.",
     rarity: 'common',
     category: 'converter',
@@ -3190,7 +3190,7 @@ const TALENTS = [
   {
     id: 'compound_interest',
     name: 'Compound Interest',
-    desc: '<span class="mod-badge scale">×1.15</span> per 50 Gold',
+    desc: 'Per 50 Gold: <span class="mod-badge scale">×1.15</span>',
     flavor: "Money makes money.",
     rarity: 'rare',
     category: 'converter',
@@ -3200,7 +3200,7 @@ const TALENTS = [
   {
     id: 'word_historian',
     name: 'Word Historian',
-    desc: '<span class="mod-badge word">+0.25 W</span> Gem per Word used this run',
+    desc: 'Gem: <span class="mod-badge word">+0.25 W</span> per Word used this run',
     flavor: "Every word you've spoken echoes forward.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3210,7 +3210,7 @@ const TALENTS = [
   {
     id: 'reverberation',
     name: 'Reverberation',
-    desc: '<span class="mod-badge word">+2 W</span> per Adj per REREAD this run',
+    desc: 'Each Adj: <span class="mod-badge word">+2 W</span> per <span class="mod-badge reread">REREAD</span> this run',
     flavor: "Past echoes amplify future resonance.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3221,12 +3221,12 @@ const TALENTS = [
   // W OVERFLOW BUILD - Quadratic Scaling
   // ========================================
 
-  // T2 - Linear W per adjective slot filled
+  // T2 - Quadratic W scaling (word count × word count)
   {
     id: 'verbose_surplus',
     name: 'Verbose Surplus',
-    desc: '<span class="mod-badge word">+10 W</span> per Adjective slot filled',
-    flavor: "More descriptions, more power.",
+    desc: 'Each Adj: <span class="mod-badge word">+10 W</span> × Word count',
+    flavor: "More words means more power! Each word amplifies the total.",
     rarity: 'uncommon',
     category: 'converter',
     apply: (ctx) => 0 // Handled in converter phase
@@ -3235,7 +3235,7 @@ const TALENTS = [
   {
     id: 'linguistic_density',
     name: 'Linguistic Density',
-    desc: '<span class="mod-badge word">+5 W</span> per Word if 4+ Words',
+    desc: '4+ Words: Each gains <span class="mod-badge word">+5 W</span> × Word count',
     flavor: "Dense language packs tremendous force.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3250,18 +3250,18 @@ const TALENTS = [
   {
     id: 'elemental_mastery',
     name: 'Elemental Mastery',
-    desc: '<span class="mod-badge word">+1 W</span> per Elemental Word this run (stacks)',
+    desc: 'Each Elemental Word played this run: <span class="mod-badge word">+1 W</span> to ALL Words',
     flavor: "Mastery grows with practice.",
     rarity: 'uncommon',
     category: 'converter',
     apply: (ctx) => 0 // Handled in converter phase + post-combat
   },
-  // T3 - Multiplier based on unique element types used
+  // T3 - Exponential multiplier based on accumulated Word Count
   {
     id: 'prismatic_resonance',
     name: 'Prismatic Resonance',
-    desc: '<span class="mod-badge scale">×1.2</span> per unique Element type (max 8)',
-    flavor: "The rainbow weapon, forged from all elements.",
+    desc: 'Per <span class="mod-badge word">5 W</span> accumulated: <span class="mod-badge scale">×1.2</span>',
+    flavor: "The rainbow weapon, forged across battles.",
     rarity: 'rare',
     category: 'converter',
     apply: (ctx) => 0 // Handled in converter phase
@@ -3270,7 +3270,7 @@ const TALENTS = [
   {
     id: 'weakness_exploit_amp',
     name: 'Weakness Exploit Amp',
-    desc: '<span class="mod-badge word">+1 W</span> per Weakness hit (stacks)',
+    desc: 'Each Word hitting Weakness this run: <span class="mod-badge word">+1 W</span> to ALL Words',
     flavor: "Exploit their flaws to master your craft.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3286,7 +3286,7 @@ const TALENTS = [
   {
     id: 'critical_mass',
     name: 'Critical Mass',
-    desc: '<span class="mod-badge reread">REREAD</span> each T3 Word',
+    desc: 'Each T3 Word in Forge: <span class="mod-badge reread">REREAD</span>',
     flavor: "The tipping point.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3296,7 +3296,7 @@ const TALENTS = [
   {
     id: 'rarity_cascade',
     name: 'Rarity Cascade',
-    desc: '<span class="mod-badge reread">REREAD</span> each Rarity Word',
+    desc: 'Each Rarity Word in Forge: <span class="mod-badge reread">REREAD</span>',
     flavor: "Quality echoes through time.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3306,7 +3306,7 @@ const TALENTS = [
   {
     id: 'overflow',
     name: 'Overflow',
-    desc: '<span class="mod-badge scale">×1.5</span> per 10 W above 50',
+    desc: 'Per <span class="mod-badge word">10 W</span> above 50: <span class="mod-badge scale">×1.5</span>',
     flavor: "More than the vessel can hold.",
     rarity: 'rare',
     category: 'converter',
@@ -3316,7 +3316,7 @@ const TALENTS = [
   {
     id: 'cascade',
     name: 'Cascade',
-    desc: '<span class="mod-badge scale">×1.5</span> per unique Element',
+    desc: 'Each unique Element in Forge: <span class="mod-badge scale">×1.5</span>',
     flavor: "An unstoppable torrent.",
     rarity: 'rare',
     category: 'multiplier',
@@ -3329,7 +3329,7 @@ const TALENTS = [
   {
     id: 'chain_reaction',
     name: 'Chain Reaction',
-    desc: '<span class="mod-badge scale">×3</span> if 4+ REREAD',
+    desc: '4+ <span class="mod-badge reread">REREAD</span>: <span class="mod-badge scale">×3</span>',
     flavor: "One triggers another.",
     rarity: 'rare',
     category: 'threshold',
@@ -3341,7 +3341,7 @@ const TALENTS = [
   {
     id: 'crescendo',
     name: 'Crescendo',
-    desc: '<span class="mod-badge reread">REREAD ALL</span> if 6+ REREAD',
+    desc: '6+ <span class="mod-badge reread">REREAD</span>: <span class="mod-badge reread">REREAD ALL</span> again',
     flavor: "Building to the climax.",
     rarity: 'rare',
     category: 'threshold',
@@ -3353,7 +3353,7 @@ const TALENTS = [
   {
     id: 'fortuna',
     name: 'Fortuna',
-    desc: '<span class="mod-badge scale">×2</span> if 100+ Gold',
+    desc: '100+ Gold: <span class="mod-badge scale">×2</span>',
     flavor: "Fortune favors the wealthy.",
     rarity: 'uncommon',
     category: 'threshold',
@@ -3365,7 +3365,7 @@ const TALENTS = [
   {
     id: 'capital_punishment',
     name: 'Capital Punishment',
-    desc: '<span class="mod-badge scale">×2.5</span> if Boss or Miniboss',
+    desc: 'Enemy is Boss or Miniboss: <span class="mod-badge scale">×2.5</span>',
     flavor: "Big letters for big enemies.",
     rarity: 'common',
     category: 'threshold',
@@ -3375,7 +3375,7 @@ const TALENTS = [
   {
     id: 'berserker',
     name: 'Berserker',
-    desc: '<span class="mod-badge scale">×1.5</span> per Chapter',
+    desc: 'Per Chapter: <span class="mod-badge scale">×1.5</span>',
     flavor: "Rage builds with time.",
     rarity: 'rare',
     category: 'multiplier',
@@ -3388,7 +3388,7 @@ const TALENTS = [
   {
     id: 'perfectionist',
     name: 'Perfectionist',
-    desc: '<span class="mod-badge scale">×3</span> if 6 slots, no Resisted',
+    desc: 'All 6 slots filled, no Resisted Elements: <span class="mod-badge scale">×3</span>',
     flavor: "Flawless execution.",
     rarity: 'uncommon',
     category: 'threshold',
@@ -3434,7 +3434,7 @@ const TALENTS = [
   {
     id: 'crown_jewel',
     name: 'Kohinoor',
-    desc: '<span class="mod-badge word">×4 W</span> Gem (instead of ×2)',
+    desc: 'Gem Slot: <span class="mod-badge word">×4 W</span> instead of ×2',
     flavor: "Mountain of Light.",
     rarity: 'rare',
     category: 'effect',
@@ -3459,7 +3459,7 @@ const TALENTS = [
   {
     id: 'word_hoard',
     name: 'Word Hoard',
-    desc: '<span class="mod-badge word">+0.2 W</span> per Adj per Inventory Word',
+    desc: 'Each Adj: <span class="mod-badge word">+0.2 W</span> per Inventory Word',
     flavor: "A dragon's treasure of language.",
     rarity: 'common',
     category: 'generator',
@@ -3469,7 +3469,7 @@ const TALENTS = [
   {
     id: 'slow_burn',
     name: 'Slow Burn',
-    desc: '<span class="mod-badge word">+2 W</span> Weapon per Round',
+    desc: 'Weapon: <span class="mod-badge word">+2 W</span> per Round',
     flavor: "Patience rewards the persistent.",
     rarity: 'common',
     category: 'generator',
@@ -3480,7 +3480,7 @@ const TALENTS = [
   {
     id: 'trinity',
     name: 'Trinity',
-    desc: '<span class="mod-badge scale">×2.5</span> if 3 Words',
+    desc: 'Exactly 3 Words in Forge: <span class="mod-badge scale">×2.5</span>',
     flavor: "Three is a magic number.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3490,7 +3490,7 @@ const TALENTS = [
   {
     id: 'glass_cannon',
     name: 'Glass Cannon',
-    desc: '<span class="mod-badge scale">×5</span> if 1 Word',
+    desc: 'Exactly 1 Word in Forge: <span class="mod-badge scale">×5</span>',
     flavor: "One word to rule them all.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3500,7 +3500,7 @@ const TALENTS = [
   {
     id: 'focused_fire',
     name: 'Focused Fire',
-    desc: '<span class="mod-badge scale">×2.5</span> if 1 Hero Strong Element',
+    desc: "Only 1 of Hero's Strong Elements in Forge: <span class=\"mod-badge scale\">×2.5</span>",
     flavor: "Specialization over diversification.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3516,7 +3516,7 @@ const TALENTS = [
   {
     id: 'opening_strike',
     name: 'Opening Strike',
-    desc: '<span class="mod-badge scale">×1.5</span> if Weapon first',
+    desc: 'Weapon is first slot filled: <span class="mod-badge scale">×1.5</span>',
     flavor: "Lead with your blade.",
     rarity: 'common',
     category: 'multiplier',
@@ -3533,7 +3533,7 @@ const TALENTS = [
   {
     id: 'polysyndeton',
     name: 'Polysyndeton',
-    desc: '<span class="mod-badge reread">REREAD</span> highest AP if 3+ Elements',
+    desc: '3+ Elements in Forge: <span class="mod-badge reread">REREAD</span> highest AP Word',
     flavor: "Conjunction junction, what's your function?",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3543,7 +3543,7 @@ const TALENTS = [
   {
     id: 'anadiplosis',
     name: 'Anadiplosis',
-    desc: '<span class="mod-badge reread">REREAD</span> if adjacent same Element',
+    desc: 'Adjacent Words share Element: <span class="mod-badge reread">REREAD</span> both',
     flavor: "The end of one becomes the beginning of another.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3553,7 +3553,7 @@ const TALENTS = [
   {
     id: 'chiasmus',
     name: 'Chiasmus',
-    desc: '<span class="mod-badge reread">REREAD ×2</span> if first/last same Element',
+    desc: 'First and Last elemental Words same Element: <span class="mod-badge reread">REREAD ×2</span> both',
     flavor: "What begins, ends. What ends, begins.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3564,7 +3564,7 @@ const TALENTS = [
   {
     id: 'tithe',
     name: 'Tithe',
-    desc: '<span class="mod-badge word">+2 W</span> per Adj per 20 Gold spent',
+    desc: 'Each Adj: <span class="mod-badge word">+2 W</span> per 20 Gold spent',
     flavor: "Offerings beget power.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3579,7 +3579,7 @@ const TALENTS = [
   {
     id: 'steady_hand',
     name: 'Steady Hand',
-    desc: '<span class="mod-badge word">+3 W</span> Weapon',
+    desc: 'Weapon: <span class="mod-badge word">+3 W</span>',
     flavor: "A firm grip yields consistent results.",
     rarity: 'common',
     category: 'generator',
@@ -3589,7 +3589,7 @@ const TALENTS = [
   {
     id: 'first_blood',
     name: 'First Blood',
-    desc: '<span class="mod-badge word">+10 W</span> Weapon (Ch.1 only)',
+    desc: 'Ch.1 - Weapon: <span class="mod-badge word">+10 W</span>',
     flavor: "Write when the iron is hot.",
     rarity: 'common',
     category: 'generator',
@@ -3599,7 +3599,7 @@ const TALENTS = [
   {
     id: 'comfort_zone',
     name: 'Comfort Zone',
-    desc: '<span class="mod-badge word">+6 W</span> if 1 Element type',
+    desc: 'Only 1 Element type in Forge: <span class="mod-badge word">+6 W</span>',
     flavor: "Familiarity breeds confidence.",
     rarity: 'common',
     category: 'generator',
@@ -3609,7 +3609,7 @@ const TALENTS = [
   {
     id: 'linguist',
     name: 'Linguist',
-    desc: '<span class="mod-badge word">+5 W</span> per Word if 3+ types',
+    desc: '3+ Types: Each Word gains <span class="mod-badge word">+5 W</span>',
     flavor: "A polyglot of destruction.",
     rarity: 'common',
     category: 'generator',
@@ -3619,7 +3619,7 @@ const TALENTS = [
   {
     id: 'condensed',
     name: 'Condensed',
-    desc: '<span class="mod-badge word">+8 W</span> per Word if ≤3 Words',
+    desc: '≤3 Words: Each gains <span class="mod-badge word">+8 W</span>',
     flavor: "Less is more.",
     rarity: 'common',
     category: 'generator',
@@ -3629,7 +3629,7 @@ const TALENTS = [
   {
     id: 'spectrum',
     name: 'Spectrum',
-    desc: '<span class="mod-badge word">+2 W</span> per unique Element',
+    desc: 'Each unique Element in Forge: <span class="mod-badge word">+2 W</span>',
     flavor: "A rainbow of destruction.",
     rarity: 'common',
     category: 'generator',
@@ -3639,7 +3639,7 @@ const TALENTS = [
   {
     id: 'inferno',
     name: 'Inferno',
-    desc: '<span class="mod-badge word">+10 W</span> if Fire + Water',
+    desc: 'Fire + Water in Forge: <span class="mod-badge word">+10 W</span>',
     flavor: "Steam and fury.",
     rarity: 'common',
     category: 'generator',
@@ -3649,7 +3649,7 @@ const TALENTS = [
   {
     id: 'verdant',
     name: 'Verdant',
-    desc: '<span class="mod-badge word">+10 W</span> if Earth + Light',
+    desc: 'Earth + Light in Forge: <span class="mod-badge word">+10 W</span>',
     flavor: "Growth under sunlight.",
     rarity: 'common',
     category: 'generator',
@@ -3659,7 +3659,7 @@ const TALENTS = [
   {
     id: 'venom_strike',
     name: 'Venom Strike',
-    desc: '<span class="mod-badge word">+10 W</span> if Poison + Lightning',
+    desc: 'Poison + Lightning in Forge: <span class="mod-badge word">+10 W</span>',
     flavor: "Shocking toxicity.",
     rarity: 'common',
     category: 'generator',
@@ -3669,7 +3669,7 @@ const TALENTS = [
   {
     id: 'twilight',
     name: 'Twilight',
-    desc: '<span class="mod-badge word">+10 W</span> if Dark + Physical',
+    desc: 'Dark + Physical in Forge: <span class="mod-badge word">+10 W</span>',
     flavor: "Shadows made manifest.",
     rarity: 'common',
     category: 'generator',
@@ -3679,7 +3679,7 @@ const TALENTS = [
   {
     id: 'bibliophile',
     name: 'Bibliophile',
-    desc: '<span class="mod-badge word">+1 W</span> per Word',
+    desc: 'Each Word in Forge: <span class="mod-badge word">+1 W</span>',
     flavor: "Knowledge is power.",
     rarity: 'common',
     category: 'generator',
@@ -3695,7 +3695,7 @@ const TALENTS = [
   {
     id: 'midas_touch',
     name: 'Midas Touch',
-    desc: '<span class="mod-badge gold">+5 Gold</span> per Elemental Word (in combat)',
+    desc: 'Each Elemental Word in Forge: <span class="mod-badge gold">+5 Gold</span> (in combat)',
     flavor: "Everything you touch turns to gold.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3705,7 +3705,7 @@ const TALENTS = [
   {
     id: 'golden_reread',
     name: 'Golden Reread',
-    desc: '<span class="mod-badge gold">+10 Gold</span> per REREAD (in combat)',
+    desc: 'Each <span class="mod-badge reread">REREAD</span>: <span class="mod-badge gold">+10 Gold</span> (in combat)',
     flavor: "Repetition pays dividends.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3715,7 +3715,7 @@ const TALENTS = [
   {
     id: 'fortunes_favor',
     name: "Fortune's Favor",
-    desc: '<span class="mod-badge reread">REREAD ALL</span> if 200+ Gold',
+    desc: '200+ Gold held: <span class="mod-badge reread">REREAD ALL</span>',
     flavor: "Fortune favors the wealthy.",
     rarity: 'rare',
     category: 'threshold',
@@ -3727,7 +3727,7 @@ const TALENTS = [
   {
     id: 'liquidate',
     name: 'Liquidate',
-    desc: '<span class="mod-badge gold">+1 Gold</span> per 5 W scored',
+    desc: 'After victory: <span class="mod-badge gold">+1 Gold</span> per <span class="mod-badge word">5 W</span>',
     flavor: "Cash out your assets.",
     rarity: 'uncommon',
     category: 'economy',
@@ -4339,8 +4339,8 @@ function getWordAP(word, ctx, slotKey = null) {
     // Adjective slots get adjAP bonus
     ap += skillBonuses.adjAP || 0;
   } else if (slotKey && slotKey.startsWith('noun')) {
-    // Gem slot (noun1) gets gemAP bonus
-    ap += skillBonuses.gemAP || 0;
+    // Noun slots get nounAP bonus
+    ap += skillBonuses.nounAP || 0;
   }
 
   // Get chapter multiplier for talents that scale with chapters
@@ -4526,7 +4526,7 @@ function getWordAP(word, ctx, slotKey = null) {
     ap += cratesOpened * scaleTalentBonus('crate_opener', 1.5);
   }
 
-  // Momentum: +0.2 W per Word per Round completed (max 10)
+  // Momentum: +1 W per Word per Round completed (max 10)
   // NOTE: This is handled in getTalentBonusesForWord as a W bonus, not AP
   // Keeping this block for reference but it doesn't add to AP anymore
 
@@ -4741,10 +4741,10 @@ function getTalentBonusesForWord(word) {
     }
   }
 
-  // Momentum: +0.2 W per Word per Round completed (max 10), scales with level
+  // Momentum: +1 W per Word per Round completed (max 10), scales with level
   if (hasTalent('momentum')) {
     const roundsCompleted = Math.min((S.roundIndex || 1) - 1, 10);
-    const momentumBonus = roundsCompleted * scaleTalentBonus('momentum', 0.2);
+    const momentumBonus = roundsCompleted * scaleTalentBonus('momentum', 1);
     if (momentumBonus > 0) {
       bonuses.push({ name: 'Momentum', value: momentumBonus, type: 'W' });
     }
@@ -5765,7 +5765,7 @@ const TALENT_SVG = {
     <ellipse cx="50" cy="100" rx="8" ry="3" fill="#ef4444"/>
   </svg>`,
 
-  // Momentum - Forward arrow (+0.2W per word per round)
+  // Momentum - Forward arrow (+1W per word per round)
   momentum: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="mm-arrow" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#92400e"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
@@ -6565,132 +6565,6 @@ const TALENT_SVG = {
     <path d="M35 112 L50 118 L65 112" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
   </svg>`,
 
-  // === GOLD BUILD TALENTS ===
-
-  // Midas Touch - Hand with gold sparkles (T2 Uncommon)
-  midas_touch: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="mt-hand" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f3f4f6"/><stop offset="100%" stop-color="#9ca3af"/></linearGradient>
-      <radialGradient id="mt-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.6"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></radialGradient>
-      <radialGradient id="mt-coin" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#d4af37"/><stop offset="100%" stop-color="#92400e"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="40" ry="48" fill="url(#mt-glow)"/>
-    <path d="M45 85 L40 95 L35 98 L38 92 L35 85 L38 80 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
-    <path d="M50 78 L48 90 L45 95 L47 88 L46 80 L48 75 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
-    <path d="M55 75 L54 88 L52 93 L53 86 L53 78 L54 72 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
-    <path d="M60 78 L60 90 L59 95 L59 88 L60 80 L60 75 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
-    <ellipse cx="50" cy="95" rx="18" ry="12" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1.5" opacity="0.9"/>
-    <circle cx="50" cy="45" r="10" fill="url(#mt-coin)" opacity="0.9"/>
-    <circle cx="50" cy="45" r="7" fill="none" stroke="#92400e" stroke-width="1.5"/>
-    <text x="50" y="49" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">G</text>
-    <circle cx="32" cy="38" r="4" fill="#fbbf24" opacity="0.7"/>
-    <circle cx="68" cy="52" r="3" fill="#fbbf24" opacity="0.6"/>
-    <circle cx="40" cy="58" r="2.5" fill="#fbbf24" opacity="0.5"/>
-    <circle cx="62" cy="35" r="2" fill="#fbbf24" opacity="0.4"/>
-  </svg>`,
-
-  // Golden Reread - Repeating gold arrows (T2 Uncommon)
-  golden_reread: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="gr-arrow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
-      <radialGradient id="gr-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#06b6d4" stop-opacity="0.5"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="38" ry="45" fill="url(#gr-glow)"/>
-    <path d="M30 50 Q50 40 70 50 L65 55 L70 50 L75 55" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M70 65 Q50 75 30 65 L35 60 L30 65 L25 60" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M30 80 Q50 70 70 80 L65 85 L70 80 L75 85" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
-    <circle cx="75" cy="45" r="2" fill="#fbbf24"/>
-    <circle cx="25" cy="70" r="2" fill="#fbbf24"/>
-    <circle cx="72" cy="88" r="1.5" fill="#fbbf24" opacity="0.8"/>
-  </svg>`,
-
-  // Fortune's Favor - Crown over gold (T3 Rare)
-  fortunes_favor: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="ff-crown" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#d4af37"/><stop offset="100%" stop-color="#92400e"/></linearGradient>
-      <linearGradient id="ff-coin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
-      <radialGradient id="ff-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9333ea" stop-opacity="0.5"/><stop offset="100%" stop-color="#9333ea" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="40" ry="48" fill="url(#ff-glow)"/>
-    <circle cx="40" cy="85" r="12" fill="url(#ff-coin)" opacity="0.8"/>
-    <circle cx="60" cy="88" r="12" fill="url(#ff-coin)" opacity="0.8"/>
-    <circle cx="50" cy="95" r="12" fill="url(#ff-coin)" opacity="0.9"/>
-    <circle cx="50" cy="95" r="9" fill="none" stroke="#92400e" stroke-width="1"/>
-    <path d="M30 45 L35 55 L40 45 L45 55 L50 45 L55 55 L60 45 L65 55 L70 45 L70 60 L30 60 Z" fill="url(#ff-crown)" stroke="#92400e" stroke-width="1.5"/>
-    <circle cx="40" cy="50" r="2.5" fill="#dc2626"/>
-    <circle cx="50" cy="50" r="3" fill="#dc2626"/>
-    <circle cx="60" cy="50" r="2.5" fill="#dc2626"/>
-    <circle cx="28" cy="38" r="1.5" fill="#9333ea" opacity="0.8"/>
-    <circle cx="72" cy="42" r="1.5" fill="#9333ea" opacity="0.8"/>
-    <circle cx="35" cy="28" r="1.5" fill="#9333ea" opacity="0.6"/>
-    <circle cx="65" cy="32" r="1.5" fill="#9333ea" opacity="0.6"/>
-  </svg>`,
-
-  // Liquidate - W converting to gold coins (T2 Uncommon)
-  liquidate: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="lq-w" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
-      <linearGradient id="lq-coin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
-      <radialGradient id="lq-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#06b6d4" stop-opacity="0.5"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="38" ry="45" fill="url(#lq-glow)"/>
-    <text x="30" y="60" font-size="32" font-weight="bold" fill="url(#lq-w)" stroke="#15803d" stroke-width="1">W</text>
-    <path d="M50 55 L70 65" stroke="#06b6d4" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
-    <defs>
-      <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
-        <path d="M0,0 L0,6 L9,3 z" fill="#06b6d4"/>
-      </marker>
-    </defs>
-    <circle cx="75" cy="55" r="8" fill="url(#lq-coin)"/>
-    <circle cx="75" cy="55" r="6" fill="none" stroke="#92400e" stroke-width="1"/>
-    <text x="75" y="58" font-size="8" font-weight="bold" fill="#92400e" text-anchor="middle">G</text>
-    <circle cx="85" cy="70" r="7" fill="url(#lq-coin)" opacity="0.9"/>
-    <circle cx="85" cy="70" r="5" fill="none" stroke="#92400e" stroke-width="1"/>
-    <circle cx="68" cy="75" r="6" fill="url(#lq-coin)" opacity="0.8"/>
-    <circle cx="68" cy="75" r="4" fill="none" stroke="#92400e" stroke-width="0.8"/>
-  </svg>`,
-
-  // Prismatic Resonance - Rainbow prism (×1.2 per element type)
-  prismatic_resonance: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="pr-prism" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#7dd3fc"/></linearGradient>
-      <radialGradient id="pr-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9333ea" stop-opacity="0.5"/><stop offset="100%" stop-color="#9333ea" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="45" ry="55" fill="url(#pr-glow)"/>
-    <ellipse cx="50" cy="65" rx="40" ry="48" fill="none" stroke="#9333ea" stroke-width="1.5" opacity="0.3"/>
-    <path d="M50 25 L75 85 L25 85 Z" fill="url(#pr-prism)" opacity="0.9"/>
-    <path d="M50 25 L50 85" stroke="#fff" stroke-width="1" opacity="0.3"/>
-    <path d="M35 55 L65 55" stroke="#fff" stroke-width="1" opacity="0.2"/>
-    <path d="M75 85 L85 95" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L88 90" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L90 85" stroke="#eab308" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L88 80" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L85 75" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L80 70" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
-    <ellipse cx="42" cy="45" rx="5" ry="4" fill="#fff" opacity="0.4"/>
-    <circle cx="30" cy="35" r="2" fill="#fff" opacity="0.5"/>
-  </svg>`,
-
-  // Weakness Exploit Amp - Target with amplifier waves (bonus W on weakness hit)
-  weakness_exploit_amp: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="wea-target" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
-      <radialGradient id="wea-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="35" ry="40" fill="url(#wea-glow)"/>
-    <circle cx="50" cy="60" r="28" fill="none" stroke="#dc2626" stroke-width="3"/>
-    <circle cx="50" cy="60" r="18" fill="none" stroke="#dc2626" stroke-width="2.5"/>
-    <circle cx="50" cy="60" r="8" fill="#dc2626"/>
-    <circle cx="50" cy="60" r="4" fill="#fff" opacity="0.5"/>
-    <path d="M50 28 L50 40" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-    <path d="M50 80 L50 92" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-    <path d="M18 60 L30 60" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-    <path d="M70 60 L82 60" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-    <path d="M72 95 Q80 90 85 100" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M78 98 Q85 94 92 102" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M84 101 Q90 98 96 105" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
-  </svg>`,
-
   // Default fallback icon
   default: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -6721,6 +6595,13 @@ const SKILL_NODE_SVG = {
   adjAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
     <path d="M10 2 L10 18 M2 10 L18 10 M4 4 L16 16 M16 4 L4 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     <circle cx="10" cy="10" r="2" fill="currentColor"/>
+  </svg>`,
+
+  // Noun slot bonus - open book
+  nounAP: `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 4 L10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M10 4 Q6 3 3 5 L3 16 Q6 14 10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M10 4 Q14 3 17 5 L17 16 Q14 14 10 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
   // Gem slot bonus - diamond
@@ -7845,8 +7726,8 @@ async function showChapterCelebration(chapterNum, goldBonus){
   const battleView = document.getElementById('battle-view');
   if(battleView) battleView.classList.add('hidden');
 
-  // Check if this is the run completion (Round 27 = roundIndex 28)
-  const isRunCompleted = (S.roundIndex === 28);
+  // Check if this is the run completion (Round 18 = roundIndex 19)
+  const isRunCompleted = (S.roundIndex === 19);
 
   try {
     // Populate the chapter overlay
@@ -9073,47 +8954,37 @@ function playShepardTone(triggerIndex, totalTriggers, isRetrigger) {
   if (!audioOn) return;
   if (!audioCtx) initAudio();
 
-  // Use pentatonic scale for musicality (5 notes per octave cycle)
-  const scaleLength = MAGIC_SCALE_SEMITONES.length; // 5 notes
-  const scaleIndex = triggerIndex % scaleLength;
+  // Use pentatonic scale for musicality
+  const scaleIndex = triggerIndex % MAGIC_SCALE_SEMITONES.length;
   const semitones = MAGIC_SCALE_SEMITONES[scaleIndex];
 
-  // Position within one octave cycle (0 to 1)
-  // After 5 notes we've gone through one "octave" of the pentatonic scale
-  const cyclePosition = scaleIndex / scaleLength;
+  // Shepard tone: layer 3 octaves with volume envelope based on position
+  // As pitch rises within an octave, fade it out while fading in the octave below
+  const cyclePosition = (triggerIndex % 15) / 15; // 0-1 position in cycle (15 notes per full cycle)
 
-  // Base frequency for the current note in middle register
+  // Base frequency in middle octave (E4 = 330Hz)
   const baseFreq = MAGIC_BASE_FREQ * Math.pow(2, semitones / 12);
 
-  // Duration and volume
+  // Duration and volume - boosted for prominence
   const dur = isRetrigger ? 0.35 : 0.30;
-  const baseVol = isRetrigger ? 0.32 : 0.25;
+  const baseVol = isRetrigger ? 0.35 : 0.28;
 
-  // Shepard tone: layer 3 octaves with crossfading envelope
-  // As we rise through the scale:
-  // - High octave fades OUT (preparing to wrap to bottom)
-  // - Low octave fades IN (coming from previous wrap)
-  // - Middle octave stays relatively constant
-  const octaves = [-1, 0, 1]; // Low, middle, high
-
+  // Layer 3 octaves with Shepard envelope (bell curve centered on middle)
+  const octaves = [-1, 0, 1]; // One octave below, middle, one above
   octaves.forEach(octOffset => {
     const freq = baseFreq * Math.pow(2, octOffset);
 
-    // Shepard envelope: each octave has a different phase
-    // Low octave (-1): loudest at END of cycle (fading in as high wraps)
-    // Middle octave (0): loudest in MIDDLE of cycle
-    // High octave (+1): loudest at START of cycle (fading out as we rise)
+    // Shepard envelope: volume based on position in cycle + octave offset
+    // Creates smooth crossfade between octaves
+    const adjustedPos = cyclePosition + (octOffset + 1) / 3;
+    const normalizedPos = adjustedPos % 1;
 
-    // Map octave offset to phase: -1->0.67, 0->0.33, 1->0
-    const phase = (1 - octOffset) / 3; // High=0, Mid=0.33, Low=0.67
-    const envelopePos = (cyclePosition + phase) % 1;
-
-    // Smooth bell curve: peaks at 0.5, fades at 0 and 1
-    // cos^2 gives smooth fade in/out
-    const envelope = Math.pow(Math.cos((envelopePos - 0.5) * Math.PI), 2);
+    // Bell curve envelope: loudest in middle, fades at extremes
+    // Using cos^2 for smooth falloff
+    const envelope = Math.pow(Math.cos((normalizedPos - 0.5) * Math.PI), 2);
     const vol = baseVol * envelope;
 
-    if (vol > 0.02) { // Only play if audible
+    if (vol > 0.01) { // Only play if audible
       playBrassTone(freq, dur, vol);
     }
   });
@@ -9199,7 +9070,7 @@ function playSample(name, vol = 0.9, pan = 0) {
   const play = (audio) => {
     if (!audio) return;
     const clone = audio.cloneNode();
-    clone.volume = vol * 0.8 * volSfx; // Apply SFX volume setting
+    clone.volume = vol * 0.8; // Match masterGain volume
     clone.play().catch(e => console.warn('Play failed:', e));
   };
 
@@ -9250,7 +9121,7 @@ async function playSamplePanned(name, vol = 0.9, pan = 0) {
     source.buffer = buffer;
 
     const gainNode = audioCtx.createGain();
-    gainNode.gain.value = vol * 0.8 * volSfx; // Apply SFX volume setting
+    gainNode.gain.value = vol * 0.8;
 
     const pannerNode = audioCtx.createStereoPanner();
     pannerNode.pan.value = Math.max(-1, Math.min(1, pan));
@@ -11079,18 +10950,6 @@ let ONBOARD = {
   forgeAttempted: false
 };
 
-// Generate badge examples for onboarding (AP, W, Multiplier, REREAD)
-function onboardingBadges() {
-  return `
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center">
-      <span class="mod-badge ap" style="font-size:14px">+15 AP</span>
-      <span class="mod-badge word" style="font-size:14px">+4 W</span>
-      <span class="mod-badge scale" style="font-size:14px">×1.5</span>
-      <span class="mod-badge reread" style="font-size:14px">REREAD</span>
-    </div>
-  `;
-}
-
 // Generate a mini word chip HTML for onboarding examples
 function onboardingChip(name, tier = 1, elemIndex = null, type = 'elemental') {
   const tierClass = `tier-${tier}`;
@@ -11214,11 +11073,6 @@ async function onOnboardingWordPlaced(word, slotKey) {
       '<span style="color:#6b7280;font-size:20px;align-self:center">→</span>' +
       onboardingChip('Fiery', 1, E.FIRE);
     await showOnboarding('Select a Word and place it in another slot. Depending where, it\'ll take on its proper form — as an <span class="highlight">adjective</span> or a <span class="highlight">noun</span>.', formExamples);
-
-    // Show modifier badges explanation (AP, W, Multipliers, REREAD)
-    await showOnboarding('When you forge, these modifiers determine your damage:', onboardingBadges());
-    await showOnboarding('Each Word has <span class="highlight">Attack Power</span>, or <span class="highlight">AP</span>. This depends on the Word\'s <span class="highlight">Tier</span> and how effective it is.');
-    await showOnboarding('Each Word adds <span class="highlight">+1 W</span> to the <span class="highlight">Word Count</span>... but Words can count for more! <span class="highlight">REREADs</span> will count a Word twice!');
 
     ONBOARD.step = 4;
   } else if (ONBOARD.weaponPlaced && !ONBOARD.secondWordPlaced && slotKey !== 'item') {
@@ -12450,6 +12304,11 @@ function updateSlotCalcs(){
     const wCountDisplay = Number.isInteger(wCount) ? wCount : parseFloat(wCount.toFixed(2));
     let wordCountText = wCount ? `<span class="mod-badge word">+${wCountDisplay} W</span>` : '';
 
+    // Echo Chamber bonus (per-word, shown separately)
+    if(wordData.echoChamberW && wordData.echoChamberW > 0){
+      wordCountText += ` <span class="mod-badge word" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6)">+${wordData.echoChamberW} W</span>`;
+    }
+
     return {apText,multText,className,wordCountText};
   }
 
@@ -13029,30 +12888,26 @@ function openTalentViewer(){
       let scalingTotal = '';
       let scaledDesc = ''; // Override description for dynamic talents like Momentum
       const descLower = (t.desc || '').toLowerCase();
-      // Determine if talent grants W (word count) based on badge type in desc
-      const isWordCountTalent = t.desc.includes('mod-badge word');
+      // Determine if talent grants W (word count) or AP based on category
+      const isWordCountTalent = t.category === 'word_count_bonus';
 
       if(descLower.includes('per round')){
         const round = S.roundIndex || 1;
         const match = t.desc.match(/\+(\d+\.?\d*)/);
         if(match){
           const baseValue = parseFloat(match[1]);
-          const talentLevel = getTalentLevel(t.id);
-          const scaledBase = baseValue * talentLevel;
-          const total = scaledBase * round;
+          const total = baseValue * round;
           const totalVal = total % 1 === 0 ? total : parseFloat(total.toFixed(1));
           const badge = isWordCountTalent ? fmtMod(totalVal, 'word', ' W') : fmtMod(totalVal, 'ap', ' AP');
           const perWord = descLower.includes('each') || descLower.includes('per word') || descLower.includes('/word') ? '/Word' : '';
-          scalingTotal = `<div style="font-size:11px;margin-top:4px">Current Bonus: ${badge}${perWord}</div>`;
+          scalingTotal = `<div style="font-size:11px;margin-top:4px">Round ${round} this run: ${badge}${perWord}</div>`;
         }
       } else if(descLower.includes('per chapter')){
         const chapter = Math.floor((S.roundIndex - 1) / 9) + 1;
         const match = t.desc.match(/\+(\d+\.?\d*)/);
         if(match){
           const baseValue = parseFloat(match[1]);
-          const talentLevel = getTalentLevel(t.id);
-          const scaledBase = baseValue * talentLevel;
-          const total = chapterScale(scaledBase, chapter);
+          const total = chapterScale(baseValue, chapter);
           const totalVal = total % 1 === 0 ? total : parseFloat(total.toFixed(1));
           const badge = isWordCountTalent ? fmtMod(totalVal, 'word', ' W') : fmtMod(totalVal, 'ap', ' AP');
           const perWord = descLower.includes('each') || descLower.includes('per word') || descLower.includes('/word') ? '/Word' : '';
@@ -13113,13 +12968,13 @@ function openTalentViewer(){
         const levelText = getTalentLevel('tithe') > 1 ? ` (Lv.${getTalentLevel('tithe')})` : '';
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${spent}g spent ÷ 20 × ${basePerStack} = ${badge}${levelText}</div>`;
       } else if(t.id === 'momentum'){
-        // Momentum: +0.2 W per Word per round played (max 10) - scales with level
+        // Momentum: +1 W per Word per round played (max 10) - scales with level
         const roundsPlayed = Math.min((S.roundIndex || 1) - 1, 10);
-        const basePerRound = scaleTalentBonus('momentum', 0.2);
+        const basePerRound = scaleTalentBonus('momentum', 1);
         const bonusPerWord = roundsPlayed * basePerRound;
         const levelText = getTalentLevel('momentum') > 1 ? ` (Lv.${getTalentLevel('momentum')})` : '';
         // Override description to show current total W per word
-        scaledDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord.toFixed(1)} W</span>`;
+        scaledDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord} W</span>`;
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${basePerRound} W × ${roundsPlayed} rounds${levelText}</div>`;
       } else if(t.id === 'word_historian'){
         // Word Historian: +0.25 W per Word used this run - scales with level
@@ -13138,36 +12993,36 @@ function openTalentViewer(){
         const levelText = getTalentLevel('reverberation') > 1 ? ` (Lv.${getTalentLevel('reverberation')})` : '';
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${rereadsTriggered} rereads: ${badge}${levelText}</div>`;
       } else if(t.id === 'verbose_surplus'){
-        // Verbose Surplus: +10 W per adjective slot filled (linear)
-        const adjCount = [S.sel?.adj1, S.sel?.adj2, S.sel?.adj3, S.sel?.adj4].filter(Boolean).length;
-        const basePerAdj = scaleTalentBonus('verbose_surplus', 10);
-        const totalBonus = adjCount * basePerAdj;
-        const badge = fmtMod(totalBonus, 'word', ' W');
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${adjCount}/4 adj slots = ${badge}</div>`;
+        // Verbose Surplus: +10 W per word × word count (quadratic)
+        const basePerWord = scaleTalentBonus('verbose_surplus', 10);
+        const badge = fmtMod(basePerWord, 'word', ' W');
+        const levelText = getTalentLevel('verbose_surplus') > 1 ? ` (Lv.${getTalentLevel('verbose_surplus')})` : '';
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">Bonus: ${badge} × Words × Words${levelText}</div>`;
       } else if(t.id === 'linguistic_density'){
         // Linguistic Density: +5 W per word per word (4+ words)
         const basePerWord = scaleTalentBonus('linguistic_density', 5);
         const badge = fmtMod(basePerWord, 'word', ' W');
         const levelText = getTalentLevel('linguistic_density') > 1 ? ` (Lv.${getTalentLevel('linguistic_density')})` : '';
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">4+ Words: ${badge} per Word in play${levelText}</div>`;
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">4+ Words: ${badge} × Word count²${levelText}</div>`;
       } else if(t.id === 'elemental_mastery'){
         // Elemental Mastery: Track accumulated elemental W
         const elementalW = S.elementalWBonus || 0;
         const badge = fmtMod(elementalW, 'word', ' W');
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">Global Bonus: ${badge}</div>`;
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">Accumulated: ${badge}</div>`;
       } else if(t.id === 'prismatic_resonance'){
-        // Prismatic Resonance: ×1.2 per unique element type (max 8)
+        // Prismatic Resonance: ×1.2 per 5 Word Count
+        const cumulativeW = S.cumulativeWordCount || 0;
+        const tiers = Math.floor(cumulativeW / 5);
         const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
+        const mult = tiers > 0 ? Math.pow(scaledMult, tiers) : 1;
+        const badge = fmtMod(mult, 'scale');
         const levelText = getTalentLevel('prismatic_resonance') > 1 ? ` (Lv.${getTalentLevel('prismatic_resonance')})` : '';
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${fmtMod(scaledMult, 'scale')} per element${levelText}</div>`;
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">${cumulativeW} Word Count ÷ 5 = ${tiers} tiers = ${badge}${levelText}</div>`;
       } else if(t.id === 'weakness_exploit_amp'){
-        // Weakness Exploit Amp: +1 W per weakness hit × level (tracked separately from Elemental Mastery)
-        const hits = S.weaknessExploitBonus || 0;
-        const talentLevel = getTalentLevel('weakness_exploit_amp');
-        const totalW = hits * talentLevel;
-        const badge = fmtMod(totalW, 'word', ' W');
-        const levelText = talentLevel > 1 ? ` (×${talentLevel})` : '';
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${hits} hits${levelText}: ${badge}</div>`;
+        // Weakness Exploit Amp: +4 W per weakness hit
+        const elementalW = S.elementalWBonus || 0;
+        const badge = fmtMod(elementalW, 'word', ' W');
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">Accumulated: ${badge}</div>`;
       } else if(t.id === 'lexicon_growth'){
         // Lexicon Growth: +1 W per Word per Boss defeated - scales with level
         const bosses = S.bossesDefeated || 0;
@@ -13277,7 +13132,6 @@ function openTalentViewer(){
 
       const card = document.createElement('div');
       card.style.cssText = `
-        position: relative;
         padding: 12px;
         border-radius: 8px;
         background: linear-gradient(135deg, rgba(30,40,54,0.9), rgba(21,25,33,0.95));
@@ -13289,14 +13143,12 @@ function openTalentViewer(){
       const talentLevel = getTalentLevel(t.id);
       const levelColor = talentLevel > 1 ? '#4ade80' : '#9ca3af';
       card.innerHTML = `
-        <span style="position:absolute;top:6px;right:6px;font-size:9px;padding:1px 5px;border-radius:3px;background:${t.rarity === 'rare' ? '#f4d03f' : t.rarity === 'uncommon' ? '#4d99ff' : '#9ca3af'};color:#000;font-weight:600">${rarityLabel}</span>
-        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div style="width:44px;height:57px;display:flex;align-items:center;justify-content:center">${getTalentSVG(t.id)}</div>
-          <span style="font-size:10px;color:${levelColor};font-weight:600">Lv.${talentLevel}</span>
-        </div>
-        <div style="flex:1;min-width:0;padding-right:40px">
+        <div style="flex-shrink:0;width:44px;height:57px;display:flex;align-items:center;justify-content:center">${getTalentSVG(t.id)}</div>
+        <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
             <span class="${rc}" style="font-size:13px;font-weight:600">${t.name}</span>
+            <span style="font-size:10px;color:${levelColor};font-weight:600">Lv.${talentLevel}</span>
+            <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:${t.rarity === 'rare' ? '#f4d03f' : t.rarity === 'uncommon' ? '#4d99ff' : '#9ca3af'};color:#000;font-weight:600">${rarityLabel}</span>
             ${effectivenessHtml}
           </div>
           <div style="font-size:11px;color:#d1d5db;line-height:1.4">${scaledDesc || formatTalentDesc(t, t.id)}</div>
@@ -13576,10 +13428,10 @@ function mkTooltip(w, opts={}){
         skillBonusText = ` <span class="dim">(+${adjBonus} Skills in Adj slot)</span>`;
       }
     } else if (w.type === 'elemental') {
-      // Gems can go in gem slot (noun1)
-      const gemBonus = skillBonuses.gemAP || 0;
-      if (gemBonus > 0) {
-        skillBonusText = ` <span class="dim">(+${gemBonus} Skills in Gem slot)</span>`;
+      // Gems can go in noun slots
+      const nounBonus = skillBonuses.nounAP || 0;
+      if (nounBonus > 0) {
+        skillBonusText = ` <span class="dim">(+${nounBonus} Skills in Noun slot)</span>`;
       }
     }
 
@@ -13688,16 +13540,15 @@ function mkTooltip(w, opts={}){
     }
   }
 
-  // Show Elemental Mastery accumulation reminder (only for elemental words, since they build the bonus)
+  // Show Elemental Mastery bonus if player has the talent and word has an element
   if(w.elem !== undefined && S.talents && S.talents.includes('elemental_mastery')){
-    let wBonus = 1; // Base +1 W from Elemental Mastery
+    let wBonus = 2; // Base +2 W from Elemental Mastery
     // Check for Weakness Exploit Amp bonus (requires enemy data)
     if(S.talents.includes('weakness_exploit_amp') && S.enemy && S.enemy.weak && S.enemy.weak.includes(w.elem)){
-      const weaLevel = getTalentLevel('weakness_exploit_amp');
-      wBonus += weaLevel; // +1 W per level from Weakness Exploit Amp
-      lines.push(`<div class="tooltip-line"><span class="mod-badge word">+${wBonus} W</span> <span style="color:#60a5fa">Elemental Mastery</span> + <span style="color:#fbbf24">Weakness Exploit</span> <span style="color:#6b7280">(stacks permanently)</span></div>`);
+      wBonus += 4; // Additional +4 W from Weakness Exploit Amp
+      lines.push(`<div class="tooltip-line"><span class="mod-badge word">+${wBonus} W</span> <span style="color:#60a5fa">Elemental Mastery</span> + <span style="color:#fbbf24">Weakness Exploit</span></div>`);
     } else {
-      lines.push(`<div class="tooltip-line"><span class="mod-badge word">+${wBonus} W</span> <span style="color:#60a5fa">Elemental Mastery</span> <span style="color:#6b7280">(stacks permanently)</span></div>`);
+      lines.push(`<div class="tooltip-line"><span class="mod-badge word">+${wBonus} W</span> <span style="color:#60a5fa">Elemental Mastery</span> <span style="color:#6b7280">(persists)</span></div>`);
     }
   }
 
@@ -13937,42 +13788,46 @@ function formatDamageBreakdown(source){
   html += `<div class="breakdown-total"><span class="label">Total ×</span><span class="value">${fmtMod(c.totalMultiplier,'scale')}</span></div>`;
   html += '</div>';
 
-  // Rereads section (if any) - consolidate by talent/source
+  // Rereads section (if any) - aggregate by talent name with (xN) count
   if(rereadLines.length){
     html += '<div class="breakdown-section">';
     html += '<div class="breakdown-section-title" style="color:#fb923c">Rereads</div>';
 
-    // Group rereads by talent source - consolidate individual word entries
-    const rereadBySource = new Map();
-    const aggregateLines = []; // Lines that are already aggregate (REREAD ALL, etc.)
-
+    // Group reread lines by talent name and aggregate
+    const rereadByTalent = {};
     rereadLines.forEach(line => {
-      // Check if already an aggregate line (has "REREAD ×" or "REREAD ALL")
-      if(line.includes('REREAD ×') || line.includes('REREAD ALL')){
-        aggregateLines.push(line);
-      } else {
-        // Individual word reread - extract talent name from "(TalentName REREAD)"
-        const match = line.match(/\(([^)]+)\s+REREAD/);
-        if(match){
-          const talent = match[1];
-          const count = rereadBySource.get(talent) || 0;
-          rereadBySource.set(talent, count + 1);
-        } else {
-          // Can't parse, show as-is
-          aggregateLines.push(line);
+      // Extract talent name from "(TalentName REREAD)" pattern
+      const talentMatch = line.match(/\((\w+)\s+REREAD\)/);
+      if(talentMatch){
+        const talentName = talentMatch[1];
+        if(!rereadByTalent[talentName]) rereadByTalent[talentName] = { apTotal: 0, multTotal: 1, count: 0, hasMult: false };
+
+        // Check if it's an AP line or multiplier line
+        const apMatch = line.match(/^\+?([\d.]+)\s*AP/i) || line.match(/>([+-]?[\d.]+)<\/span>\s*AP/i);
+        const multMatch = line.match(/×([\d.]+)/);
+
+        if(apMatch){
+          rereadByTalent[talentName].apTotal += parseFloat(apMatch[1]);
+          rereadByTalent[talentName].count++;
+        } else if(multMatch){
+          rereadByTalent[talentName].multTotal *= parseFloat(multMatch[1]);
+          rereadByTalent[talentName].hasMult = true;
         }
+      } else {
+        // Fallback for lines without talent pattern
+        html += `<div class="tooltip-line breakdown-reread" style="font-size:10px">${line}</div>`;
       }
     });
 
-    // Show consolidated word rereads first
-    rereadBySource.forEach((count, talent) => {
-      const label = count > 1 ? `${count} words` : '1 word';
-      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px"><span class="mod-badge reread">REREAD</span> ${label} (${talent})</div>`;
-    });
-
-    // Then show aggregate/threshold rereads
-    aggregateLines.forEach(line => {
-      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px">${line}</div>`;
+    // Render aggregated talent rereads
+    Object.entries(rereadByTalent).forEach(([talentName, data]) => {
+      const countStr = data.count > 1 ? ` (×${data.count})` : '';
+      if(data.apTotal > 0){
+        html += `<div class="tooltip-line breakdown-reread" style="font-size:10px">${fmtMod(data.apTotal, 'ap', ' AP')} ${talentName} REREAD${countStr}</div>`;
+      }
+      if(data.hasMult && data.multTotal !== 1){
+        html += `<div class="tooltip-line breakdown-reread" style="font-size:10px">${fmtMod(data.multTotal, 'scale')} ${talentName} REREAD${countStr}</div>`;
+      }
     });
 
     html += '</div>';
@@ -15154,11 +15009,11 @@ function calc(opts={}){
     // AP and word count, causing a 1.5× stalemate to feel like ~2.25×.
     let apContribution = tierValue * elemMult;
 
-    // Silent Knight: Immune if fewer than 6 words in forge (checked once, applies to all)
+    // Silent Knight: Immune to words with fewer than 6 letters
     let silentKnightImmune = false;
     if (S.enemy && S.enemy.id === 'silent_knight') {
-      const totalWordsInForge = allWords.length;
-      if (totalWordsInForge < 6) {
+      const wordName = word.name || '';
+      if (wordName.length < 6) {
         apContribution = 0;
         silentKnightImmune = true;
       }
@@ -15198,13 +15053,6 @@ function calc(opts={}){
     // Calculate total W before gem multiplier: base (with proficiency) + talent bonuses
     let totalWBeforeGem = wCountDelta + wCountBonus;
 
-    // Silent Knight immunity: zero out W contribution too (word contributes nothing)
-    if (silentKnightImmune) {
-      totalWBeforeGem = 0;
-      wCountDelta = 0;
-      wCountBonus = 0;
-    }
-
     // Gem slot multiplies TOTAL Word Count (×4 with Crown Jewel talent)
     // Applied AFTER all talent bonuses
     if(slotKey === 'noun1'){
@@ -15224,7 +15072,7 @@ function calc(opts={}){
     if(wantBreakdown){
       if(silentKnightImmune){
         // Silent Knight immunity: show 0 AP with immunity message
-        breakdown.base.push(`<span style="color:#ef4444">0 AP</span> ${word.name} (Wordless: need 6+ Words)`);
+        breakdown.base.push(`<span style="color:#ef4444">0 AP</span> ${word.name} (Wordless: <6 letters)`);
       } else {
         // Build badge-style labels for element and weapon type
         const badges = [];
@@ -15407,10 +15255,10 @@ function calc(opts={}){
 
   // --- PER-WORD +W TALENTS (attributed to qualifying words) ---
 
-  // Momentum: +0.2 W per Word per round played (max 10) - each word gets the bonus
+  // Momentum: +1 W per Word per round played (max 10) - each word gets the bonus
   if (hasTalent('momentum')) {
     const roundsPlayed = Math.min((S.roundIndex || 1) - 1, 10);
-    const basePerWordPerRound = scaleTalentBonus('momentum', 0.2);
+    const basePerWordPerRound = scaleTalentBonus('momentum', 1);
     const bonusPerWord = roundsPlayed * basePerWordPerRound;
     if (bonusPerWord > 0) {
       allWords.forEach(word => addWBonusToWord(word, bonusPerWord, `Momentum (R${roundsPlayed})`));
@@ -15490,23 +15338,12 @@ function calc(opts={}){
     }
   }
 
-  // Elemental Mastery: Apply accumulated elemental W bonus to elemental words only
-  if (hasTalent('elemental_mastery') && S.elementalWBonus > 0) {
-    const elementalWordsEM = allWords.filter(w => w.elem !== undefined);
-    if (elementalWordsEM.length > 0) {
-      const bonusPerWord = S.elementalWBonus / elementalWordsEM.length;
-      elementalWordsEM.forEach(word => addWBonusToWord(word, bonusPerWord, 'Elemental Mastery'));
-    }
-  }
-
-  // Weakness Exploit Amp: Apply bonus only to elemental words (tracked separately)
-  // S.weaknessExploitBonus tracks hits, multiply by level to get W bonus
-  if (hasTalent('weakness_exploit_amp') && S.weaknessExploitBonus > 0) {
+  // Elemental Mastery & Weakness Exploit Amp: Apply accumulated elemental W bonus (to elemental words)
+  if ((hasTalent('elemental_mastery') || hasTalent('weakness_exploit_amp')) && S.elementalWBonus > 0) {
     const elementalWords = allWords.filter(w => w.elem !== undefined);
     if (elementalWords.length > 0) {
-      const totalWBonus = scaleTalentBonus('weakness_exploit_amp', S.weaknessExploitBonus);
-      const bonusPerWord = totalWBonus / elementalWords.length;
-      elementalWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Weakness Exploit'));
+      const bonusPerWord = S.elementalWBonus / elementalWords.length;
+      elementalWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Elemental W'));
     }
   }
 
@@ -15572,13 +15409,13 @@ function calc(opts={}){
     }
   }
 
-  // Verbose Surplus: +10 W per adjective slot filled (simple linear)
+  // Verbose Surplus: Each Adj: +10 W × word count
   if (hasTalent('verbose_surplus')) {
-    const adjCount = [s.adj1, s.adj2, s.adj3, s.adj4].filter(Boolean).length;
-    const basePerAdj = scaleTalentBonus('verbose_surplus', 10);
-    const bonus = adjCount * basePerAdj;
+    const wc = allWords.length;
+    const basePerWord = scaleTalentBonus('verbose_surplus', 10);
+    const bonus = wc * wc * basePerWord;
     if (bonus > 0) {
-      addWBonusToAdjectives(bonus, `Verbose (${adjCount} adj)`);
+      addWBonusToAdjectives(bonus, `Verbose (${wc}×${wc})`);
     }
   }
 
@@ -15588,7 +15425,7 @@ function calc(opts={}){
     if (wc >= 4) {
       const basePerWord = scaleTalentBonus('linguistic_density', 5);
       const bonus = wc * wc * basePerWord;
-      distributeWBonusToAll(bonus, `Ling Density (+${basePerWord}×${wc})`);
+      distributeWBonusToAll(bonus, `Ling Density (${wc}×${wc})`);
     }
   }
 
@@ -15703,11 +15540,10 @@ function calc(opts={}){
   const getWordCountForReread = (wd) => wd ? ((wd.wCountTotal ?? wd.wCountDelta ?? 0) + (wd.wTalentBonus || 0)) : 0;
 
   // Helper to apply reread for a word N times (based on talent level)
-  // BALANCE: Rereads now only add Word Count and multipliers, NOT base AP
   const applyReread = (word, wordData, talentId, talentName, rereadCount = 1) => {
     if (!wordData) return;
     for (let i = 0; i < rereadCount; i++) {
-      // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads (balance nerf)
+      retriggerAP += wordData.apContribution;
       retriggerWordCount += getWordCountForReread(wordData);
       if (wordData.mult) {
         // Additive: add the bonus portion (mult - 1.0) instead of multiplying
@@ -15719,7 +15555,7 @@ function calc(opts={}){
     if (wantBreakdown) {
       const countLabel = rereadCount > 1 ? ` <span class="mod-badge reread">×${rereadCount}</span>` : '';
       const wContrib = getWordCountForReread(wordData) * rereadCount;
-      breakdown.base.push(`${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
+      breakdown.base.push(`${fmtMod(wordData.apContribution * rereadCount, 'ap', ' AP')} ${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
       if (wordData.mult) {
         const totalMult = 1 + (wordData.mult - 1) * rereadCount;
         breakdown.multipliers.push(`${fmtMod(totalMult, 'scale')} ${word.name} (${talentName} REREAD${countLabel})`);
@@ -15965,11 +15801,11 @@ function calc(opts={}){
     const weaponWord = s.item;
     const wordData = wordDataMap.get(weaponWord);
     if(wordData){
-      // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads
+      retriggerAP += wordData.apContribution;
       retriggerWordCount += getWordCountForReread(wordData);
       if(wordData.mult) retriggerMult *= wordData.mult;
       retriggeredWords.push({word: weaponWord, talent: "Cross the T's"});
-      if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${weaponWord.name} <span class="mod-badge reread">REREAD</span> Cross the T's`);
+      if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${weaponWord.name} <span class="mod-badge reread">REREAD</span> Cross the T's`);
       if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${weaponWord.name} (Cross the T's)`);
     }
   }
@@ -15981,11 +15817,11 @@ function calc(opts={}){
     if(lastWord){
       const wordData = wordDataMap.get(lastWord);
       if(wordData){
-        // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads
+        retriggerAP += wordData.apContribution;
         retriggerWordCount += getWordCountForReread(wordData);
         if(wordData.mult) retriggerMult *= wordData.mult;
         retriggeredWords.push({word: lastWord, talent: 'Count Cadence'});
-        if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${lastWord.name} <span class="mod-badge reread">REREAD</span> Count Cadence`);
+        if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${lastWord.name} <span class="mod-badge reread">REREAD</span> Count Cadence`);
         if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${lastWord.name} (Count Cadence)`);
       }
     }
@@ -16005,7 +15841,7 @@ function calc(opts={}){
         // This word comes after an empty slot - retrigger it (×2 effect)
         const wordData = wordDataMap.get(word);
         if(wordData){
-          // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads
+          retriggerAP += wordData.apContribution;
           retriggerWordCount += getWordCountForReread(wordData);
           if(wordData.mult) {
             // Additive: add the bonus portion (mult - 1.0) instead of multiplying
@@ -16013,7 +15849,7 @@ function calc(opts={}){
             retriggerMultAdditive += bonusPortion;
           }
           retriggeredWords.push({word, talent: 'Ellipsis'});
-          if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Ellipsis`);
+          if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Ellipsis`);
           if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${word.name} (Ellipsis)`);
         }
       }
@@ -16025,7 +15861,7 @@ function calc(opts={}){
     allWords.forEach(word => {
       const wordData = wordDataMap.get(word);
       if(wordData){
-        // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads
+        retriggerAP += wordData.apContribution;
         retriggerWordCount += getWordCountForReread(wordData);
         if(wordData.mult) {
           // Additive: add the bonus portion (mult - 1.0) instead of multiplying
@@ -16033,7 +15869,7 @@ function calc(opts={}){
           retriggerMultAdditive += bonusPortion;
         }
         retriggeredWords.push({word, talent: 'Knowledge Eternal'});
-        if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Knowledge Eternal`);
+        if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Knowledge Eternal`);
         if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${word.name} (Knowledge Eternal)`);
       }
     });
@@ -16066,18 +15902,17 @@ function calc(opts={}){
   let crescendoRereads = 0;
 
   // Helper to REREAD all words (used by Critical Mass, Crescendo)
-  // BALANCE: Rereads only add Word Count and multipliers, NOT base AP
   const rereadAllWords = (talentName) => {
     let newRereads = 0;
     allWords.forEach(word => {
       const wordData = wordDataMap.get(word);
       if(wordData){
-        // baseAP += wordData.apContribution; // REMOVED: No AP from rereads
+        baseAP += wordData.apContribution;
         wordCount += getWordCountForReread(wordData);
         if(wordData.mult) multiplicativeMult *= wordData.mult;
         retriggeredWords.push({word, talent: talentName});
         newRereads++;
-        if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> ${talentName}`);
+        if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> ${talentName}`);
       }
     });
     return newRereads;
@@ -16104,9 +15939,9 @@ function calc(opts={}){
         globalWBonus += bonus;
         totalWBonuses += bonus;
 
-        // Add Echo Chamber bonus to each word's wTalentBonus (merges into main +W display)
+        // Track per-word Echo Chamber bonuses for slot display
         if(loopIteration === 1){
-          // Count rereads per word and add to wTalentBonus
+          // Count rereads per word and store in wordDataMap
           const rereadCountByWord = new Map();
           retriggeredWords.forEach(r => {
             const count = rereadCountByWord.get(r.word) || 0;
@@ -16115,7 +15950,7 @@ function calc(opts={}){
           rereadCountByWord.forEach((count, word) => {
             const wordData = wordDataMap.get(word);
             if(wordData){
-              wordData.wTalentBonus += count * basePerReread; // Combine into main +W
+              wordData.echoChamberW = count * basePerReread;
             }
           });
         }
@@ -16138,15 +15973,15 @@ function calc(opts={}){
 
     // === ELEMENTAL BUILD CONVERTERS ===
 
-    // Prismatic Resonance: ×1.2 per unique element type (max 8)
+    // Prismatic Resonance: ×1.2 per 5 Elemental W accumulated (exponential)
     if(hasTalent('prismatic_resonance') && loopIteration === 1){
-      const uniqueElements = new Set(allWords.filter(w => w.elem !== undefined).map(w => w.elem));
-      const tiers = uniqueElements.size; // 1 tier per unique element (max 8)
+      const elementalW = S.elementalWBonus || 0;
+      const tiers = Math.floor(elementalW / 5); // One tier per 5 W accumulated
       if(tiers > 0){
         const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
         const mult = Math.pow(scaledMult, tiers);
         multiplicativeMult *= mult;
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Prismatic Resonance (${tiers}/8 elements)`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Prismatic Resonance (${elementalW} Elemental W ÷ 5 = ${tiers} tiers)`);
       }
     }
 
@@ -16215,7 +16050,7 @@ function calc(opts={}){
       }
     }
 
-    // Overflow: Per 10 W above 50 → +0.5× per stack (stacks additively) - scales with level
+    // Overflow: Per 10 W above 50 → ×1.5 (stacks multiplicatively) - scales with level
     if(hasTalent('overflow') && loopIteration === 1){
       const currentW = wordCount + globalWBonus;
       if(currentW > 50){
@@ -16223,7 +16058,7 @@ function calc(opts={}){
         const stacks = Math.floor(excessW / 10);
         if(stacks > 0){
           const scaledMult = scaleTalentMult('overflow', 1.5);
-          const mult = 1 + (stacks * (scaledMult - 1)); // Additive: 60W=×1.5, 70W=×2.0, 80W=×2.5
+          const mult = Math.pow(scaledMult, stacks);
           multiplicativeMult *= mult;
           if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Overflow (${stacks}×10 W above 50)`);
         }
@@ -16312,21 +16147,22 @@ function calc(opts={}){
       const executeRereadCount = getTalentLevel('execute');
       const countLabel = executeRereadCount > 1 ? ` ×${executeRereadCount}` : '';
       if(wantBreakdown) breakdown.multipliers.push(`<span class="mod-badge reread">REREAD ALL${countLabel}</span> Execute (enemy at ${Math.round(remainingPercent * 100)}% HP)`);
-      // REREAD ALL words - BALANCE: No AP from rereads, only W and multipliers
-      let executeW = 0, executeMult = 1;
+      // REREAD ALL words
+      let executeAP = 0, executeW = 0, executeMult = 1;
       for(let i = 0; i < executeRereadCount; i++){
         allWords.forEach(word => {
           const wordData = wordDataMap.get(word);
           if(wordData){
-            // executeAP += wordData.apContribution; // REMOVED: No AP from rereads
+            executeAP += wordData.apContribution;
             executeW += getWordCountForReread(wordData);
             if(wordData.mult) executeMult *= wordData.mult;
             retriggeredWords.push({word, talent: 'Execute'});
-            if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Execute`);
+            if(wantBreakdown) breakdown.base.push(`${fmtMod(wordData.apContribution, 'ap', ' AP')} ${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Execute`);
           }
         });
       }
-      // Recalculate damage with Execute bonuses (no AP)
+      // Recalculate damage with Execute bonuses
+      baseAP += executeAP;
       wordCount += executeW;
       multiplicativeMult *= executeMult;
       heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult * talentCountMult);
@@ -16548,27 +16384,24 @@ async function forge(){
   S.cumulativeWordCount += Math.floor(c.breakdown ? c.breakdown.wordCount : c.wordCount);
   // Store last combat rereads for Echo Profits gold bonus
   S.lastCombatRereads = c.totalRereadCount || 0;
-  // Track elemental W bonus for Elemental Mastery and Weakness Exploit Amp (SEPARATELY)
+  // Track elemental W bonus for Elemental Mastery and Weakness Exploit Amp
   const hasTalentForge = (id) => S.talents && S.talents.includes(id);
-  let elementalWGainedThisCombat = 0; // Elemental Mastery: all elemental words
-  let weaknessHitsThisCombat = 0; // Weakness Exploit Amp: only weakness hits
+  let elementalWGainedThisCombat = 0; // Track for display in victory screen
   if (hasTalentForge('elemental_mastery') || hasTalentForge('weakness_exploit_amp')) {
     if (S.elementalWBonus === undefined) S.elementalWBonus = 0;
-    if (S.weaknessExploitBonus === undefined) S.weaknessExploitBonus = 0;
     allWords.forEach(w => {
       if (w.elem !== undefined) {
-        // Elemental Mastery: +1 W per element word
+        // Elemental Mastery: +2 W per element word
         if (hasTalentForge('elemental_mastery')) {
-          elementalWGainedThisCombat += 1;
+          elementalWGainedThisCombat += 2;
         }
-        // Weakness Exploit Amp: +1 W if hitting weakness (tracked separately, scales with level)
+        // Weakness Exploit Amp: +4 W if hitting weakness
         if (hasTalentForge('weakness_exploit_amp') && S.enemy && S.enemy.weak && S.enemy.weak.includes(w.elem)) {
-          weaknessHitsThisCombat += 1; // Count actual hits, not W bonus
+          elementalWGainedThisCombat += 4;
         }
       }
     });
     S.elementalWBonus += elementalWGainedThisCombat;
-    S.weaknessExploitBonus += weaknessHitsThisCombat;
   }
   PStats.weaponsForged++;
   const currentDamage = Math.round(c.heroDmg||0);
@@ -16754,11 +16587,8 @@ async function forge(){
   S.pendingBossLoot = null;
 
   if(c.heroDmg >= targetHp){
-    // Victory - gold reward based on enemy type
-    // Regular: 10g, Mini boss (R3, R6, R12...): 20g, Chapter boss (R9, R18, R27): 50g
-    const isChapterBoss = (S.roundIndex % 9 === 0);
-    const isMiniBoss = (S.roundIndex % 3 === 0) && !isChapterBoss;
-    let goldReward = isChapterBoss ? 50 : isMiniBoss ? 20 : 10;
+    // Victory - flat gold reward (no streak/overkill bonuses)
+    let goldReward = 20;
 
     rewards.gold = goldReward;
     rewards.talentGoldBonuses = []; // Track individual talent gold bonuses for animated display
@@ -17181,7 +17011,7 @@ async function afterCombat(){
   if(lastResult.win){
     // Victory: level up, gain gold, proceed
     S.wins++;S.streak++;
-    if(S.roundIndex>=27){
+    if(S.roundIndex>=18){
       PStats.victories++;
       if(S.hero && S.hero.name) PStats.heroClears[S.hero.name]=true;
       // Track difficulty clears per hero for unlocking harder modes
@@ -17480,26 +17310,6 @@ function massUpgradeAllTalents() {
   return upgradedTalents;
 }
 
-// Upgrade random talents (not all) - for balanced progression
-function massUpgradeRandomTalents(count = 2) {
-  if (!S.talents || S.talents.length === 0) return [];
-
-  // Shuffle and pick random talents to upgrade
-  const shuffled = [...S.talents].sort(() => Math.random() - 0.5);
-  const toUpgrade = shuffled.slice(0, Math.min(count, shuffled.length));
-
-  const upgradedTalents = [];
-  toUpgrade.forEach(talentId => {
-    const talent = TALENTS.find(t => t.id === talentId);
-    const oldLevel = getTalentLevel(talentId);
-    const newLevel = oldLevel + 1;
-    setTalentLevel(talentId, newLevel);
-    upgradedTalents.push({ talent, oldLevel, newLevel });
-  });
-
-  return upgradedTalents;
-}
-
 // Scale a talent bonus by its level (linear scaling)
 function scaleTalentBonus(talentId, baseValue) {
   const level = getTalentLevel(talentId);
@@ -17527,11 +17337,11 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
   // Chapter Boss Mass Upgrade System
   // isChapterBoss is passed from caller (checked before roundIndex is incremented)
 
-  // If chapter boss and player has existing talents, upgrade 2 random talents +1 level
+  // If chapter boss and player has existing talents, mass upgrade them all +1 level
   if (isChapterBoss && S.talents.length > 0) {
-    const upgradedTalents = massUpgradeRandomTalents(2);
+    const upgradedTalents = massUpgradeAllTalents();
 
-    // Show visual upgrade animation for mass upgrade (reuses manual upgrade animation style)
+    // Show visual card animation for mass upgrade
     if (upgradedTalents.length > 0) {
       // Create overlay for the animation
       const upgradeOverlay = document.createElement('div');
@@ -17572,7 +17382,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
         font-size: 14px;
         margin-bottom: 24px;
       `;
-      subheader.textContent = upgradedTalents.length === 1 ? '1 random talent upgraded +1 level!' : `${upgradedTalents.length} random talents upgraded +1 level!`;
+      subheader.textContent = 'All talents upgraded +1 level!';
       upgradeOverlay.appendChild(subheader);
 
       // Cards container
@@ -17601,43 +17411,47 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
           opacity: 0;
           transform: translateY(50px) scale(0.9);
           transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-          overflow: hidden;
-          border-radius: 10px;
         `;
 
-        // Simple card - no flip, just show talent info directly
-        const tierBorderColor = talent.rarity === 'rare' ? '#f4d03f' : talent.rarity === 'uncommon' ? '#60a5fa' : '#9ca3af';
         card.innerHTML = `
-          <div style="
-            width: 100%;
-            height: 100%;
-            padding: 12px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1a1f2e, #0f1419);
-            border: 2px solid ${tierBorderColor};
-            box-sizing: border-box;
-          ">
-            <div style="width:40px;height:52px;margin-bottom:6px;flex-shrink:0">${getTalentSVG(talent.id)}</div>
-            <div style="font-size:11px;text-align:center;line-height:1.2;font-weight:600;color:#fff;margin-bottom:4px">${talent.name}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-              <span style="font-size:9px;color:#4ade80;font-weight:600">Lv.${newLevel}</span>
-              <span style="font-size:8px;padding:2px 5px;border-radius:3px;background:${tierBorderColor};color:#000;font-weight:600">${rarityLabel}</span>
-            </div>
-            <div style="font-size:9px;color:#9ca3af;line-height:1.3;text-align:center;flex-grow:1;overflow-y:auto;margin-bottom:6px">
-              ${formatTalentDesc(talent, talent.id)}
-            </div>
-            <div style="
-              background: linear-gradient(135deg, rgba(74, 222, 128, 0.2), rgba(34, 197, 94, 0.1));
-              border: 1px solid rgba(74, 222, 128, 0.5);
-              border-radius: 4px;
-              padding: 4px 8px;
-              text-align: center;
+          <div class="talent-card-inner">
+            <div class="talent-card-face talent-card-front" style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              border-radius: 10px;
+              background: linear-gradient(135deg, #1a1f2e, #0f1419);
+              border: 2px solid #fbbf24;
             ">
-              <div style="font-size:10px;font-weight:bold;color:#4ade80">
-                Lv.${oldLevel} → Lv.${newLevel}
+              <div style="font-size:40px;opacity:0.6">⬆</div>
+              <div style="font-size:11px;color:#fbbf24;margin-top:8px;font-weight:600">UPGRADE</div>
+            </div>
+            <div class="talent-card-face talent-card-back ${tierClass}" style="
+              transform: rotateY(180deg);
+              padding: 14px 10px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              border-radius: 10px;
+              overflow: hidden;
+            ">
+              <div class="talent-card-icon" style="width:48px;height:62px;margin-bottom:10px;flex-shrink:0">${getTalentSVG(talent.id)}</div>
+              <div class="talent-card-name" style="font-size:12px;text-align:center;margin-bottom:6px;line-height:1.2;font-weight:600">${talent.name}</div>
+              <span class="talent-card-rarity-badge" style="font-size:8px;margin-bottom:10px;padding:2px 6px">${rarityLabel}</span>
+              <div style="
+                background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1));
+                border: 1px solid rgba(251, 191, 36, 0.4);
+                border-radius: 8px;
+                padding: 8px 12px;
+                text-align: center;
+                margin-top: auto;
+                width: 100%;
+                box-sizing: border-box;
+              ">
+                <div style="font-size:14px;font-weight:bold;color:#fbbf24;text-shadow:0 0 10px rgba(251,191,36,0.5)">
+                  Lv.${oldLevel} → Lv.${newLevel}
+                </div>
               </div>
             </div>
           </div>
@@ -17646,9 +17460,19 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
         cardsContainer.appendChild(card);
       });
 
+      // Instruction text
+      const instruction = document.createElement('div');
+      instruction.style.cssText = `
+        color: #6b7280;
+        font-size: 12px;
+        margin-bottom: 16px;
+      `;
+      instruction.textContent = 'Click each card to reveal upgrade';
+      upgradeOverlay.appendChild(instruction);
+
       upgradeOverlay.appendChild(cardsContainer);
 
-      // Continue button (shown after all animations complete)
+      // Continue button (hidden until all cards clicked)
       const continueBtn = document.createElement('button');
       continueBtn.style.cssText = `
         margin-top: 24px;
@@ -17675,62 +17499,60 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       upgradeOverlay.style.opacity = '1';
       await dly(RHYTHM.HALF);
 
-      // Get all cards
+      // Show cards face-down first
       const cards = cardsContainer.querySelectorAll('.talent-card');
+      let revealedCount = 0;
 
-      // Make cards visible and trigger upgrade animations sequentially (reuses manual upgrade animation)
+      // Make cards visible (but still face-down visually via CSS)
       for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
-        const talentData = upgradedTalents[i];
-
-        // Slide card into view (already flipped to show talent)
-        card.classList.add('flipped');
         card.style.opacity = '1';
         card.style.transform = 'translateY(0) scale(1)';
+        card.classList.remove('flipped'); // Start face-down
+        card.style.cursor = 'pointer';
         await dly(RHYTHM.QUARTER);
-
-        // Play skill-up sound (same as manual upgrade)
-        try { playSfxSkillUp(); } catch(e){}
-
-        // Add upgrade animation classes (same sequence as manual upgrade)
-        card.classList.add('upgrade-winner');
-        await dly(RHYTHM.EIGHTH);
-
-        card.classList.add('upgrade-wiggle');
-        await dly(RHYTHM.BEAT);
-
-        card.classList.remove('upgrade-wiggle');
-        card.classList.add('upgrade-pop');
-
-        // Play upgrade fanfare (same tones as manual upgrade)
-        try {
-          playTone(523, 0.1, 'sine', 0.15);
-          setTimeout(() => playTone(659, 0.1, 'sine', 0.15), RHYTHM.QUARTER);
-          setTimeout(() => playTone(784, 0.1, 'sine', 0.15), RHYTHM.HALF);
-          setTimeout(() => playTone(1047, 0.2, 'sine', 0.25), RHYTHM.HALF);
-        } catch(err) {}
-
-        // Burst sparks effect (same as manual upgrade)
-        const rect = card.getBoundingClientRect();
-        burstSparks(rect.left + rect.width/2, rect.top + rect.height/2, 30);
-
-        // Brief pause between cards
-        await dly(RHYTHM.HALF);
       }
+      try { playSample('whoosh.ogg', 0.4); } catch(e){}
 
-      // All upgrades complete - show continue button
-      await dly(RHYTHM.BEAT);
-      continueBtn.style.opacity = '1';
-      continueBtn.style.transform = 'translateY(0)';
-      continueBtn.style.pointerEvents = 'auto';
-      continueBtn.onmouseenter = () => { try { playSfxHover(); } catch(e){} };
-
-      // Wait for continue click
+      // Wait for all cards to be clicked
       await new Promise(resolve => {
-        continueBtn.onclick = () => {
-          try { playSample('click.ogg', 0.5); } catch(e){}
-          resolve();
-        };
+        cards.forEach((card, index) => {
+          card.onclick = async () => {
+            if (card.classList.contains('flipped')) return; // Already revealed
+
+            // Flip the card
+            card.classList.add('flipped');
+            card.style.boxShadow = '0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.3)';
+            card.style.cursor = 'default';
+
+            // Play skill-up sound (matches hero upgrade feel)
+            try { playSfxSkillUp(); } catch(e){}
+
+            // Get talent rarity for burst effect
+            const talentData = upgradedTalents[index];
+            const rarity = talentData?.talent?.rarity || 'common';
+
+            // Burst sparks with rarity-based colors
+            const rect = card.getBoundingClientRect();
+            rarityBurst(rect.left + rect.width/2, rect.top + rect.height/2, rarity);
+
+            revealedCount++;
+
+            // All revealed - show continue button
+            if (revealedCount === cards.length) {
+              await dly(RHYTHM.BEAT);
+              instruction.style.opacity = '0';
+              continueBtn.style.opacity = '1';
+              continueBtn.style.transform = 'translateY(0)';
+              continueBtn.style.pointerEvents = 'auto';
+              continueBtn.onmouseenter = () => { try { playSfxHover(); } catch(e){} };
+              continueBtn.onclick = () => {
+                try { playSample('click.ogg', 0.5); } catch(e){}
+                resolve();
+              };
+            }
+          };
+        });
       });
 
       // Fade out and remove
@@ -17866,8 +17688,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       let overrideDesc = ''; // For talents that need dynamic description based on game state
       if(talent.desc){
         const descLower = talent.desc.toLowerCase();
-        // Determine if talent grants W based on badge type in desc
-        const isWordCountTalent = talent.desc.includes('mod-badge word');
+        const isWordCountTalent = talent.category === 'word_count_bonus';
         // Exclude talents with specific handlers from generic pattern matching
         const hasSpecificHandler = ['momentum', 'word_historian', 'reverberation'].includes(talent.id);
         if(descLower.includes('per round') && !hasSpecificHandler){
@@ -17879,7 +17700,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             const totalVal = total % 1 === 0 ? total : parseFloat(total.toFixed(1));
             const badge = isWordCountTalent ? fmtMod(totalVal, 'word', ' W') : fmtMod(totalVal, 'ap', ' AP');
             const perWord = descLower.includes('each') ? '/Word' : '';
-            accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Current Bonus: ${badge}${perWord}</div>`;
+            accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Round ${round} this run: ${badge}${perWord}</div>`;
           }
         } else if(descLower.includes('per chapter')){
           const chapter = (S.currentChapter || 0) + 1;
@@ -17983,13 +17804,13 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
           const levelText = getTalentLevel('word_hoard') > 1 ? ` (Lv.${getTalentLevel('word_hoard')})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${invCount} words × ${basePerWord} = ${badge}${levelText}</div>`;
         } else if(talent.id === 'momentum'){
-          // Momentum: +0.2 W per Word per round played (max 10) - scales with level
+          // Momentum: +1 W per Word per round played (max 10) - scales with level
           const roundsPlayed = Math.min((S.roundIndex || 1) - 1, 10);
-          const basePerRound = scaleTalentBonus('momentum', 0.2);
+          const basePerRound = scaleTalentBonus('momentum', 1);
           const bonusPerWord = roundsPlayed * basePerRound;
           const levelText = getTalentLevel('momentum') > 1 ? ` (Lv.${getTalentLevel('momentum')})` : '';
           // Override description to show current total W per word
-          overrideDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord.toFixed(1)} W</span>`;
+          overrideDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord} W</span>`;
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${basePerRound} W × ${roundsPlayed} rounds${levelText}</div>`;
         } else if(talent.id === 'word_historian'){
           // Word Historian: +0.25 W per Word used this run - scales with level
@@ -18008,36 +17829,36 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
           const levelText = getTalentLevel('reverberation') > 1 ? ` (Lv.${getTalentLevel('reverberation')})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${rereadsTriggered} rereads: ${badge}${levelText}</div>`;
         } else if(talent.id === 'verbose_surplus'){
-          // Verbose Surplus: +10 W per adjective slot filled (linear)
-          const adjCount = [S.sel?.adj1, S.sel?.adj2, S.sel?.adj3, S.sel?.adj4].filter(Boolean).length;
-          const basePerAdj = scaleTalentBonus('verbose_surplus', 10);
-          const totalBonus = adjCount * basePerAdj;
-          const badge = fmtMod(totalBonus, 'word', ' W');
-          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${adjCount}/4 adj slots = ${badge}</div>`;
+          // Verbose Surplus: +10 W per word × word count (quadratic)
+          const basePerWord = scaleTalentBonus('verbose_surplus', 10);
+          const badge = fmtMod(basePerWord, 'word', ' W');
+          const levelText = getTalentLevel('verbose_surplus') > 1 ? ` (Lv.${getTalentLevel('verbose_surplus')})` : '';
+          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Bonus: ${badge} × Words × Words${levelText}</div>`;
         } else if(talent.id === 'linguistic_density'){
           // Linguistic Density: +5 W per word per word (4+ words)
           const basePerWord = scaleTalentBonus('linguistic_density', 5);
           const badge = fmtMod(basePerWord, 'word', ' W');
           const levelText = getTalentLevel('linguistic_density') > 1 ? ` (Lv.${getTalentLevel('linguistic_density')})` : '';
-          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">4+ Words: ${badge} per Word in play${levelText}</div>`;
+          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">4+ Words: ${badge} × Word count²${levelText}</div>`;
         } else if(talent.id === 'elemental_mastery'){
           // Elemental Mastery: Track accumulated elemental W
           const elementalW = S.elementalWBonus || 0;
           const badge = fmtMod(elementalW, 'word', ' W');
-          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Global Bonus: ${badge}</div>`;
+          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Accumulated: ${badge}</div>`;
         } else if(talent.id === 'prismatic_resonance'){
-          // Prismatic Resonance: ×1.2 per unique element type (max 8)
+          // Prismatic Resonance: ×1.2 per 5 Elemental W
+          const elementalW = S.elementalWBonus || 0;
+          const tiers = Math.floor(elementalW / 5);
           const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
+          const mult = tiers > 0 ? Math.pow(scaledMult, tiers) : 1;
+          const badge = fmtMod(mult, 'scale');
           const levelText = getTalentLevel('prismatic_resonance') > 1 ? ` (Lv.${getTalentLevel('prismatic_resonance')})` : '';
-          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${fmtMod(scaledMult, 'scale')} per element${levelText}</div>`;
+          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${elementalW}W ÷ 5 = ${tiers} tiers = ${badge}${levelText}</div>`;
         } else if(talent.id === 'weakness_exploit_amp'){
-          // Weakness Exploit Amp: +1 W per weakness hit × level (tracked separately from Elemental Mastery)
-          const hits = S.weaknessExploitBonus || 0;
-          const talentLevel = getTalentLevel('weakness_exploit_amp');
-          const totalW = hits * talentLevel;
-          const badge = fmtMod(totalW, 'word', ' W');
-          const levelText = talentLevel > 1 ? ` (×${talentLevel})` : '';
-          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${hits} hits${levelText}: ${badge}</div>`;
+          // Weakness Exploit Amp: +4 W per weakness hit
+          const elementalW = S.elementalWBonus || 0;
+          const badge = fmtMod(elementalW, 'word', ' W');
+          accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Accumulated: ${badge}</div>`;
         } else if(talent.id === 'overflow'){
           // Overflow: Per 10 W above 50 → ×1.5
           const slots = Object.values(S.sel).filter(Boolean);
@@ -18052,8 +17873,17 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             accumulatedTotal = `<div style="font-size:10px;margin-top:6px;color:#6b7280">~${baseW} W (need 50+)</div>`;
           }
         } else if(talent.category === 'threshold' && talent.apply){
-          // Threshold talents: just show the multiplier value (don't show stale "active" status)
-          // The description already explains the condition
+          // Threshold talents: show current multiplier if active
+          try {
+            const value = talent.apply(sampleCtx);
+            if(value > 1){
+              const v = Math.round(value * 10) / 10;
+              accumulatedTotal = `<div style="font-size:10px;margin-top:6px;color:#4ade80">Active now: <span class="mod-badge scale">×${v}</span></div>`;
+            } else {
+              // Show condition not met
+              accumulatedTotal = `<div style="font-size:10px;margin-top:6px;color:#6b7280">Not active yet</div>`;
+            }
+          } catch(e) {}
         }
       }
 
@@ -18160,7 +17990,11 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
     rerollBtn.className = "talent-reroll-btn" + (hasRerolled ? " used" : "");
     rerollBtn.textContent = hasRerolled ? "Rerolled" : "Reroll";
     rerollBtn.disabled = hasRerolled;
-    rerollBtn.title = "See new talent options";
+    rerollBtn.title = "See new talents (disables upgrades)";
+
+    // References to upgrade button and "or" connector (set later) so reroll can disable/hide them
+    let upgradeBtnRef = null;
+    let orConnectorRef = null;
 
     rerollBtn.onclick = async () => {
       if(hasRerolled) return;
@@ -18170,6 +18004,17 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       rerollBtn.disabled = true;
       rerollBtn.classList.add("used");
       rerollBtn.textContent = "Rerolled";
+
+      // Disable upgrade button and hide "or" connector - reroll means no upgrades
+      if (orConnectorRef) {
+        orConnectorRef.style.display = "none";
+      }
+      if (upgradeBtnRef) {
+        upgradeBtnRef.disabled = true;
+        upgradeBtnRef.classList.add("used");
+        upgradeBtnRef.textContent = "Upgrades Disabled";
+        upgradeBtnRef.title = "You chose to reroll - upgrades are no longer available";
+      }
 
       // Play reroll sound
       try{
@@ -18198,14 +18043,25 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 
     rerollContainer.appendChild(rerollBtn);
 
-    // Add upgrade button - only show if player has at least one talent
+    // Add upgrade button - only show if player has at least one talent AND hasn't rerolled
     // Hide upgrade button at chapter bosses since mass upgrade already handles +1 to all talents
     const hasTalentsToUpgrade = S.talents && S.talents.length > 0 && !isChapterBoss;
     if (hasTalentsToUpgrade) {
+      // Add "or" connector between Reroll and Upgrade buttons
+      const orConnector = document.createElement("span");
+      orConnector.className = "connector-phrase";
+      orConnector.textContent = "or";
+      orConnector.style.cssText = "margin: 0 12px; color: #6b7280; font-size: 14px; align-self: center;";
+      if (hasRerolled) orConnector.style.display = "none"; // Hide if already rerolled
+      orConnectorRef = orConnector; // Store reference so reroll can hide it
+      rerollContainer.appendChild(orConnector);
+
       const upgradeBtn = document.createElement("button");
-      upgradeBtn.className = "talent-skip-btn talent-upgrade-btn";
-      upgradeBtn.textContent = `⬆ Upgrade`;
-      upgradeBtn.title = `Upgrade one of your existing talents`;
+      upgradeBtnRef = upgradeBtn; // Store reference so reroll can disable it
+      upgradeBtn.className = "talent-skip-btn talent-upgrade-btn" + (hasRerolled ? " used" : "");
+      upgradeBtn.textContent = hasRerolled ? "Upgrades Disabled" : `⬆ Upgrade`;
+      upgradeBtn.disabled = hasRerolled;
+      upgradeBtn.title = hasRerolled ? "You chose to reroll - upgrades are no longer available" : `Upgrade one of your existing talents`;
 
       upgradeBtn.onclick = async () => {
         // Fade out current talent choice cards
@@ -18430,42 +18286,6 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 
       rerollContainer.appendChild(upgradeBtn);
     }
-    // Add Skip button - only for Chapter bosses (mini bosses use upgrade button instead)
-    if (isChapterBoss) {
-      const skipBtn = document.createElement("button");
-      skipBtn.className = "talent-skip-btn";
-      skipBtn.textContent = "Skip";
-      skipBtn.title = "Skip this talent selection and proceed to shop";
-      skipBtn.onclick = async () => {
-        // Play skip sound (descending notes)
-        try {
-          playTone(330, 0.15, 'sine', 0.12);
-          setTimeout(() => playTone(294, 0.2, 'sine', 0.1), RHYTHM.QUARTER);
-        } catch(err) {}
-
-        // Mark all picks as skipped
-        while (selectedTalents.length < maxPicks) {
-          selectedTalents.push('__skip__');
-        }
-
-        await dly(RHYTHM.BEAT);
-
-        // Save run state before proceeding to shop
-        saveRun();
-
-        // Brief pause to let skip animation settle
-        await dly(RHYTHM.QUARTER);
-
-        // Close overlay and proceed to shop
-        await playSceneTransition(async () => {
-          $("#talent-overlay").classList.remove("show");
-          await showShop(true);
-        });
-      };
-
-      rerollContainer.appendChild(skipBtn);
-    }
-
     renderContainer.appendChild(rerollContainer);
 
     // Animate card flips
@@ -18513,7 +18333,6 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       if(!existingTalent) return;
 
       const rarityLabel = rarityLabelMap[existingTalent.rarity] || 'T1';
-      const level = getTalentLevel(tid);
 
       const card = document.createElement("div");
       card.className = "talent-card talent-swap-card flipped";
@@ -18532,8 +18351,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
               <div class="talent-card-name">${existingTalent.name}</div>
               <span class="talent-card-rarity-badge">${rarityLabel}</span>
             </div>
-            <div class="talent-level-display" style="font-size:11px;color:${level > 1 ? '#4ade80' : '#9ca3af'};font-weight:600;margin-bottom:4px">Lv.${level}</div>
-            <div class="talent-card-desc">${formatTalentDesc(existingTalent, tid)}</div>
+            <div class="talent-card-desc">${formatTalentDesc(existingTalent)}</div>
             ${existingTalent.flavor ? `<div class="talent-card-flavor"><em>${existingTalent.flavor}</em></div>` : ''}
           </div>
         </div>
@@ -18631,22 +18449,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       const headerEl = container.querySelector('.talent-pick-counter');
       if (headerEl) headerEl.innerHTML = `<span class="upgrade-header-text">Choose a Talent to Upgrade</span>`;
 
-      // Replace buttons with Cancel button during selection
-      btnContainer.innerHTML = '';
-      const cancelBtn = document.createElement("button");
-      cancelBtn.className = "talent-reroll-btn";
-      cancelBtn.textContent = "Cancel";
-      cancelBtn.onclick = async () => {
-        // Play back sound
-        try{
-          playTone(392, 0.15, 'sine', 0.12);
-          setTimeout(() => playTone(330, 0.2, 'sine', 0.1), RHYTHM.QUARTER);
-        }catch(err){}
-        // Return to swap selection
-        pendingSwapTalent = newTalent;
-        await showSwapSelection(newTalent);
-      };
-      btnContainer.appendChild(cancelBtn);
+      // Hide buttons during selection
+      btnContainer.style.display = 'none';
 
       // Make each card clickable for upgrade
       swapCards.forEach(card => {
@@ -18802,49 +18606,46 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
       });
     };
 
-    // Skip button - only for Chapter bosses (mini bosses use upgrade button instead)
-    let skipBtn = null;
-    if (isChapterBoss) {
-      skipBtn = document.createElement("button");
-      skipBtn.className = "talent-skip-btn";
-      skipBtn.textContent = "Skip";
-      skipBtn.title = "Skip this talent selection";
-      skipBtn.onclick = async () => {
-        // Play skip sound
-        try {
-          playTone(330, 0.15, 'sine', 0.12);
-          setTimeout(() => playTone(294, 0.2, 'sine', 0.1), RHYTHM.QUARTER);
-        } catch(err) {}
+    // Skip button - skip this talent selection entirely
+    const skipBtn = document.createElement("button");
+    skipBtn.className = "talent-skip-btn";
+    skipBtn.textContent = "Skip";
+    skipBtn.title = "Skip this talent selection";
+    skipBtn.onclick = async () => {
+      // Play skip sound
+      try {
+        playTone(330, 0.15, 'sine', 0.12);
+        setTimeout(() => playTone(294, 0.2, 'sine', 0.1), RHYTHM.QUARTER);
+      } catch(err) {}
 
-        // Clear swap state
-        pendingSwapTalent = null;
+      // Clear swap state
+      pendingSwapTalent = null;
 
-        // Count this as a "pick" action to consume the selection
-        selectedTalents.push('__skip__');
+      // Count this as a "pick" action to consume the selection
+      selectedTalents.push('__skip__');
 
-        await dly(RHYTHM.BEAT);
+      await dly(RHYTHM.BEAT);
 
-        // Check if more picks remaining
-        const picksRemaining = maxPicks - selectedTalents.length;
-        if (picksRemaining > 0) {
-          // Return to talent selection for remaining picks
-          currentChoices = currentChoices.filter(t => !selectedTalents.includes(t.id));
-          await renderTalentCards(currentChoices, false);
-        } else {
-          // All picks done - go to shop
-          saveRun();
-          await dly(RHYTHM.QUARTER);
-          await playSceneTransition(async () => {
-            document.getElementById("talent-overlay").classList.remove("show");
-            await showShop(true);
-          });
-        }
-      };
-    }
+      // Check if more picks remaining
+      const picksRemaining = maxPicks - selectedTalents.length;
+      if (picksRemaining > 0) {
+        // Return to talent selection for remaining picks
+        currentChoices = currentChoices.filter(t => !selectedTalents.includes(t.id));
+        await renderTalentCards(currentChoices, false);
+      } else {
+        // All picks done - go to shop
+        saveRun();
+        await dly(RHYTHM.QUARTER);
+        await playSceneTransition(async () => {
+          document.getElementById("talent-overlay").classList.remove("show");
+          await showShop(true);
+        });
+      }
+    };
 
     btnContainer.appendChild(backBtn);
     btnContainer.appendChild(upgradeBtn);
-    if (skipBtn) btnContainer.appendChild(skipBtn);
+    btnContainer.appendChild(skipBtn);
     container.appendChild(btnContainer);
   }
 
@@ -19104,15 +18905,6 @@ async function showCombat(r,words,rewards){
     const passes = buildRereadPasses(words);
     const wordShown = new Array(words.length).fill(false); // Track first appearance
 
-    // Reread Amplifier: track multiplier for floating badge display
-    const hasRereadAmp = S.talents && S.talents.includes('reread_amplifier');
-    const rereadAmpBase = hasRereadAmp ? scaleTalentMult('reread_amplifier', 1.5) : 1;
-    let rereadAmpCount = 0; // Counts rereads for multiplier display
-
-    // Reverberation: track +W per REREAD for floating badge display
-    const hasReverberation = S.talents && S.talents.includes('reverberation');
-    const reverberationBase = hasReverberation ? scaleTalentBonus('reverberation', 2) : 0;
-
     for(let passIdx = 0; passIdx < passes.length; passIdx++){
       const wordsInPass = passes[passIdx];
 
@@ -19142,16 +18934,6 @@ async function showCombat(r,words,rewards){
         } else {
           // Add retrigger visual effect
           el.classList.add("retrigger");
-          // Show floating multiplier badge for Reread Amplifier
-          if (hasRereadAmp) {
-            rereadAmpCount++;
-            const currentMult = Math.pow(rereadAmpBase, rereadAmpCount);
-            showFloatingMultiplier(el, currentMult);
-          }
-          // Show floating +W badge for Reverberation (cumulative bonus)
-          if (hasReverberation && reverberationBase > 0) {
-            showFloatingReverberationW(el, reverberationBase);
-          }
         }
 
         // Play rising Shepard tone - continues ascending across all passes
@@ -19298,11 +19080,10 @@ async function showCombat(r,words,rewards){
 
               // Floating +W animation for Elemental Mastery (only on first appearance)
               if (isFirstAppearance && S.talents && S.talents.includes('elemental_mastery')) {
-                let wBonus = 1; // Base +1W from Elemental Mastery
+                let wBonus = 2; // Base +2W from Elemental Mastery
                 // Check for Weakness Exploit Amp bonus
                 if (S.talents.includes('weakness_exploit_amp') && S.enemy && S.enemy.weak && S.enemy.weak.includes(w.wordRef.elem)) {
-                  const weaLevel = getTalentLevel('weakness_exploit_amp');
-                  wBonus += weaLevel; // +1W per level
+                  wBonus += 4; // Additional +4W
                 }
 
                 // Create floating +W element
@@ -19716,38 +19497,11 @@ function spawnFlames(count){
 }
 
 // === SHOP ===
-
-// Cleanup battle-view DOM when entering shop to prevent element accumulation
-function cleanupBattleView() {
-  const battleView = document.getElementById('battle-view');
-  if (!battleView) return;
-
-  // Clear portrait frames (SVG content with gradients)
-  const heroFrame = battleView.querySelector('.hero-portrait .portrait-frame');
-  const enemyFrame = battleView.querySelector('.enemy-portrait .portrait-frame');
-  if (heroFrame) heroFrame.innerHTML = '';
-  if (enemyFrame) enemyFrame.innerHTML = '';
-
-  // Null tooltip closures on slots to break reference chains
-  battleView.querySelectorAll('[data-slot]').forEach(slot => {
-    slot.__tooltipContent = null;
-  });
-
-  // Clear dynamic containers
-  ['#hero-elements', '#enemy-elements', '#weapon-svg', '#weapon-aura'].forEach(sel => {
-    const el = battleView.querySelector(sel);
-    if (el) el.innerHTML = '';
-  });
-}
-
 let shopCrates=[],shopConsumables=[];
 async function showShop(skipTransition = false){
   // Hide battle-view immediately to prevent flash during overlay fades
   const battleView = document.getElementById('battle-view');
-  if (battleView) {
-    battleView.style.display = 'none';
-    cleanupBattleView(); // Clear DOM content to prevent accumulation
-  }
+  if (battleView) battleView.style.display = 'none';
 
   // Stop any playing rarity drones from forge
   stopAllRarityDrones();
@@ -21525,48 +21279,6 @@ function goldBurst(x, y) {
 }
 
 /**
- * Floating multiplier badge for Reread Amplifier during tally
- */
-function showFloatingMultiplier(element, multiplier) {
-  const badge = document.createElement('div');
-  badge.className = 'floating-multiplier';
-  badge.innerHTML = `<span class="mod-badge scale">×${multiplier.toFixed(2)}</span>`;
-  badge.style.cssText = `
-    position: absolute;
-    left: 50%;
-    top: -20px;
-    transform: translateX(-50%);
-    pointer-events: none;
-    z-index: 1000;
-    animation: floatUp 0.8s ease-out forwards;
-  `;
-  element.style.position = 'relative';
-  element.appendChild(badge);
-  setTimeout(() => badge.remove(), 800);
-}
-
-/**
- * Floating +W badge for Reverberation during tally (REREAD styled)
- */
-function showFloatingReverberationW(element, bonus) {
-  const badge = document.createElement('div');
-  badge.className = 'floating-reverberation';
-  badge.innerHTML = `<span class="mod-badge reread">+${bonus}W</span>`;
-  badge.style.cssText = `
-    position: absolute;
-    left: 50%;
-    top: -35px;
-    transform: translateX(-50%);
-    pointer-events: none;
-    z-index: 1000;
-    animation: floatUp 0.8s ease-out forwards;
-  `;
-  element.style.position = 'relative';
-  element.appendChild(badge);
-  setTimeout(() => badge.remove(), 800);
-}
-
-/**
  * Preset: Rarity burst (for talent/item reveals)
  */
 function rarityBurst(x, y, rarity = 0) {
@@ -22266,7 +21978,7 @@ const GFX_SETTINGS_KEY = 'wordyweapon_gfx';
 // Default graphics settings
 let gfxSettings = {
   lowFx: false,  // Master toggle: disables sparks, parallax, transitions, combat effects, expensive GPU animations
-  zoom: 100,  // UI zoom percentage (85-115)
+  zoom: 95,  // UI zoom percentage (50-200)
   brightness: 100  // Brightness percentage (80-150) for HDR monitors
 };
 
@@ -22313,19 +22025,6 @@ function applyGfxSettings() {
   // Apply brightness filter for HDR monitors
   const brightnessVal = gfxSettings.brightness / 100;
   document.body.style.filter = brightnessVal !== 1 ? `brightness(${brightnessVal})` : '';
-
-  // Apply UI scale (85-115%)
-  const gameContainer = document.getElementById('game-container');
-  if (gameContainer) {
-    const scaleVal = gfxSettings.zoom / 100;
-    if (scaleVal !== 1) {
-      gameContainer.style.transform = `scale(${scaleVal})`;
-      gameContainer.style.transformOrigin = 'center center';
-    } else {
-      gameContainer.style.transform = '';
-      gameContainer.style.transformOrigin = '';
-    }
-  }
 }
 
 // Open graphics settings overlay
@@ -22336,14 +22035,6 @@ function openGraphicsSettings() {
   // Sync Low FX checkbox with current setting
   const lowFxCheckbox = document.getElementById('gfx-lowfx');
   if (lowFxCheckbox) lowFxCheckbox.checked = gfxSettings.lowFx;
-
-  // Sync Scale slider with current setting
-  const scaleSlider = document.getElementById('gfx-scale');
-  const scaleValue = document.getElementById('gfx-scale-value');
-  if (scaleSlider) {
-    scaleSlider.value = gfxSettings.zoom;
-    if (scaleValue) scaleValue.textContent = `${gfxSettings.zoom}%`;
-  }
 
   showOverlay(overlay);
   playSfxOpen();
@@ -22372,21 +22063,6 @@ function initGfxSettingsListeners() {
     lowFxCheckbox.onchange = () => {
       gfxSettings.lowFx = lowFxCheckbox.checked;
       applyGfxSettings();
-      saveGfxSettings();
-    };
-  }
-
-  // UI Scale slider
-  const scaleSlider = document.getElementById('gfx-scale');
-  const scaleValue = document.getElementById('gfx-scale-value');
-  if (scaleSlider) {
-    scaleSlider.oninput = () => {
-      const val = parseInt(scaleSlider.value, 10);
-      if (scaleValue) scaleValue.textContent = `${val}%`;
-      gfxSettings.zoom = val;
-      applyGfxSettings();
-    };
-    scaleSlider.onchange = () => {
       saveGfxSettings();
     };
   }
@@ -22571,18 +22247,19 @@ async function showCrateReelAnimation(crate) {
     }
 
     // Create 20 items for smooth looping (all visual placeholders initially)
-    // Use DocumentFragment for batch DOM insertion + cache item refs
-    const fragment = document.createDocumentFragment();
-    const itemElements = [];
+    const items = [];
     for(let i = 0; i < 20; i++){
       const randomWord = visualPool[Math.floor(Math.random() * visualPool.length)];
+      items.push(randomWord);
+    }
+
+    // Render items
+    items.forEach(word => {
       const item = document.createElement('div');
       item.className = 'crate-reel-item';
-      item.innerHTML = formatReelItem(randomWord);
-      fragment.appendChild(item);
-      itemElements.push(item);
-    }
-    strip.appendChild(fragment); // Single DOM operation
+      item.innerHTML = formatReelItem(word);
+      strip.appendChild(item);
+    });
 
     reel.appendChild(strip);
     container.appendChild(reel);
@@ -22607,7 +22284,6 @@ async function showCrateReelAnimation(crate) {
     reels.push({
       element: reel,
       strip,
-      itemElements, // Cached refs for direct access
       reelType,
       slotTier,
       weightedPool,
@@ -22665,10 +22341,10 @@ async function showCrateReelAnimation(crate) {
     // Store the revealed word
     revealedWords[reelIndex] = rolledWord;
 
-    // Update the strip to show the rolled word (use cached refs)
-    const targetItem = reelData.itemElements[targetPosition];
-    if (targetItem) {
-      targetItem.innerHTML = formatReelItem(rolledWord);
+    // Update the strip to show the rolled word
+    const stripItems = strip.querySelectorAll('.crate-reel-item');
+    if (stripItems[targetPosition]) {
+      stripItems[targetPosition].innerHTML = formatReelItem(rolledWord);
     }
 
     // Stop spinning and position at target
@@ -22677,12 +22353,9 @@ async function showCrateReelAnimation(crate) {
     const targetOffset = -(targetPosition * 60 - 60);
     strip.style.transform = `translateY(${targetOffset}px)`;
 
-    // Create particles (defer to avoid layout thrash during animation)
-    const wordRarity = rolledWord.rarity || 'common';
-    requestAnimationFrame(() => {
-      const rect = element.getBoundingClientRect();
-      rarityBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, wordRarity);
-    });
+    // Create particles
+    const rect = element.getBoundingClientRect();
+    rarityBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, rolledWord.rarity || 'common');
 
     // Play tier-based reveal sound
     const wordRank = rolledWord.rarity || 0;
@@ -23121,26 +22794,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(pauseWishlistBtn) {
     pauseWishlistBtn.onclick = () => { window.open(STEAM_WISHLIST_URL, '_blank'); };
     pauseWishlistBtn.onmouseenter = sfxHover;
-  }
-
-  // Settings modal reset tutorial button
-  const gfxResetTutorialBtn = document.getElementById('gfx-reset-tutorial');
-  if(gfxResetTutorialBtn) {
-    gfxResetTutorialBtn.onclick = () => {
-      PStats.tutorialComplete = false;
-      saveStats();
-      closeGraphicsSettings();
-      // Show brief confirmation
-      const btn = gfxResetTutorialBtn;
-      const originalText = btn.textContent;
-      btn.textContent = 'Tutorial Reset!';
-      btn.style.color = '#4ade80';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.color = '';
-      }, 1500);
-    };
-    gfxResetTutorialBtn.onmouseenter = sfxHover;
   }
 
   // Settings modal reset data button

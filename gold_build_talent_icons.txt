@@ -1,0 +1,85 @@
+// === GOLD BUILD TALENT ICONS ===
+// Add these before the "default" icon in TALENT_SVG object (around line 6497)
+
+  // Midas Touch - Hand with gold sparkles (T2 Uncommon)
+  midas_touch: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="mt-hand" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f3f4f6"/><stop offset="100%" stop-color="#9ca3af"/></linearGradient>
+      <radialGradient id="mt-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.6"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></radialGradient>
+      <radialGradient id="mt-coin" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#d4af37"/><stop offset="100%" stop-color="#92400e"/></radialGradient>
+    </defs>
+    <ellipse cx="50" cy="65" rx="40" ry="48" fill="url(#mt-glow)"/>
+    <path d="M45 85 L40 95 L35 98 L38 92 L35 85 L38 80 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
+    <path d="M50 78 L48 90 L45 95 L47 88 L46 80 L48 75 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
+    <path d="M55 75 L54 88 L52 93 L53 86 L53 78 L54 72 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
+    <path d="M60 78 L60 90 L59 95 L59 88 L60 80 L60 75 Z" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1" opacity="0.9"/>
+    <ellipse cx="50" cy="95" rx="18" ry="12" fill="url(#mt-hand)" stroke="#06b6d4" stroke-width="1.5" opacity="0.9"/>
+    <circle cx="50" cy="45" r="10" fill="url(#mt-coin)" opacity="0.9"/>
+    <circle cx="50" cy="45" r="7" fill="none" stroke="#92400e" stroke-width="1.5"/>
+    <text x="50" y="49" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">G</text>
+    <circle cx="32" cy="38" r="4" fill="#fbbf24" opacity="0.7"/>
+    <circle cx="68" cy="52" r="3" fill="#fbbf24" opacity="0.6"/>
+    <circle cx="40" cy="58" r="2.5" fill="#fbbf24" opacity="0.5"/>
+    <circle cx="62" cy="35" r="2" fill="#fbbf24" opacity="0.4"/>
+  </svg>`,
+
+  // Golden Reread - Repeating gold arrows (T2 Uncommon)
+  golden_reread: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gr-arrow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
+      <radialGradient id="gr-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#06b6d4" stop-opacity="0.5"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="50" cy="65" rx="38" ry="45" fill="url(#gr-glow)"/>
+    <path d="M30 50 Q50 40 70 50 L65 55 L70 50 L75 55" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M70 65 Q50 75 30 65 L35 60 L30 65 L25 60" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M30 80 Q50 70 70 80 L65 85 L70 80 L75 85" fill="none" stroke="url(#gr-arrow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    <circle cx="75" cy="45" r="2" fill="#fbbf24"/>
+    <circle cx="25" cy="70" r="2" fill="#fbbf24"/>
+    <circle cx="72" cy="88" r="1.5" fill="#fbbf24" opacity="0.8"/>
+  </svg>`,
+
+  // Fortune's Favor - Crown over gold (T3 Rare)
+  fortunes_favor: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="ff-crown" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="50%" stop-color="#d4af37"/><stop offset="100%" stop-color="#92400e"/></linearGradient>
+      <linearGradient id="ff-coin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
+      <radialGradient id="ff-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9333ea" stop-opacity="0.5"/><stop offset="100%" stop-color="#9333ea" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="50" cy="65" rx="40" ry="48" fill="url(#ff-glow)"/>
+    <circle cx="40" cy="85" r="12" fill="url(#ff-coin)" opacity="0.8"/>
+    <circle cx="60" cy="88" r="12" fill="url(#ff-coin)" opacity="0.8"/>
+    <circle cx="50" cy="95" r="12" fill="url(#ff-coin)" opacity="0.9"/>
+    <circle cx="50" cy="95" r="9" fill="none" stroke="#92400e" stroke-width="1"/>
+    <path d="M30 45 L35 55 L40 45 L45 55 L50 45 L55 55 L60 45 L65 55 L70 45 L70 60 L30 60 Z" fill="url(#ff-crown)" stroke="#92400e" stroke-width="1.5"/>
+    <circle cx="40" cy="50" r="2.5" fill="#dc2626"/>
+    <circle cx="50" cy="50" r="3" fill="#dc2626"/>
+    <circle cx="60" cy="50" r="2.5" fill="#dc2626"/>
+    <circle cx="28" cy="38" r="1.5" fill="#9333ea" opacity="0.8"/>
+    <circle cx="72" cy="42" r="1.5" fill="#9333ea" opacity="0.8"/>
+    <circle cx="35" cy="28" r="1.5" fill="#9333ea" opacity="0.6"/>
+    <circle cx="65" cy="32" r="1.5" fill="#9333ea" opacity="0.6"/>
+  </svg>`,
+
+  // Liquidate - W converting to gold coins (T2 Uncommon)
+  liquidate: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lq-w" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
+      <linearGradient id="lq-coin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d4af37"/></linearGradient>
+      <radialGradient id="lq-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#06b6d4" stop-opacity="0.5"/><stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="50" cy="65" rx="38" ry="45" fill="url(#lq-glow)"/>
+    <text x="30" y="60" font-size="32" font-weight="bold" fill="url(#lq-w)" stroke="#15803d" stroke-width="1">W</text>
+    <path d="M50 55 L70 65" stroke="#06b6d4" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#06b6d4"/>
+      </marker>
+    </defs>
+    <circle cx="75" cy="55" r="8" fill="url(#lq-coin)"/>
+    <circle cx="75" cy="55" r="6" fill="none" stroke="#92400e" stroke-width="1"/>
+    <text x="75" y="58" font-size="8" font-weight="bold" fill="#92400e" text-anchor="middle">G</text>
+    <circle cx="85" cy="70" r="7" fill="url(#lq-coin)" opacity="0.9"/>
+    <circle cx="85" cy="70" r="5" fill="none" stroke="#92400e" stroke-width="1"/>
+    <circle cx="68" cy="75" r="6" fill="url(#lq-coin)" opacity="0.8"/>
+    <circle cx="68" cy="75" r="4" fill="none" stroke="#92400e" stroke-width="0.8"/>
+  </svg>`,
