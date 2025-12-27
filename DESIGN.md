@@ -1,7 +1,7 @@
 # DESIGN - Wordy Weapon
 
 > **Owner**: Design Subagent
-> **Last Updated**: 2024-12-20
+> **Last Updated**: 2025-12-23
 > **Status**: Stable
 
 ## Document Purpose
@@ -76,6 +76,13 @@ PHASE 6: Final Damage = floor(AP × W × Mult)
 - REREAD ALL = Retriggers every word in the forge
 - Loop detection: If iterations ≥100 or damage exceeds MAX_SAFE_INTEGER → ULTIMATE WEAPON VICTORY
 
+### Ultimate Weapon Victory
+When a player achieves **1 quadrillion damage** (or triggers infinite loop detection):
+- **Ultimate Weapon is forged** - This is the ultimate victory condition
+- **Run ends immediately** with special rewards and recognition
+- **No endless mode continuation** - Achieving the Ultimate Weapon is the definitive end goal
+- Victory tracked in player stats and achievements
+
 ---
 
 ## Heroes (6 Playable Characters)
@@ -127,13 +134,112 @@ PHASE 6: Final Damage = floor(AP × W × Mult)
 | Uncommon | 18 | 35% |
 | Rare | 30 | 15% |
 
-### Example Infinite Combo
+### Talent Upgrade System
+**Miniboss Rewards (Rounds 3, 6)**:
+- Choose to either:
+  - Pick NEW talents from the talent pool, OR
+  - Upgrade existing talents by +1 level
+
+**Chapter Boss Rewards (Round 9)**:
+- ALL equipped talents automatically upgrade +1 level (mass upgrade)
+- THEN pick new talents as bonus rewards
+
+**Example Progression**:
+```
+Round 1: Pick Reread Amplifier (Level 1: ×1.5^REREADs)
+Round 3 Miniboss: Upgrade Reread Amplifier to Level 2 (×1.6^REREADs)
+Round 6 Miniboss: Pick Echo Chamber (Level 1)
+Round 9 Boss:
+  → Reread Amplifier auto-upgrades to Level 3 (×1.7^REREADs)
+  → Echo Chamber auto-upgrades to Level 2
+  → Then pick new talents
+```
+
+### Build Archetypes
+The talent system supports four major build archetypes, each with distinct scaling mechanics:
+
+#### 1. REREAD Build (Existing System)
+**Core Multiplier**: Reread Amplifier - ×1.5^REREADs
+**Strategy**: Stack REREAD triggers to multiply damage exponentially
+**Key Talents**: Gemination, Echo Chamber, Critical Mass, Crescendo
+
+**Example Infinite Combo**:
 1. Gemination (same tier → REREAD all)
 2. Echo Chamber (REREAD → +5 W)
 3. Critical Mass (50+ W → REREAD all)
 4. Crescendo (6+ REREADs → REREAD all again)
 
 Play 6 T2 words → infinite loop → ULTIMATE WEAPON VICTORY
+
+#### 2. W Overflow Build
+**Core Multiplier**: Overflow - ×1.5^((W-50)/10)
+**Strategy**: Stack massive W values to trigger exponential Overflow scaling
+**Key Talents**:
+- **Verbose Surplus**: +W per word beyond 3 words in forge
+- **Linguistic Density**: Convert excess AP into W (when AP > threshold)
+
+**Scaling Example**:
+- W = 50 → ×1.5^0 = ×1.0 (no bonus)
+- W = 70 → ×1.5^2 = ×2.25
+- W = 100 → ×1.5^5 = ×7.59
+
+#### 3. Gold Build
+**Core Multiplier**: Compound Interest - ×1.15^(gold/50)
+**Strategy**: Hoard gold instead of spending, convert wealth into power
+**Key Talents**:
+- **Midas Touch**: Gain gold on combat victories
+- **Golden Reread**: Spend gold to trigger REREAD effects
+- **Fortune's Favor**: Higher gold = increased crit chance or damage
+- **Liquidate**: Convert gold directly into damage multiplier
+
+**Scaling Example**:
+- 100 gold → ×1.15^2 = ×1.32
+- 500 gold → ×1.15^10 = ×4.05
+- 1000 gold → ×1.15^20 = ×16.37
+
+#### 4. Elemental Build
+**Core Multiplier**: Prismatic Resonance - ×1.2^(element stacks)
+**Strategy**: Build and maintain element stacks across combats in a run
+**Key Talents**:
+- **Elemental Mastery**: Gain element stacks when using elemental words
+- **Prismatic Resonance**: Damage multiplier based on total element stacks
+- **Weakness Exploit Amp**: Bonus stacks when hitting enemy weaknesses
+- **Chromatic Cascade**: Chain reactions when mixing element families
+
+**Element Stack Mechanics**:
+- Stacks persist across all combats within a single run
+- Reset to 0 when starting a new run
+- Each elemental word played can add stacks (via Elemental Mastery)
+- Stacks are consumed or amplified by various talents
+
+**Scaling Example**:
+- 5 stacks → ×1.2^5 = ×2.49
+- 10 stacks → ×1.2^10 = ×6.19
+- 20 stacks → ×1.2^20 = ×38.34
+
+### New Talents (Build Diversity Expansion)
+
+#### Gold Talents
+| Talent | Rarity | Effect |
+|--------|--------|--------|
+| Midas Touch | Uncommon | Gain +X gold on combat victory (scales with level) |
+| Golden Reread | Rare | Spend 50 gold to REREAD all words |
+| Fortune's Favor | Rare | +1% crit chance per 10 gold (or similar scaling) |
+| Liquidate | Rare | Convert 100 gold → ×1.5 damage multiplier (consumable) |
+
+#### W Overflow Talents
+| Talent | Rarity | Effect |
+|--------|--------|--------|
+| Verbose Surplus | Uncommon | +2 W per word beyond 3 words in forge |
+| Linguistic Density | Rare | If AP > 100, convert excess AP into W at 5:1 ratio |
+
+#### Elemental Talents
+| Talent | Rarity | Effect |
+|--------|--------|--------|
+| Elemental Mastery | Uncommon | Gain +1 element stack per elemental word played |
+| Prismatic Resonance | Rare | ×1.2^(element stacks) damage multiplier |
+| Weakness Exploit Amp | Rare | Hitting weakness grants +2 element stacks instead of +1 |
+| Chromatic Cascade | Rare | Playing 2+ element families in one forge → REREAD all |
 
 ---
 
@@ -214,6 +320,11 @@ Play 6 T2 words → infinite loop → ULTIMATE WEAPON VICTORY
 | 5 Bosses | Done | Unique mechanics |
 | 3 Difficulties | Done | Apprentice/Adept/Master |
 | Talent Rebalance | Planned | 50→59 talents, tier redistribution |
+| Build Diversity System | Designed | 4 archetypes: REREAD, W Overflow, Gold, Elemental |
+| Talent Upgrade System | Designed | Miniboss choices, boss mass upgrades |
+| Ultimate Weapon Victory | Designed | 1 quadrillion damage breakpoint, run-ending condition |
+| New Talents (10) | Designed | Gold (4), W Overflow (2), Elemental (4) |
+| Element Stack System | Designed | Persistent stacks across run combats |
 
 ---
 
@@ -319,5 +430,11 @@ PStats.achievements = {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2025-12-23 | Add Ultimate Weapon Build Diversity system documentation | Design Subagent |
+| 2025-12-23 | Document 4 build archetypes (REREAD, W Overflow, Gold, Elemental) | Design Subagent |
+| 2025-12-23 | Add talent upgrade system (miniboss choices, boss mass upgrades) | Design Subagent |
+| 2025-12-23 | Document 10 new talents for build diversity | Design Subagent |
+| 2025-12-23 | Add element stack system mechanics | Design Subagent |
+| 2025-12-23 | Clarify Ultimate Weapon victory as run-ending condition | Design Subagent |
 | 2024-12-20 | Add 15 new Steam achievement designs | Design Subagent |
 | 2024-12-20 | Initial creation from docs restructure | Documentation Team |
