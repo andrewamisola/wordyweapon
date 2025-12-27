@@ -3564,7 +3564,7 @@ const TALENTS = [
   {
     id: 'tithe',
     name: 'Tithe',
-    desc: '<span class="mod-badge word">+2 W</span> per Adj per 20 Gold spent',
+    desc: 'Gem: <span class="mod-badge word">+2 W</span> per 20 Gold spent',
     flavor: "Offerings beget power.",
     rarity: 'uncommon',
     category: 'converter',
@@ -13942,8 +13942,8 @@ function formatDamageBreakdown(source){
     html += '<div class="breakdown-section">';
     html += '<div class="breakdown-section-title" style="color:#fb923c">Rereads</div>';
 
-    // Group rereads by talent source - consolidate individual word entries
-    const rereadBySource = new Map();
+    // Group rereads by talent source - consolidate individual word entries and track +W
+    const rereadBySource = new Map(); // talent -> { count, totalW }
     const aggregateLines = []; // Lines that are already aggregate (REREAD ALL, etc.)
 
     rereadLines.forEach(line => {
@@ -13951,12 +13951,16 @@ function formatDamageBreakdown(source){
       if(line.includes('REREAD ×') || line.includes('REREAD ALL')){
         aggregateLines.push(line);
       } else {
-        // Individual word reread - extract talent name from "(TalentName REREAD)"
-        const match = line.match(/\(([^)]+)\s+REREAD/);
-        if(match){
-          const talent = match[1];
-          const count = rereadBySource.get(talent) || 0;
-          rereadBySource.set(talent, count + 1);
+        // Individual word reread - extract talent name and +W value
+        const talentMatch = line.match(/\(([^)]+)\s+REREAD/);
+        const wMatch = line.match(/\+(\d+\.?\d*)\s*W/);
+        if(talentMatch){
+          const talent = talentMatch[1];
+          const wValue = wMatch ? parseFloat(wMatch[1]) : 0;
+          const existing = rereadBySource.get(talent) || { count: 0, totalW: 0 };
+          existing.count++;
+          existing.totalW += wValue;
+          rereadBySource.set(talent, existing);
         } else {
           // Can't parse, show as-is
           aggregateLines.push(line);
@@ -13965,9 +13969,10 @@ function formatDamageBreakdown(source){
     });
 
     // Show consolidated word rereads first
-    rereadBySource.forEach((count, talent) => {
+    rereadBySource.forEach(({ count, totalW }, talent) => {
       const label = count > 1 ? `${count} words` : '1 word';
-      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px"><span class="mod-badge reread">REREAD</span> ${label} (${talent})</div>`;
+      const wDisplay = totalW > 0 ? ` <span class="mod-badge word">+${totalW % 1 === 0 ? totalW : totalW.toFixed(1)} W</span>` : '';
+      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px"><span class="mod-badge reread">REREAD</span> ${label} (${talent})${wDisplay}</div>`;
     });
 
     // Then show aggregate/threshold rereads
@@ -15368,6 +15373,11 @@ function calc(opts={}){
     if (s.item) addWBonusToWord(s.item, bonus, talentName);
   };
 
+  // Helper: Add +W to gem slot only (no fallback if empty)
+  const addWBonusToGem = (bonus, talentName) => {
+    if (s.noun1) addWBonusToWord(s.noun1, bonus, talentName);
+  };
+
   // Helper: Add +W to ALL adjectives - each gets FULL bonus (no fallback if no adjectives)
   // Consolidates breakdown to single entry for performance
   const addWBonusToAllAdjectives = (bonus, talentName) => {
@@ -15546,7 +15556,7 @@ function calc(opts={}){
     if (stacks > 0) {
       const basePerStack = scaleTalentBonus('tithe', 2);
       const bonus = stacks * basePerStack;
-      addWBonusToAllAdjectives(bonus, `Tithe (${goldSpent}g spent)`);
+      addWBonusToGem(bonus, `Tithe (${goldSpent}g spent)`);
     }
   }
 
@@ -22400,6 +22410,21 @@ function initGfxSettingsListeners() {
     };
     bugReportBtn.onmouseenter = sfxHover;
   }
+
+  // Fullscreen toggle (Electron only)
+  const fullscreenBtn = document.getElementById('gfx-fullscreen');
+  const fullscreenSetting = document.getElementById('fullscreen-setting');
+  if (fullscreenBtn && window.fullscreenAPI) {
+    if (fullscreenSetting) fullscreenSetting.style.display = 'flex';
+    fullscreenBtn.onclick = async () => {
+      const isNowFullscreen = await window.fullscreenAPI.toggle();
+      fullscreenBtn.textContent = isNowFullscreen ? 'Fullscreen' : 'Windowed';
+    };
+    // Sync initial state
+    window.fullscreenAPI.isFullscreen().then(isFs => {
+      fullscreenBtn.textContent = isFs ? 'Fullscreen' : 'Windowed';
+    });
+  }
 }
 
 // === TEXT SELECTION PREVENTION ===
@@ -23735,3 +23760,60 @@ init();
     });
   });
 })();
+
+// ========================================
+// ESCAPE KEY - Pause Menu / Back Button
+// ========================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+
+    // List of closeable overlays (in priority order)
+    const closeableOverlays = [
+      'graphics-settings',
+      'credits-overlay',
+      'achievements-overlay',
+      'talent-viewer-overlay',
+      'skill-tree-overlay',
+      'bug-report-modal',
+      'sound-panel'
+    ];
+
+    // Check if any closeable overlay is open and close it
+    for (const id of closeableOverlays) {
+      const overlay = document.getElementById(id);
+      if (overlay && overlay.classList.contains('show')) {
+        overlay.classList.remove('show');
+        playSfxBack();
+        return;
+      }
+    }
+
+    // Check if pause menu is open - close it
+    const pauseMenu = document.getElementById('pause-menu');
+    if (pauseMenu && pauseMenu.classList.contains('show')) {
+      pauseMenu.classList.remove('show');
+      playSfxBack();
+      return;
+    }
+
+    // Open pause menu if we're not in the main menu
+    const mainMenu = document.getElementById('main-menu');
+    const inMainMenu = mainMenu && mainMenu.classList.contains('show');
+
+    if (!inMainMenu) {
+      showOverlay('#pause-menu');
+      playSfxOpen();
+    }
+  }
+});
+
+// ========================================
+// FULLSCREEN TOGGLE (F11)
+// ========================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F11' && window.fullscreenAPI) {
+    e.preventDefault();
+    window.fullscreenAPI.toggle();
+  }
+});

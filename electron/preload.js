@@ -57,6 +57,25 @@ window.steamAPI = {
   }
 };
 
+// Fullscreen toggle API
+window.fullscreenAPI = {
+  toggle: async () => {
+    try {
+      return await ipcRenderer.invoke('toggle-fullscreen');
+    } catch (e) {
+      console.warn('Fullscreen toggle error:', e);
+      return false;
+    }
+  },
+  isFullscreen: async () => {
+    try {
+      return await ipcRenderer.invoke('is-fullscreen');
+    } catch (e) {
+      return false;
+    }
+  }
+};
+
 // Also set on DOMContentLoaded to be safe
 document.addEventListener('DOMContentLoaded', () => {
   window.electronAudio = { isElectron: true };

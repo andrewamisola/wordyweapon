@@ -176,6 +176,18 @@ ipcMain.handle('steam-cloud-load', (event, key) => steamCloudLoad(key));
 ipcMain.handle('steam-unlock-achievement', (event, id) => unlockSteamAchievement(id));
 ipcMain.handle('steam-is-achievement-unlocked', (event, id) => isSteamAchievementUnlocked(id));
 
+// Fullscreen toggle
+ipcMain.handle('toggle-fullscreen', () => {
+  if (!mainWindow) return false;
+  const isFullscreen = mainWindow.isFullScreen();
+  mainWindow.setFullScreen(!isFullscreen);
+  // Force scale update after window transition settles
+  setTimeout(updateContentScale, 100);
+  setTimeout(updateContentScale, 300);
+  return !isFullscreen;
+});
+ipcMain.handle('is-fullscreen', () => mainWindow ? mainWindow.isFullScreen() : false);
+
 // Update content scaling with smart auto-zoom based on display
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
