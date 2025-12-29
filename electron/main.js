@@ -19,6 +19,7 @@ let mainWindow;
 let localServer;
 let steamClient = null;
 let smartBaseZoom = 1.0; // Calculated based on display characteristics
+let userZoom = 1.0; // User's zoom preference from slider (0.25 - 2.0)
 let moveDebounceTimer = null;
 
 // === SMART AUTO-SCALING ===
@@ -188,22 +189,30 @@ ipcMain.handle('toggle-fullscreen', () => {
 });
 ipcMain.handle('is-fullscreen', () => mainWindow ? mainWindow.isFullScreen() : false);
 
-// Update content scaling with smart auto-zoom based on display
+// User zoom from slider (25-200%)
+ipcMain.handle('set-user-zoom', (event, zoomPercent) => {
+  userZoom = zoomPercent / 100;
+  updateContentScale();
+  return true;
+});
+
+// Update content scaling using Electron's setZoomFactor
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  // Get current display (handles window moving between monitors)
-  const { screen } = require('electron');
-  const windowBounds = mainWindow.getBounds();
-  const currentDisplay = screen.getDisplayMatching(windowBounds);
+  // Get actual window content size
+  const [windowWidth, windowHeight] = mainWindow.getContentSize();
 
-  // Calculate smart zoom for current display
-  smartBaseZoom = calculateSmartBaseZoom(currentDisplay);
+  // Calculate scale to fit game (1920x1080) in window, cap at 1.0
+  const scaleX = windowWidth / BASE_WIDTH;
+  const scaleY = windowHeight / BASE_HEIGHT;
+  const fitScale = Math.min(scaleX, scaleY, 1.0);
 
-  // Use Electron's setZoomFactor - properly handles both visuals and hit testing
-  mainWindow.webContents.setZoomFactor(smartBaseZoom);
+  // Apply combined zoom: fitScale * userZoom
+  const finalZoom = fitScale * userZoom;
+  mainWindow.webContents.setZoomFactor(finalZoom);
 
-  console.log(`Smart zoom applied: ${smartBaseZoom.toFixed(3)}`);
+  console.log(`Window: ${windowWidth}x${windowHeight}, Zoom: ${finalZoom.toFixed(3)} (fit:${fitScale.toFixed(3)} x user:${userZoom.toFixed(2)})`);
 }
 
 // MIME types for serving files
@@ -350,6 +359,13 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // F12 to open DevTools for debugging
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      mainWindow.webContents.toggleDevTools();
+    }
   });
 }
 

@@ -1191,12 +1191,43 @@ const HERO_XP_THRESHOLDS = [
 ];
 const HERO_MAX_LEVEL = HERO_XP_THRESHOLDS.length;
 
-// XP awarded based on round reached (base + bonus per round)
-function calcRunXP(roundReached, defeatedBoss) {
+// XP awarded based on round reached and chapter completion
+// Chapter bosses (rounds 9, 18, 27) give full level ups: Ch1=1 level, Ch2=2 levels, Ch3=3 levels
+function calcRunXP(roundReached, defeatedBoss, heroName = null) {
+  // Calculate which chapter this is (1, 2, or 3)
+  const chapter = Math.floor((roundReached - 1) / 9) + 1;
+
+  // For chapter boss defeats, calculate XP needed for N level ups (where N = chapter number)
+  if (defeatedBoss && roundReached % 9 === 0 && heroName) {
+    const currentXP = (PStats.heroXP && PStats.heroXP[heroName]) || 0;
+    const currentLevel = getHeroLevel(heroName);
+
+    // Calculate XP needed for 'chapter' number of level ups
+    const targetLevel = Math.min(currentLevel + chapter, HERO_MAX_LEVEL);
+    const targetXP = HERO_XP_THRESHOLDS[targetLevel - 1] || HERO_XP_THRESHOLDS[HERO_XP_THRESHOLDS.length - 1];
+    const xpNeeded = Math.max(targetXP - currentXP, 0);
+
+    // Add small buffer to ensure level up (avoid edge cases)
+    return xpNeeded + 10;
+  }
+
+  // Mid-chapter: Give XP progress based on how far into the chapter we are
+  // Each round within a chapter gives ~10-15% of a level
+  const roundInChapter = ((roundReached - 1) % 9) + 1; // 1-9
+
+  // Get average XP needed per level at current progression (approximate)
+  const avgXPPerLevel = 100 + (chapter * 50); // Ch1: 150, Ch2: 200, Ch3: 250
+
+  // Each round gives about 10-12% of a level's worth of XP
+  const perRoundXP = Math.floor(avgXPPerLevel * 0.11);
+
+  // Miniboss bonus (rounds 3, 6 within each chapter)
+  const isMiniboss = roundReached % 3 === 0 && roundReached % 9 !== 0;
+  const minibossBonus = isMiniboss ? Math.floor(avgXPPerLevel * 0.15) : 0;
+
+  // Regular loss or non-chapter-boss victory
   const baseXP = 10;
-  const perRoundXP = 15;
-  const bossBonus = defeatedBoss ? 50 : 0;
-  return baseXP + (roundReached * perRoundXP) + bossBonus;
+  return baseXP + (roundInChapter * perRoundXP) + minibossBonus;
 }
 
 // Get hero's current level from XP
@@ -1311,6 +1342,35 @@ function allocateSkillPoint(heroName, skillId) {
   // Allocate
   PStats.heroSkills[heroName][skillId] = currentPoints + 1;
   PStats.heroSkillPoints[heroName] = availablePoints - 1;
+  saveStats();
+  updateSkillBadges();
+  return true;
+}
+
+// Deallocate a point from a skill (right-click to refund)
+function deallocateSkillPoint(heroName, skillId) {
+  initHeroSkills(heroName);
+  const tree = SKILL_TREES[heroName];
+  if (!tree) return false;
+
+  const node = tree.nodes.find(n => n.id === skillId);
+  if (!node) return false;
+
+  const currentPoints = getSkillPoints(heroName, skillId);
+
+  // Can't deallocate if no points in this skill
+  if (currentPoints <= 0) return false;
+
+  // Check if any other skill depends on this one and has points
+  // Only allow deallocation if it won't break prerequisites
+  const dependentNodes = tree.nodes.filter(n =>
+    n.requires && n.requires.includes(skillId) && getSkillPoints(heroName, n.id) > 0
+  );
+  if (dependentNodes.length > 0) return false;
+
+  // Deallocate
+  PStats.heroSkills[heroName][skillId] = currentPoints - 1;
+  PStats.heroSkillPoints[heroName] = (PStats.heroSkillPoints[heroName] || 0) + 1;
   saveStats();
   updateSkillBadges();
   return true;
@@ -1434,7 +1494,7 @@ function hasCapstone(heroName) {
 function createGrahamTree() {
   const p = 'gm';
   return {
-    capstone: { id: 'cross_the_ts', name: "Cross the T's", desc: "Slash weapons: REREAD ×1" },
+    capstone: { id: 'cross_the_ts', name: "Cross the T's", desc: "Slash weapons: +1 REREAD" },
     nodes: [
       // Row 0: Start
       { id: `${p}_recruit`, name: "Weapon Training", type: "minor", maxPoints: 1, row: 0, col: 2,
@@ -1490,7 +1550,7 @@ function createGrahamTree() {
 
       // Row 7: Capstone
       { id: `${p}_capstone`, name: "Duty Bound", type: "capstone", maxPoints: 1, row: 7, col: 2,
-        desc: "Slash weapons: REREAD ×1", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_bladework`, points: 1}, {id: `${p}_titan`, points: 1}] },
+        desc: "Slash weapons: +1 REREAD", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_bladework`, points: 1}, {id: `${p}_titan`, points: 1}] },
     ]
   };
 }
@@ -1562,7 +1622,7 @@ function createQuiveraTree() {
 function createBelleTree() {
   const p = 'bl';
   return {
-    capstone: { id: 'knowledge_eternal', name: "Knowledge Eternal", desc: "All words: REREAD ×1" },
+    capstone: { id: 'knowledge_eternal', name: "Knowledge Eternal", desc: "All words: +1 REREAD" },
     nodes: [
       // Row 0: Start
       { id: `${p}_student`, name: "Bookworm", type: "minor", maxPoints: 1, row: 0, col: 2,
@@ -1618,7 +1678,7 @@ function createBelleTree() {
 
       // Row 7: Capstone
       { id: `${p}_capstone`, name: "Knowledge Eternal", type: "capstone", maxPoints: 1, row: 7, col: 2,
-        desc: "All words: REREAD ×1", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_arcana`, points: 1}, {id: `${p}_duality`, points: 1}] },
+        desc: "All words: +1 REREAD", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_arcana`, points: 1}, {id: `${p}_duality`, points: 1}] },
     ]
   };
 }
@@ -1690,7 +1750,7 @@ function createAlexandriaTree() {
 function createCaesuraTree() {
   const p = 'cs';
   return {
-    capstone: { id: 'final_silence', name: "Final Silence", desc: "Words after an empty slot: ×2" },
+    capstone: { id: 'final_silence', name: "Final Silence", desc: "Words after an empty slot: +1×" },
     nodes: [
       // Row 0: Start
       { id: `${p}_whisper`, name: "Stealth", type: "minor", maxPoints: 1, row: 0, col: 2,
@@ -1746,7 +1806,7 @@ function createCaesuraTree() {
 
       // Row 7: Capstone
       { id: `${p}_capstone`, name: "Final Silence", type: "capstone", maxPoints: 1, row: 7, col: 2,
-        desc: "Words after empty slot: ×2", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_assassinate`, points: 1}, {id: `${p}_execute`, points: 1}] },
+        desc: "Words after empty slot: +1×", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_assassinate`, points: 1}, {id: `${p}_execute`, points: 1}] },
     ]
   };
 }
@@ -2360,7 +2420,7 @@ const SECRET_CHAPTER_BOSS = {
     icon: '🤫'
   }
 };
-const SECRET_BOSS_SPAWN_CHANCE = 0.05; // 5% chance on chapter boss rounds
+const SECRET_BOSS_SPAWN_CHANCE = 0.01; // 1% chance on chapter boss rounds
 
 // === CHARACTER PORTRAITS (Abstract Side Profile Silhouettes) ===
 // Minimalist side profiles facing right, no outlines, 2-3 colors blended, intricate layered shapes
@@ -2799,15 +2859,19 @@ const TALENTS = [
     category: 'generator',
     apply: (ctx) => 0 // Handled in computeWordCountBonuses()
   },
-  // T2 - Hard condition (BUFFED from +10 to +15)
+  // T2 - Hard condition multiplier
   {
     id: 'isocolon',
     name: 'Isocolon',
-    desc: 'All Words same Tier: <span class="mod-badge word">+10 W</span>',
+    desc: '<span class="mod-badge scale">+1.0×</span> if all Words same Tier',
     flavor: "Parallel structure with equal length and rhythm.",
     rarity: 'uncommon',
-    category: 'generator',
-    apply: (ctx) => 0 // Handled in computeWordCountBonuses()
+    category: 'multiplier',
+    apply: (ctx) => {
+      if (!ctx.allWords || ctx.allWords.length === 0) return 1.0;
+      const tiers = new Set(ctx.allWords.map(w => w.rarity));
+      return tiers.size === 1 ? 2.0 : 1.0; // +1× bonus = 2.0 total
+    }
   },
   // T1 - Flat bonus, easy proc (MOVED from T2)
   {
@@ -2819,15 +2883,15 @@ const TALENTS = [
     category: 'generator',
     apply: (ctx) => 0 // Handled in computeWordCountBonuses()
   },
-  // T1 - Flat element combo (MOVED from T2)
+  // T2 - Element combo multiplier
   {
     id: 'stony_brook',
     name: 'Stony Brook',
-    desc: 'Water + Earth in Forge: <span class="mod-badge word">+12 W</span>',
+    desc: '<span class="mod-badge scale">+1×</span> if Water + Earth',
     flavor: "Where rivers meet stone.",
-    rarity: 'common',
-    category: 'generator',
-    apply: (ctx) => hasElements(ctx.allWords, [E.WATER, E.EARTH]) ? 12 : 0
+    rarity: 'uncommon',
+    category: 'multiplier',
+    apply: (ctx) => hasElements(ctx.allWords, [E.WATER, E.EARTH]) ? 2.0 : 1.0
   },
   {
     id: 'alliteration',
@@ -2848,7 +2912,7 @@ const TALENTS = [
   {
     id: 'magma_core',
     name: 'Magma Core',
-    desc: '<span class="mod-badge scale">×2</span> if Fire + Earth',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Fire + Earth',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.FIRE, E.EARTH]) ? 2.0 : 1.0
@@ -2856,7 +2920,7 @@ const TALENTS = [
   {
     id: 'tempest',
     name: 'Tempest',
-    desc: '<span class="mod-badge scale">×2</span> if Lightning + Water',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Lightning + Water',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHTNING, E.WATER]) ? 2.0 : 1.0
@@ -2865,7 +2929,7 @@ const TALENTS = [
   {
     id: 'eclipse',
     name: 'Umbral Dawn',
-    desc: '<span class="mod-badge scale">×2</span> if Light + Dark',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Light + Dark',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHT, E.DARK]) ? 2.0 : 1.0
@@ -2873,7 +2937,7 @@ const TALENTS = [
   {
     id: 'necrotoxin',
     name: 'Thanatos',
-    desc: '<span class="mod-badge scale">×2</span> if Dark + Poison',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Dark + Poison',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.DARK, E.POISON]) ? 2.0 : 1.0
@@ -2881,7 +2945,7 @@ const TALENTS = [
   {
     id: 'blessed_steel',
     name: 'Helios',
-    desc: '<span class="mod-badge scale">×2</span> if Light + Physical',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Light + Physical',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHT, E.PHYS]) ? 2.0 : 1.0
@@ -2889,7 +2953,7 @@ const TALENTS = [
   {
     id: 'static_earth',
     name: 'Gaia',
-    desc: '<span class="mod-badge scale">×2</span> if Lightning + Earth',
+    desc: '<span class="mod-badge scale">+1.0×</span> if Lightning + Earth',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => hasElements(ctx.allWords, [E.LIGHTNING, E.EARTH]) ? 2.0 : 1.0
@@ -2900,7 +2964,7 @@ const TALENTS = [
   {
     id: 'synecdoche',
     name: 'Synecdoche',
-    desc: '<span class="mod-badge scale">×4</span> when 3+ Words same Element',
+    desc: '<span class="mod-badge scale">+3.0×</span> when 3+ Words same Element',
     flavor: "A part representing the whole, or the whole for a part.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -2916,7 +2980,7 @@ const TALENTS = [
   {
     id: 'minimalist',
     name: 'Brevity',
-    desc: '<span class="mod-badge scale">×3</span> if 2 Words',
+    desc: '<span class="mod-badge scale">+2.0×</span> if 2 Words',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => ctx.allWords.length === 2 ? 3 : 1.0
@@ -2925,7 +2989,7 @@ const TALENTS = [
   {
     id: 'maximalist',
     name: 'Maximalist',
-    desc: '<span class="mod-badge scale">×2.5</span> if 6 slots filled',
+    desc: '<span class="mod-badge scale">+1.5×</span> if 6 slots filled',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => ctx.allWords.length >= 6 ? 2.5 : 1.0
@@ -2934,7 +2998,7 @@ const TALENTS = [
   {
     id: 'dual_spec',
     name: 'Dual Spec',
-    desc: '<span class="mod-badge scale">×2</span> if both Hero Strong Elements',
+    desc: '<span class="mod-badge scale">+1.0×</span> if both Hero Strong Elements',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => {
@@ -2948,7 +3012,7 @@ const TALENTS = [
   {
     id: 'weak_point',
     name: 'Weak Point',
-    desc: '<span class="mod-badge scale">×1.5</span> if hitting Weakness',
+    desc: '<span class="mod-badge scale">+0.5×</span> if hitting Weakness',
     rarity: 'common',
     category: 'multiplier',
     apply: (ctx) => {
@@ -2962,7 +3026,7 @@ const TALENTS = [
   {
     id: 'monolith',
     name: 'Monolith',
-    desc: '<span class="mod-badge scale">×4</span> if all Words T3',
+    desc: '<span class="mod-badge scale">+3.0×</span> if all Words T3',
     rarity: 'uncommon',
     category: 'multiplier',
     apply: (ctx) => {
@@ -3090,16 +3154,6 @@ const TALENTS = [
     category: 'converter',
     apply: (ctx) => 0 // Handled in converter phase
   },
-  // T1 - Utility, not damage (MOVED from T3)
-  {
-    id: 'overkill_dividend',
-    name: 'Overkill Dividend',
-    desc: 'Overkill damage becomes Gold (10:1, max 50)',
-    flavor: "Excessive force has its rewards.",
-    rarity: 'common',
-    category: 'converter',
-    apply: (ctx) => 0 // Handled post-combat
-  },
   // T1 - Gold from rereads
   {
     id: 'echo_profits',
@@ -3160,7 +3214,7 @@ const TALENTS = [
   {
     id: 'reread_amplifier',
     name: 'Reread Amplifier',
-    desc: '<span class="mod-badge scale">×1.5</span> per REREAD (stacks)',
+    desc: '<span class="mod-badge scale">+0.5×</span> per REREAD (stacks)',
     flavor: "Repetition breeds power.",
     rarity: 'rare',
     category: 'converter',
@@ -3190,7 +3244,7 @@ const TALENTS = [
   {
     id: 'compound_interest',
     name: 'Compound Interest',
-    desc: '<span class="mod-badge scale">×1.15</span> per 50 Gold',
+    desc: '<span class="mod-badge scale">+0.15×</span> per 50 Gold',
     flavor: "Money makes money.",
     rarity: 'rare',
     category: 'converter',
@@ -3260,7 +3314,7 @@ const TALENTS = [
   {
     id: 'prismatic_resonance',
     name: 'Prismatic Resonance',
-    desc: '<span class="mod-badge scale">×1.2</span> per unique Element type (max 8)',
+    desc: '<span class="mod-badge scale">+0.2×</span> per unique Element type',
     flavor: "The rainbow weapon, forged from all elements.",
     rarity: 'rare',
     category: 'converter',
@@ -3270,7 +3324,7 @@ const TALENTS = [
   {
     id: 'weakness_exploit_amp',
     name: 'Weakness Exploit Amp',
-    desc: '<span class="mod-badge word">+1 W</span> per Weakness hit (stacks)',
+    desc: '<span class="mod-badge word">+1 W</span> to words hitting Weakness (stacks permanently)',
     flavor: "Exploit their flaws to master your craft.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3306,7 +3360,7 @@ const TALENTS = [
   {
     id: 'overflow',
     name: 'Overflow',
-    desc: '<span class="mod-badge scale">×1.5</span> per 10 W above 50',
+    desc: '<span class="mod-badge scale">+0.5×</span> per 10 W above 50 (max 3 stacks)',
     flavor: "More than the vessel can hold.",
     rarity: 'rare',
     category: 'converter',
@@ -3316,7 +3370,7 @@ const TALENTS = [
   {
     id: 'cascade',
     name: 'Cascade',
-    desc: '<span class="mod-badge scale">×1.5</span> per unique Element',
+    desc: '<span class="mod-badge scale">+0.5×</span> per unique Element',
     flavor: "An unstoppable torrent.",
     rarity: 'rare',
     category: 'multiplier',
@@ -3329,7 +3383,7 @@ const TALENTS = [
   {
     id: 'chain_reaction',
     name: 'Chain Reaction',
-    desc: '<span class="mod-badge scale">×3</span> if 4+ REREAD',
+    desc: '<span class="mod-badge scale">+2.0×</span> if 4+ REREAD',
     flavor: "One triggers another.",
     rarity: 'rare',
     category: 'threshold',
@@ -3337,23 +3391,21 @@ const TALENTS = [
     resource: 'REREAD',
     apply: (ctx) => 0 // Handled in threshold phase
   },
-  // T3 - Loop enabler
+  // T3 - Loop enabler (scales: threshold 10→1, then multiplier increases)
   {
     id: 'crescendo',
     name: 'Crescendo',
-    desc: '<span class="mod-badge reread">REREAD ALL</span> if 6+ REREAD',
+    desc: '<span class="mod-badge reread">REREAD ALL</span> per 10 REREAD',
     flavor: "Building to the climax.",
     rarity: 'rare',
-    category: 'threshold',
-    threshold: 6,
-    resource: 'REREAD',
+    category: 'converter',
     apply: (ctx) => 0 // Handled in threshold phase
   },
   // T2 - Conditional threshold (MOVED from T3)
   {
     id: 'fortuna',
     name: 'Fortuna',
-    desc: '<span class="mod-badge scale">×2</span> if 100+ Gold',
+    desc: '<span class="mod-badge scale">+1.0×</span> if 100+ Gold',
     flavor: "Fortune favors the wealthy.",
     rarity: 'uncommon',
     category: 'threshold',
@@ -3365,7 +3417,7 @@ const TALENTS = [
   {
     id: 'capital_punishment',
     name: 'Capital Punishment',
-    desc: '<span class="mod-badge scale">×2.5</span> if Boss or Miniboss',
+    desc: '<span class="mod-badge scale">+1.5×</span> if Boss or Miniboss',
     flavor: "Big letters for big enemies.",
     rarity: 'common',
     category: 'threshold',
@@ -3375,7 +3427,7 @@ const TALENTS = [
   {
     id: 'berserker',
     name: 'Berserker',
-    desc: '<span class="mod-badge scale">×1.5</span> per Chapter',
+    desc: '<span class="mod-badge scale">+0.5×</span> per Chapter',
     flavor: "Rage builds with time.",
     rarity: 'rare',
     category: 'multiplier',
@@ -3388,7 +3440,7 @@ const TALENTS = [
   {
     id: 'perfectionist',
     name: 'Perfectionist',
-    desc: '<span class="mod-badge scale">×3</span> if 6 slots, no Resisted',
+    desc: '<span class="mod-badge scale">+2.0×</span> if 6 slots, no Resisted',
     flavor: "Flawless execution.",
     rarity: 'uncommon',
     category: 'threshold',
@@ -3434,7 +3486,7 @@ const TALENTS = [
   {
     id: 'crown_jewel',
     name: 'Kohinoor',
-    desc: '<span class="mod-badge word">×4 W</span> Gem (instead of ×2)',
+    desc: '<span class="mod-badge word">+3.0× W</span> Gem (instead of +1×)',
     flavor: "Mountain of Light.",
     rarity: 'rare',
     category: 'effect',
@@ -3444,7 +3496,7 @@ const TALENTS = [
   {
     id: 'hyperbole',
     name: 'Hyperbole',
-    desc: 'Overkill ×2 carries to next Round (max 25% HP)',
+    desc: 'Overkill +1× carries to next Round (max 25% HP)',
     flavor: "Exaggerated statements not meant to be taken literally.",
     rarity: 'uncommon',
     category: 'effect',
@@ -3480,7 +3532,7 @@ const TALENTS = [
   {
     id: 'trinity',
     name: 'Trinity',
-    desc: '<span class="mod-badge scale">×2.5</span> if 3 Words',
+    desc: '<span class="mod-badge scale">+1.5×</span> if 3 Words',
     flavor: "Three is a magic number.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3490,7 +3542,7 @@ const TALENTS = [
   {
     id: 'glass_cannon',
     name: 'Glass Cannon',
-    desc: '<span class="mod-badge scale">×5</span> if 1 Word',
+    desc: '<span class="mod-badge scale">+4.0×</span> if 1 Word',
     flavor: "One word to rule them all.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3500,7 +3552,7 @@ const TALENTS = [
   {
     id: 'focused_fire',
     name: 'Focused Fire',
-    desc: '<span class="mod-badge scale">×2.5</span> if 1 Hero Strong Element',
+    desc: '<span class="mod-badge scale">+1.5×</span> if 1 Hero Strong Element',
     flavor: "Specialization over diversification.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3516,7 +3568,7 @@ const TALENTS = [
   {
     id: 'opening_strike',
     name: 'Opening Strike',
-    desc: '<span class="mod-badge scale">×1.5</span> if Weapon first',
+    desc: '<span class="mod-badge scale">+0.5×</span> if Weapon first',
     flavor: "Lead with your blade.",
     rarity: 'common',
     category: 'multiplier',
@@ -3553,7 +3605,7 @@ const TALENTS = [
   {
     id: 'chiasmus',
     name: 'Chiasmus',
-    desc: '<span class="mod-badge reread">REREAD ×2</span> if first/last same Element',
+    desc: '<span class="mod-badge reread">REREAD +1×</span> if first/last same Element',
     flavor: "What begins, ends. What ends, begins.",
     rarity: 'uncommon',
     category: 'retrigger',
@@ -3605,11 +3657,11 @@ const TALENTS = [
     category: 'generator',
     apply: (ctx) => 0 // Handled in W calculation
   },
-  // T1 - Deck diversity reward
+  // T1 - Deck diversity reward (requires all 3 core word types)
   {
     id: 'linguist',
     name: 'Linguist',
-    desc: '<span class="mod-badge word">+5 W</span> per Word if 3+ types',
+    desc: '<span class="mod-badge word">+5 W</span> per Word if Rarity + Weapon + Elemental',
     flavor: "A polyglot of destruction.",
     rarity: 'common',
     category: 'generator',
@@ -3625,55 +3677,55 @@ const TALENTS = [
     category: 'generator',
     apply: (ctx) => 0 // Handled in W calculation
   },
-  // T1 - Flat per-element (not per-word)
+  // T1 - Flat per-element, applied to each elemental word
   {
     id: 'spectrum',
     name: 'Spectrum',
-    desc: '<span class="mod-badge word">+2 W</span> per unique Element',
+    desc: '<span class="mod-badge word">+2 W</span> per unique Element, applied to each Elemental Word',
     flavor: "A rainbow of destruction.",
     rarity: 'common',
     category: 'generator',
     apply: (ctx) => 0 // Handled in W calculation
   },
-  // T1 - Flat element combo
+  // T2 - Element combo multiplier
   {
     id: 'inferno',
     name: 'Inferno',
-    desc: '<span class="mod-badge word">+10 W</span> if Fire + Water',
+    desc: '<span class="mod-badge scale">+1×</span> if Fire + Water',
     flavor: "Steam and fury.",
-    rarity: 'common',
-    category: 'generator',
-    apply: (ctx) => hasElements(ctx.allWords, [E.FIRE, E.WATER]) ? 10 : 0
+    rarity: 'uncommon',
+    category: 'multiplier',
+    apply: (ctx) => hasElements(ctx.allWords, [E.FIRE, E.WATER]) ? 2.0 : 1.0
   },
-  // T1 - Flat element combo
+  // T2 - Element combo multiplier
   {
     id: 'verdant',
     name: 'Verdant',
-    desc: '<span class="mod-badge word">+10 W</span> if Earth + Light',
+    desc: '<span class="mod-badge scale">+1×</span> if Earth + Light',
     flavor: "Growth under sunlight.",
-    rarity: 'common',
-    category: 'generator',
-    apply: (ctx) => hasElements(ctx.allWords, [E.EARTH, E.LIGHT]) ? 10 : 0
+    rarity: 'uncommon',
+    category: 'multiplier',
+    apply: (ctx) => hasElements(ctx.allWords, [E.EARTH, E.LIGHT]) ? 2.0 : 1.0
   },
-  // T1 - Flat element combo
+  // T2 - Element combo multiplier
   {
     id: 'venom_strike',
     name: 'Venom Strike',
-    desc: '<span class="mod-badge word">+10 W</span> if Poison + Lightning',
+    desc: '<span class="mod-badge scale">+1×</span> if Poison + Lightning',
     flavor: "Shocking toxicity.",
-    rarity: 'common',
-    category: 'generator',
-    apply: (ctx) => hasElements(ctx.allWords, [E.POISON, E.LIGHTNING]) ? 10 : 0
+    rarity: 'uncommon',
+    category: 'multiplier',
+    apply: (ctx) => hasElements(ctx.allWords, [E.POISON, E.LIGHTNING]) ? 2.0 : 1.0
   },
-  // T1 - Flat element combo
+  // T2 - Element combo multiplier
   {
     id: 'twilight',
     name: 'Twilight',
-    desc: '<span class="mod-badge word">+10 W</span> if Dark + Physical',
+    desc: '<span class="mod-badge scale">+1×</span> if Dark + Physical',
     flavor: "Shadows made manifest.",
-    rarity: 'common',
-    category: 'generator',
-    apply: (ctx) => hasElements(ctx.allWords, [E.DARK, E.PHYS]) ? 10 : 0
+    rarity: 'uncommon',
+    category: 'multiplier',
+    apply: (ctx) => hasElements(ctx.allWords, [E.DARK, E.PHYS]) ? 2.0 : 1.0
   },
   // T1 - Simple per-word AP
   {
@@ -3699,7 +3751,11 @@ const TALENTS = [
     flavor: "Everything you touch turns to gold.",
     rarity: 'uncommon',
     category: 'converter',
-    apply: (ctx) => 0 // Handled in converter phase
+    goldBonus: (ctx) => {
+      const elementalWords = (ctx.allWords || []).filter(w => w.elem !== undefined);
+      return elementalWords.length * scaleTalentBonus('midas_touch', 5);
+    },
+    apply: (ctx) => 0
   },
   // T2 - Gold from REREADs
   {
@@ -3883,14 +3939,14 @@ const WORDS=[
   {id:"mace",name:"Mace",type:"weapon",category:"blunt",rarity:T.T1,desc:"A heavy bludgeon."},
   {id:"warhammer",name:"Warhammer",type:"weapon",category:"blunt",rarity:T.T2,desc:"A crushing war weapon."},
   {id:"maul",name:"Maul",type:"weapon",category:"blunt",rarity:T.T3,desc:"A massive two-handed hammer."},
-  // Rarity words - Pure multipliers (non-elemental)
-  // Scaled for REREAD synergy: each tier roughly doubles with 2 REREADs
-  {id:"adj_common",name:"Common",type:"rarity",mult:1.25,rarity:T.T1,desc:"×1.25 multiplier."},
-  {id:"adj_uncommon",name:"Uncommon",type:"rarity",mult:1.5,rarity:T.T1,desc:"×1.5 multiplier."},
-  {id:"adj_magic",name:"Magic",type:"rarity",mult:1.75,rarity:T.T2,desc:"×1.75 multiplier."},
-  {id:"adj_rare",name:"Rare",type:"rarity",mult:2.0,rarity:T.T2,desc:"×2.0 multiplier."},
-  {id:"adj_epic",name:"Epic",type:"rarity",mult:2.5,rarity:T.T3,desc:"×2.5 multiplier."},
-  {id:"adj_legendary",name:"Legendary",type:"rarity",mult:3.0,rarity:T.T3,desc:"×3.0 multiplier."},
+  // Rarity words - Pure multipliers (non-elemental, ADDITIVE stacking)
+  // mult value is the total (1 + bonus), bonus = mult - 1
+  {id:"adj_common",name:"Common",type:"rarity",mult:1.25,rarity:T.T1,desc:"+0.25× multiplier"},
+  {id:"adj_uncommon",name:"Uncommon",type:"rarity",mult:1.5,rarity:T.T1,desc:"+0.5× multiplier"},
+  {id:"adj_magic",name:"Magic",type:"rarity",mult:1.75,rarity:T.T2,desc:"+0.75× multiplier"},
+  {id:"adj_rare",name:"Rare",type:"rarity",mult:2.0,rarity:T.T2,desc:"+1× multiplier"},
+  {id:"adj_epic",name:"Epic",type:"rarity",mult:2.5,rarity:T.T3,desc:"+1.5× multiplier"},
+  {id:"adj_legendary",name:"Legendary",type:"rarity",mult:3.0,rarity:T.T3,desc:"+2× multiplier"},
   // Elemental words (noun + adjective forms)
   // FIRE
   {id:"fire_n",name:"Fire",type:"elemental",elem:E.FIRE,rarity:T.T1,desc:"Fire",nounForm:"Fire",adjPrimary:"Fiery",adjAlt:"Fiery"},
@@ -4270,6 +4326,12 @@ function formatTalentDescUpgradePreview(talent, talentId = null){
       const newVal = scaleLinear(n, nextLevel);
       return `<span class="upgrade-old">+${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">+${newVal}</span>${suffix}`;
     })
+    // Scale +N Gold with old→new preview
+    .replace(/\+(\d+\.?\d*)(\s*Gold)(?=\s|<|$)/gi, (_, n, suffix) => {
+      const oldVal = scaleLinear(n, currentLevel);
+      const newVal = scaleLinear(n, nextLevel);
+      return `<span class="upgrade-old">+${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">+${newVal}</span>${suffix}`;
+    })
     // Scale ×N with old→new preview (but NOT REREAD ×N)
     .replace(/(?<!REREAD\s*)×(\d+\.?\d*)/g, (_, n) => {
       const oldVal = scaleMult(n, currentLevel);
@@ -4284,8 +4346,8 @@ function formatTalentDescUpgradePreview(talent, talentId = null){
       return `REREAD <span class="upgrade-old">×${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
     })
     // Scale standalone REREAD with old→new preview
-    // Exclude REREAD after threshold pattern "N+ " (e.g., "6+ REREAD" should not scale)
-    .replace(/(?<!\d+\+\s*)\bREREAD\b(?!\s*×)(?!\s*ALL)/g, () => {
+    // Exclude REREAD after threshold pattern "N+ " or "per " (e.g., "6+ REREAD", "per REREAD" should not scale)
+    .replace(/(?<!\d+\+\s*)(?<!per\s)\bREREAD\b(?!\s*×)(?!\s*ALL)/gi, () => {
       const oldVal = currentLevel;
       const newVal = nextLevel;
       if (currentLevel === 1) {
@@ -4302,6 +4364,41 @@ function formatTalentDescUpgradePreview(talent, talentId = null){
       }
       return `REREAD ALL <span class="upgrade-old">×${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
     });
+
+  // Special handling for Crescendo - show threshold decrease or multiplier increase
+  const effectiveTalentId = talentId || talent?.id;
+  if(effectiveTalentId === 'crescendo') {
+    let oldThreshold, oldBonus, newThreshold, newBonus;
+    if(currentLevel <= 9) {
+      oldThreshold = 11 - currentLevel;
+      oldBonus = 1;
+    } else {
+      oldThreshold = 1;
+      oldBonus = currentLevel - 9;
+    }
+    if(nextLevel <= 9) {
+      newThreshold = 11 - nextLevel;
+      newBonus = 1;
+    } else {
+      newThreshold = 1;
+      newBonus = nextLevel - 9;
+    }
+
+    let oldText, newText;
+    if(oldBonus === 1) {
+      oldText = `per ${oldThreshold}`;
+    } else {
+      oldText = `×${oldBonus} per 1`;
+    }
+    if(newBonus === 1) {
+      newText = `per ${newThreshold}`;
+    } else {
+      newText = `×${newBonus} per 1`;
+    }
+
+    previewDesc = `<span class="mod-badge reread">REREAD ALL</span> <span class="upgrade-old">${oldText}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">${newText}</span>`;
+    return fmtTalentDesc(previewDesc);
+  }
 
   return fmtTalentDesc(previewDesc);
 }
@@ -5873,24 +5970,6 @@ const TALENT_SVG = {
     <path d="M46 62 L50 58 L54 62 M46 68 L50 72 L54 68" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
   </svg>`,
 
-  // Overkill Dividend - Coin splash (overkill → gold)
-  overkill_dividend: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="od-coin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#92400e"/></linearGradient>
-      <radialGradient id="od-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#d4af37" stop-opacity="0.4"/><stop offset="100%" stop-color="#d4af37" stop-opacity="0"/></radialGradient>
-    </defs>
-    <ellipse cx="50" cy="65" rx="35" ry="40" fill="url(#od-glow)"/>
-    <ellipse cx="50" cy="70" rx="15" ry="15" fill="url(#od-coin)"/>
-    <ellipse cx="50" cy="68" rx="10" ry="10" fill="#fff" opacity="0.2"/>
-    <ellipse cx="30" cy="45" rx="8" ry="8" fill="url(#od-coin)"/>
-    <ellipse cx="70" cy="48" rx="7" ry="7" fill="url(#od-coin)"/>
-    <ellipse cx="25" cy="80" rx="6" ry="6" fill="url(#od-coin)"/>
-    <ellipse cx="75" cy="85" rx="7" ry="7" fill="url(#od-coin)"/>
-    <ellipse cx="40" cy="95" rx="5" ry="5" fill="url(#od-coin)"/>
-    <ellipse cx="62" cy="92" rx="6" ry="6" fill="url(#od-coin)"/>
-    <path d="M50 50 L45 35 M50 50 L55 32 M50 50 L38 42 M50 50 L62 40" stroke="#fbbf24" stroke-width="2" opacity="0.6"/>
-  </svg>`,
-
   // Echo Profits - Coins with reread echoes
   echo_profits: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -6686,9 +6765,6 @@ const TALENT_SVG = {
     <path d="M50 80 L50 92" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
     <path d="M18 60 L30 60" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
     <path d="M70 60 L82 60" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
-    <path d="M72 95 Q80 90 85 100" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M78 98 Q85 94 92 102" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M84 101 Q90 98 96 105" stroke="#fbbf24" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
   </svg>`,
 
   // Default fallback icon
@@ -7418,7 +7494,7 @@ function showVictoryScreen(){
 
   // Award XP to hero for completing the run (with boss bonus)
   if (S.hero && S.hero.name) {
-    const xpGained = calcRunXP(S.roundIndex, true); // true = defeated boss
+    const xpGained = calcRunXP(S.roundIndex, true, S.hero.name); // true = defeated boss
     const result = awardHeroXP(S.hero.name, xpGained);
     S.lastRunXP = { xp: xpGained, ...result };
   }
@@ -7613,13 +7689,22 @@ function renderSkillTree() {
     drawSkillTreeLines(heroName, nodes);
   });
 
-  // Add click handlers for nodes
+  // Add click handlers for nodes (left-click = allocate, right-click = deallocate)
   container.querySelectorAll('.skill-node:not(.locked)').forEach(el => {
     el.onclick = () => {
       const skillId = el.dataset.skill;
       const hero = el.dataset.hero;
       if (allocateSkillPoint(hero, skillId)) {
         playSfxSkillUp();
+        renderSkillTree();
+      }
+    };
+    el.oncontextmenu = (e) => {
+      e.preventDefault(); // Prevent browser context menu
+      const skillId = el.dataset.skill;
+      const hero = el.dataset.hero;
+      if (deallocateSkillPoint(hero, skillId)) {
+        playSfxClick(); // Use click sound for deallocation
         renderSkillTree();
       }
     };
@@ -8086,7 +8171,7 @@ function executeForfeit() {
   let newLevel = 1;
   const heroName = S.hero?.name || 'Hero';
   if (S.hero && S.hero.name) {
-    xpGained = calcRunXP(S.roundIndex, false);
+    xpGained = calcRunXP(S.roundIndex, false, S.hero.name);
     const result = awardHeroXP(S.hero.name, xpGained);
     leveledUp = result.leveledUp;
     newLevel = result.newLevel;
@@ -8904,8 +8989,6 @@ function playBrassTone(freq, dur = 0.3, vol = 0.12) {
   const now = audioCtx.currentTime;
   const oscCount = 3;
   const spread = 15; // cents detune spread
-  const oscillators = [];
-  const gains = [];
 
   // Create multiple detuned sawtooth oscillators for "fat" brass sound
   for (let i = 0; i < oscCount; i++) {
@@ -8924,14 +9007,50 @@ function playBrassTone(freq, dur = 0.3, vol = 0.12) {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur + 0.4); // longer release tail
 
     osc.connect(gain);
-    gain.connect(masterGain);
-    gain.connect(delayNode); // reverb via delay
+    gain.connect(masterGain);  // Through masterGain for normal volume control
+    gain.connect(delayNode);   // reverb via delay
 
     osc.start(now);
     osc.stop(now + dur + 0.5);
+  }
+}
 
-    oscillators.push(osc);
-    gains.push(gain);
+// Loud tally tone for combat tally - bypasses masterGain for prominence
+// pan: -1 (left) to 1 (right), 0 = center
+function playTallyTone(freq, dur, vol, pan = 0) {
+  if (!audioOn) return;
+  if (!audioCtx) initAudio();
+
+  const now = audioCtx.currentTime;
+  const oscCount = 3;
+  const spread = 15;
+
+  // Create stereo panner for positional audio
+  const panner = audioCtx.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, pan)); // clamp to -1..1
+  panner.connect(audioCtx.destination);
+
+  for (let i = 0; i < oscCount; i++) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    osc.detune.value = (i - 1) * spread;
+
+    // Smooth envelope with decay tail
+    const oscVol = vol * 0.35;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(oscVol, now + 0.02);
+    gain.gain.setValueAtTime(oscVol * 0.9, now + dur * 0.4);
+    gain.gain.exponentialRampToValueAtTime(oscVol * 0.3, now + dur);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur + 0.3);
+
+    osc.connect(gain);
+    gain.connect(panner);  // Through panner for stereo position
+
+    osc.start(now);
+    osc.stop(now + dur + 0.4);
   }
 }
 
@@ -9043,7 +9162,7 @@ function playResolutionChord(lastToneIndex) {
 
 // Rarity drone stubs - feature disabled, kept for call site compatibility
 function stopRarityDrone() {}
-function stopAllRarityDrones() {}
+function stopAllRarityDrones() { }
 function playRarityDrone() {}
 
 // Magical pentatonic scale for tally sounds (brass trumpet style)
@@ -9061,63 +9180,81 @@ function playMagicParseTone(i, totalWords, isRetrigger) {
   const freq = MAGIC_BASE_FREQ * Math.pow(2, semitones / 12);
 
   // Slightly different dynamics for retriggers
-  const dur = isRetrigger ? 0.35 : 0.28;
-  const vol = isRetrigger ? 0.14 : 0.10;
+  const dur = isRetrigger ? RHYTHM.HALF / 1000 : RHYTHM.BEAT / 1000; // Beat-synced duration
+  const vol = 0.15; // Balanced with music
 
   playBrassTone(freq, dur, vol);
 }
 
-// Shepard tone: infinitely rising sound effect using octave layering
-// Creates illusion of endless ascent by fading between octave layers
-function playShepardTone(triggerIndex, totalTriggers, isRetrigger) {
+// Rising pentatonic tone for combat tally
+// Uses dedicated playTallyTone for loud, prominent sound
+// wordIndex and totalWords used for stereo panning
+function playShepardTone(triggerIndex, totalTriggers, isRetrigger, wordIndex = 0, totalWords = 1) {
   if (!audioOn) return;
   if (!audioCtx) initAudio();
 
-  // Use pentatonic scale for musicality (5 notes per octave cycle)
-  const scaleLength = MAGIC_SCALE_SEMITONES.length; // 5 notes
-  const scaleIndex = triggerIndex % scaleLength;
-  const semitones = MAGIC_SCALE_SEMITONES[scaleIndex];
+  // E minor pentatonic scale
+  const scaleIndex = triggerIndex % MAGIC_SCALE_SEMITONES.length;
+  const octave = Math.floor(triggerIndex / MAGIC_SCALE_SEMITONES.length) % 3; // Cap at 3 octaves
+  const semitones = MAGIC_SCALE_SEMITONES[scaleIndex] + octave * 12;
 
-  // Position within one octave cycle (0 to 1)
-  // After 5 notes we've gone through one "octave" of the pentatonic scale
-  const cyclePosition = scaleIndex / scaleLength;
+  const freq = MAGIC_BASE_FREQ * Math.pow(2, semitones / 12);
 
-  // Base frequency for the current note in middle register
-  const baseFreq = MAGIC_BASE_FREQ * Math.pow(2, semitones / 12);
+  // Beat-synced duration (1/4 note at 136 BPM = 441ms)
+  const dur = RHYTHM.BEAT / 1000;
+  const vol = 0.25;  // Balanced with music
 
-  // Duration and volume
-  const dur = isRetrigger ? 0.35 : 0.30;
-  const baseVol = isRetrigger ? 0.32 : 0.25;
+  // Calculate stereo pan: spread words left to right
+  // 1 word = center, 2 words = left/right, 3+ words = spread evenly
+  let pan = 0;
+  if (totalWords > 1) {
+    pan = (wordIndex / (totalWords - 1)) * 2 - 1; // -1 to 1
+  }
 
-  // Shepard tone: layer 3 octaves with crossfading envelope
-  // As we rise through the scale:
-  // - High octave fades OUT (preparing to wrap to bottom)
-  // - Low octave fades IN (coming from previous wrap)
-  // - Middle octave stays relatively constant
-  const octaves = [-1, 0, 1]; // Low, middle, high
+  playTallyTone(freq, dur, vol, pan);
+}
 
-  octaves.forEach(octOffset => {
-    const freq = baseFreq * Math.pow(2, octOffset);
+// Guitar-strum style E minor chord for damage reveal
+// Plays chord with top note at specified frequency, arpeggiated downward
+function playDamageChord(topFreq) {
+  if (!audioOn) return;
+  if (!audioCtx) initAudio();
 
-    // Shepard envelope: each octave has a different phase
-    // Low octave (-1): loudest at END of cycle (fading in as high wraps)
-    // Middle octave (0): loudest in MIDDLE of cycle
-    // High octave (+1): loudest at START of cycle (fading out as we rise)
+  // E minor chord intervals from root: 0 (E), 3 (G), 7 (B), 12 (E octave)
+  // We work backwards from the top note to build the chord
+  const intervals = [0, -5, -9, -12]; // semitones down from top note
+  const strumDelay = 0.025; // 25ms between notes for guitar strum feel
+  const now = audioCtx.currentTime;
 
-    // Map octave offset to phase: -1->0.67, 0->0.33, 1->0
-    const phase = (1 - octOffset) / 3; // High=0, Mid=0.33, Low=0.67
-    const envelopePos = (cyclePosition + phase) % 1;
+  intervals.forEach((interval, i) => {
+    const freq = topFreq * Math.pow(2, interval / 12);
+    const startTime = now + i * strumDelay;
 
-    // Smooth bell curve: peaks at 0.5, fades at 0 and 1
-    // cos^2 gives smooth fade in/out
-    const envelope = Math.pow(Math.cos((envelopePos - 0.5) * Math.PI), 2);
-    const vol = baseVol * envelope;
+    // Create 2 detuned oscillators per note for richness
+    for (let d = 0; d < 2; d++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
 
-    if (vol > 0.02) { // Only play if audible
-      playBrassTone(freq, dur, vol);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      osc.detune.value = (d - 0.5) * 10; // slight detune
+
+      // Guitar-like envelope: quick attack, sustain, fade
+      const vol = 0.08 - (i * 0.015); // lower notes slightly quieter
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(vol, startTime + 0.015);
+      gain.gain.setValueAtTime(vol * 0.8, startTime + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.6);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.7);
     }
   });
 }
+
 
 // Sample loader and cache (using Audio elements for file:// protocol compatibility)
 function loadSample(name) {
@@ -10791,6 +10928,8 @@ function init(){
   if(shopExitBtn){
     shopExitBtn.textContent = "EXIT SHOP";
     shopExitBtn.onclick = async () => {
+      if(shopExitBtn.disabled) return;
+      try {
       // Grant interest on shop exit: gold interest + empty slot interest
       const { totalInterest } = calculateInterest();
       if(totalInterest > 0){
@@ -10835,6 +10974,12 @@ function init(){
       saveRun();
 
       render();
+      } catch (e) {
+        console.error('Exit shop error:', e);
+        // Re-enable button if something went wrong
+        shopExitBtn.disabled = false;
+        shopExitBtn.classList.remove('btn-disabled');
+      }
     };
     shopExitBtn.onmouseenter = sfxHover;
   }
@@ -11085,7 +11230,7 @@ function onboardingBadges() {
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center">
       <span class="mod-badge ap" style="font-size:14px">+15 AP</span>
       <span class="mod-badge word" style="font-size:14px">+4 W</span>
-      <span class="mod-badge scale" style="font-size:14px">×1.5</span>
+      <span class="mod-badge scale" style="font-size:14px">+0.5×</span>
       <span class="mod-badge reread" style="font-size:14px">REREAD</span>
     </div>
   `;
@@ -11718,7 +11863,7 @@ function newEnc(){
   // Note: Chapter bosses set their own boss flag and HP scaling in the section below
 
   // Chapter Boss: Select from CHAPTER_BOSSES pool (no repeats until exhausted)
-  // 5% chance to spawn SECRET_CHAPTER_BOSS (The Silent Knight) instead
+  // 1% chance to spawn SECRET_CHAPTER_BOSS (The Silent Knight) instead
   if(isChapterBoss){
     let selectedBoss;
 
@@ -11727,7 +11872,7 @@ function newEnc(){
       selectedBoss = S.nextChapterBoss;
       S.nextChapterBoss = null;
     } else {
-      // 5% chance to spawn The Silent Knight as a rare secret chapter boss
+      // 1% chance to spawn The Silent Knight as a rare secret chapter boss
       if(Math.random() < SECRET_BOSS_SPAWN_CHANCE){
         selectedBoss = SECRET_CHAPTER_BOSS;
       } else {
@@ -11780,7 +11925,7 @@ function newEnc(){
 
     // Red Aktins: Block a random word slot (excluding weapon)
     if(selectedBoss.id === 'red_aktins'){
-      const blockableSlots = ['adj1', 'adj2', 'adj3', 'adj4', 'noun1'];
+      const blockableSlots = ['adj1', 'adj2', 'adj3', 'adj4']; // Gem excluded
       S.blockedSlot = blockableSlots[Math.floor(Math.random() * blockableSlots.length)];
     } else {
       S.blockedSlot = null;
@@ -11987,10 +12132,15 @@ function render(){
   // Header stats
   if(document.getElementById('gold')) document.getElementById('gold').textContent = S.gold;
   if(document.getElementById('level')) document.getElementById('level').textContent = S.level;
-  if(document.getElementById('round-num')) document.getElementById('round-num').textContent = S.roundIndex;
-  // Chapter number (every 9 rounds = 1 chapter)
+  // Round display: "X / 27" for main game, just "X" for Endless Mode
+  if(document.getElementById('round-num')) {
+    document.getElementById('round-num').textContent = S.roundIndex <= 27 ? `${S.roundIndex} / 27` : `${S.roundIndex}`;
+  }
+  // Chapter number (every 9 rounds = 1 chapter), "Endless" after round 27
   const chapter = Math.floor((S.roundIndex - 1) / 9) + 1;
-  if(document.getElementById('chapter-num')) document.getElementById('chapter-num').textContent = chapter;
+  if(document.getElementById('chapter-num')) {
+    document.getElementById('chapter-num').textContent = S.roundIndex <= 27 ? `${chapter} of 3` : 'Endless';
+  }
 
   // Update gold pill with inline interest display (uses difficulty multiplier)
   const { totalInterest } = calculateInterest();
@@ -12108,9 +12258,10 @@ function updateHealthBars(){
       const totalW = c.breakdown ? c.breakdown.wordCount : c.wordCount;
       badges.push(`<span class="mod-badge word">${fmtVal(totalW)} W</span>`);
 
-      // Show multiplier if > 1
+      // Show multiplier if > 1 (display as additive bonus)
       if(c.totalMultiplier > 1){
-        badges.push(`<span class="mod-badge scale">×${fmtVal(c.totalMultiplier)}</span>`);
+        const bonus = (c.totalMultiplier - 1).toFixed(1);
+        badges.push(`<span class="mod-badge scale">+${bonus}×</span>`);
       }
 
       badgesEl.innerHTML = badges.join('');
@@ -12429,15 +12580,17 @@ function updateSlotCalcs(){
     // Build multiplier text
     let multParts = [];
 
-    // Word's intrinsic multiplier (not in gem slot)
+    // Word's intrinsic multiplier (not in gem slot) - show as additive bonus
     if (word.mult !== undefined && slotKey !== 'noun1') {
-      multParts.push(fmtMod(word.mult, 'scale'));
+      const bonus = (word.mult - 1).toFixed(1);
+      multParts.push(`<span class="mod-badge scale">+${bonus}×</span>`);
     }
 
-    // Talent-based per-word multipliers (e.g., Eclipse ×2.5, One With Nature ×1.5)
+    // Talent-based per-word multipliers (e.g., Eclipse ×2.5, One With Nature ×1.5) - show as additive
     if (wordData.talentMults && wordData.talentMults.length > 0) {
       wordData.talentMults.forEach(tm => {
-        multParts.push(`<span class="mod-badge scale" title="${tm.name}">×${tm.mult}</span>`);
+        const bonus = (tm.mult - 1).toFixed(1);
+        multParts.push(`<span class="mod-badge scale" title="${tm.name}">+${bonus}×</span>`);
       });
     }
 
@@ -12470,24 +12623,18 @@ function updateSlotCalcs(){
     const display = getWordDisplay(word, key);
     const retriggerCount = getRetriggerCount(word);
 
-    // Build HTML string
-    let htmlContent = "";
-
-    if(retriggerCount > 0) {
-      // Show total trigger count (base + rereads) - matches tally display
-      const totalTriggers = retriggerCount + 1;
-      htmlContent += `<div style="margin-bottom:1px"><span class="mod-badge reread">×${totalTriggers}</span></div>`;
-    }
-
-    htmlContent += display.apText;
-
-    el.innerHTML = htmlContent;
+    // Build HTML string - just apText now (REREAD badge moved to top)
+    el.innerHTML = display.apText;
     el.className = "slot-calc" + (display.className ? ` ${display.className}` : "");
 
-    // Build mult text with word count badge
+    // Build mult text with word count badge and REREAD badge
     let multDisplay = display.multText;
     if(display.wordCountText) {
       multDisplay = display.wordCountText + (multDisplay ? ' ' + multDisplay : '');
+    }
+    if(retriggerCount > 0) {
+      // Short form ×N in forge preview (matches combat display)
+      multDisplay = (multDisplay ? multDisplay + ' ' : '') + `<span class="mod-badge reread">×${retriggerCount}</span>`;
     }
     if(multEl) multEl.innerHTML = multDisplay;
   }
@@ -12939,12 +13086,12 @@ function openTalentViewer(){
     content.appendChild(passiveSection);
   }
 
-  // Display talent multiplier (each talent = +0.1x) - lowkey, centered under passive
+  // Display talent multiplier (each talent = +0.2x) - lowkey, centered under passive
   if(S.talents && S.talents.length > 0){
-    const talentMult = 1.0 + (S.talents.length * 0.1);
+    const talentBonus = S.talents.length * 0.2;
     const multPill = document.createElement('div');
     multPill.style.cssText = 'text-align:center;font-size:11px;color:#6b7280;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #374151;grid-column:1/-1';
-    multPill.innerHTML = `Talent Multiplier: <span class="mod-badge scale" style="font-size:10px;padding:2px 6px">×${talentMult.toFixed(1)}</span>`;
+    multPill.innerHTML = `Talent Multiplier: <span class="mod-badge scale" style="font-size:10px;padding:2px 6px">+${talentBonus.toFixed(1)}×</span>`;
     content.appendChild(multPill);
   }
 
@@ -13018,9 +13165,8 @@ function openTalentViewer(){
             const sign = v < 0 ? '' : '+';
             effectivenessHtml = `<span class="mod-badge word" style="margin-left:8px">${sign}${v} W</span>`;
           } else if((t.category === 'multiplier' || t.category === 'multiplicative_mult' || t.category === 'threshold') && value !== 1 && value !== 0){
-            const v = Math.round(value * 10) / 10;
-            const cls = v < 1 ? 'neg' : 'scale';
-            effectivenessHtml = `<span class="mod-badge ${cls}" style="margin-left:8px">×${v}</span>`;
+            // Don't add effectivenessHtml for multipliers - the desc already has the badge
+            // effectivenessHtml would duplicate the badge shown in t.desc
           }
         } catch(e) {}
       }
@@ -13084,8 +13230,8 @@ function openTalentViewer(){
           ? '<span class="mod-badge add">+0 AP</span>'
           : fmtMod(totalVal, 'ap', ' AP');
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${wordsSold} sold × 0.2 = ${badge}/Word</div>`;
-      } else if(t.category === 'economy' && t.goldBonus){
-        // Economy talents: show current gold bonus
+      } else if(t.category === 'economy' && t.goldBonus && t.id !== 'liquidate'){
+        // Economy talents: show current gold bonus (except Liquidate which only shows in combat result)
         try {
           const goldAmt = t.goldBonus(talentCtx);
           if(goldAmt > 0){
@@ -13156,7 +13302,7 @@ function openTalentViewer(){
         const badge = fmtMod(elementalW, 'word', ' W');
         scalingTotal = `<div style="font-size:11px;margin-top:4px">Global Bonus: ${badge}</div>`;
       } else if(t.id === 'prismatic_resonance'){
-        // Prismatic Resonance: ×1.2 per unique element type (max 8)
+        // Prismatic Resonance: +0.2× per unique element type (additive)
         const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
         const levelText = getTalentLevel('prismatic_resonance') > 1 ? ` (Lv.${getTalentLevel('prismatic_resonance')})` : '';
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${fmtMod(scaledMult, 'scale')} per element${levelText}</div>`;
@@ -13179,24 +13325,29 @@ function openTalentViewer(){
         const levelText = getTalentLevel('lexicon_growth') > 1 ? ` (Lv.${getTalentLevel('lexicon_growth')})` : '';
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${bosses} bosses: ${badge}/Word${levelText}</div>`;
       } else if(t.id === 'compound_interest'){
-        // Compound Interest: Each 50 Gold held → ×1.15
+        // Compound Interest: Each 50 Gold held → +0.15× per stack
         const gold = S.gold || 0;
         const stacks = Math.floor(gold / 50);
-        const mult = Math.pow(1.15, stacks);
-        const multRound = Math.round(mult * 100) / 100;
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${gold}g ÷ 50 = ${stacks} stacks: <span class="mod-badge scale">×${multRound}</span></div>`;
+        const bonus = stacks * 0.15;
+        const bonusRound = Math.round(bonus * 100) / 100;
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">${gold}g ÷ 50 = ${stacks} stacks: <span class="mod-badge scale">+${bonusRound.toFixed(2)}×</span></div>`;
       } else if(t.id === 'overflow'){
-        // Overflow: Per 10 W above 50 → ×1.5
+        // Overflow: Per 10 W above 50 → +0.5× per stack (capped)
         const slots = [S.sel?.item, S.sel?.adj1, S.sel?.adj2, S.sel?.adj3, S.sel?.adj4, S.sel?.noun1].filter(Boolean);
         const baseW = slots.reduce((sum, w) => sum + (w.word?.length || w.name?.length || 0), 0);
+        const level = getTalentLevel('overflow');
+        const maxStacks = 2 + level;
         if(baseW > 50){
           const excessW = baseW - 50;
-          const stacks = Math.floor(excessW / 10);
-          const mult = Math.pow(1.5, stacks);
-          const multRound = Math.round(mult * 100) / 100;
-          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#4ade80">~${baseW} W: ${stacks} stacks = <span class="mod-badge scale">×${multRound}</span></div>`;
+          const rawStacks = Math.floor(excessW / 10);
+          const stacks = Math.min(rawStacks, maxStacks);
+          const bonus = stacks * 0.5;
+          const bonusRound = Math.round(bonus * 100) / 100;
+          const capNote = rawStacks > maxStacks ? ' [MAX]' : '';
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#4ade80">${baseW} W: ${stacks}/${maxStacks} stacks = <span class="mod-badge scale">+${bonusRound.toFixed(1)}×</span>${capNote}</div>`;
         } else {
-          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">~${baseW} W (need 50+ to activate)</div>`;
+          const needed = 50 - baseW;
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">${baseW} W (need ${needed} more)</div>`;
         }
       } else if(t.id === 'word_hoard'){
         // Word Hoard: Each Word in inventory → +0.2 W - scales with level
@@ -13238,12 +13389,8 @@ function openTalentViewer(){
         const badge = fmtMod(scaledW, 'word', ' W');
         scalingTotal = `<div style="font-size:11px;margin-top:4px">Chapter ${chapter}: ${badge}/Word</div>`;
       } else if(t.id === 'isocolon'){
-        // Isocolon: All words same tier → +10 W, scales with chapter
-        const chapter = Math.floor((S.roundIndex - 1) / 9) + 1;
-        const baseW = 10;
-        const scaledW = typeof chapterScaleW === 'function' ? chapterScaleW(baseW, chapter) : baseW * chapter;
-        const badge = fmtMod(scaledW, 'word', ' W');
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">Chapter ${chapter}: ${badge}</div>`;
+        // Isocolon: All words same tier → +1× multiplier (no chapter scaling for multipliers)
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">+1.0× if all Words same Tier</div>`;
       } else if(t.id === 'hendiadys'){
         // Hendiadys: 2+ Adjective slots filled → +6 W, scales with chapter
         const chapter = Math.floor((S.roundIndex - 1) / 9) + 1;
@@ -13364,7 +13511,8 @@ function mkChip(w,disabled,isStickChip){
     elemHtml=`<div class="chip-elem" style="color:${EC[w.elem]}">${EN[w.elem]}</div>`;
   } else if(w.mult && w.mult !== 1){
     // Non-elemental words (Common->Legendary adjectives) show multiplier as a badge with mono font
-    elemHtml=`<span class="mod-badge scale" style="margin-top:2px;font-size:9px">×${w.mult}</span>`;
+    const bonus = (w.mult - 1).toFixed(1);
+    elemHtml=`<span class="mod-badge scale" style="margin-top:2px;font-size:9px">+${bonus}×</span>`;
   }
 
   // Generate color tab and tier classes based on word type
@@ -13478,8 +13626,8 @@ function mkTooltip(w, opts={}){
           const v = Math.round(value * 10) / 10;
           effectivenessHtml = `<div class="tooltip-line" style="margin-top:4px">Current: <span class="mod-badge word">+${v} W</span></div>`;
         } else if((w.category === 'multiplier' || w.category === 'multiplicative_mult' || w.category === 'threshold') && value !== 1 && value > 0){
-          const v = Math.round(value * 100) / 100;
-          effectivenessHtml = `<div class="tooltip-line" style="margin-top:4px">Current: <span class="mod-badge scale">×${v}</span></div>`;
+          const bonus = (value - 1).toFixed(1);
+          effectivenessHtml = `<div class="tooltip-line" style="margin-top:4px">Current: <span class="mod-badge scale">+${bonus}×</span></div>`;
         }
       } catch(e) {}
     }
@@ -13519,25 +13667,29 @@ function mkTooltip(w, opts={}){
     let profLabel="No proficiency";
     let profMult=1.0;
     let profBadgeCls="neutral";
+    let profDisplay="";
     if(hasWM){
       profLabel="Weapon Master active";
       profMult=S.tempEffects.weaponMaster || 3;
-      profBadgeCls="word";
+      profBadgeCls="add";
+      profDisplay=`+${profMult - 1}× W`;
     } else if(good){
       profLabel="Good proficiency";
       profMult=2.0;
-      profBadgeCls="word";
+      profBadgeCls="add";
+      profDisplay="+1× W";
     } else if(bad){
       profLabel="Poor proficiency";
       profMult=0.5;
-      profBadgeCls="penalty";
+      profBadgeCls="neg";
+      profDisplay="×0.5 W";
     }
-    lines.push(`<div class="tooltip-line">${profLabel}: <span class="mod-badge ${profBadgeCls}">×${profMult} W</span></div>`);
+    if(profDisplay) lines.push(`<div class="tooltip-line">${profLabel}: <span class="mod-badge ${profBadgeCls}">${profDisplay}</span></div>`);
   }
 
-  // Show multiplier line for words with mult
+  // Show multiplier line for words with mult (show as bonus, e.g., +1× for ×2)
   if(w.mult){
-    lines.push(`<div class="tooltip-line">Multiplier: ${fmtMod(w.mult,'scale')}</div>`);
+    lines.push(`<div class="tooltip-line">Multiplier: ${fmtMod(w.mult - 1, 'add', '×')}</div>`);
   }
   // Show AP for all word types
   if(w.type === "weapon" || w.type === "elemental" || w.type === "rarity"){
@@ -13882,8 +14034,11 @@ function formatDamageBreakdown(source){
   // Sort consolidated scale multipliers by value (highest first) for consistent display
   consolidatedScaleMult.sort((a, b) => {
     const extractMult = (line) => {
-      const match = line.match(/×([\d.]+)/);
-      return match ? parseFloat(match[1]) : 1;
+      // Match both formats: +#× (additive bonus) and ×# (total multiplier/penalty)
+      const bonusMatch = line.match(/\+([\d.]+)×/);
+      if (bonusMatch) return parseFloat(bonusMatch[1]);
+      const multMatch = line.match(/×([\d.]+)/);
+      return multMatch ? parseFloat(multMatch[1]) : 0;
     };
     return extractMult(b) - extractMult(a); // Highest first
   });
@@ -13908,7 +14063,7 @@ function formatDamageBreakdown(source){
   // Right column: Word Count
   html += '<div class="breakdown-col">';
   html += '<div class="breakdown-section-title">Word Count</div>';
-  html += `<div class="tooltip-line" style="font-size:10px">${fmtMod(c.breakdown.wordCount,'word',' W')} Base Words</div>`;
+  html += `<div class="tooltip-line" style="font-size:10px">${fmtMod(c.breakdown.slotsFilled || c.breakdown.wordCount,'word',' W')} Slots Filled</div>`;
   if(consolidatedWordCount.length){
     consolidatedWordCount.forEach(line => {
       html += `<div class="tooltip-line" style="font-size:10px">${line}</div>`;
@@ -14202,13 +14357,7 @@ function isWordDisabled(w,hasItem,hasNoun){
   if(w.type !== 'weapon' && !hasItem) return true;
   // 2. Only one weapon can be selected at a time (except the backup stick).
   if(w.type === 'weapon' && S.sel.item) return true;
-  // 3. Only one rarity word can be selected at a time.
-  if(w.type === 'rarity'){
-    const hasRarityInSlots = ['adj1','adj2','adj3','adj4','noun1'].some(
-      slotKey => S.sel[slotKey] && S.sel[slotKey].type === 'rarity'
-    );
-    if(hasRarityInSlots) return true;
-  }
+  // 3. Multiple rarity words are now allowed (additive stacking makes them balanced)
   // Determine if all modifier slots are full (four adjective slots and one gem)
   const adjFull = !!(S.sel.adj1 && S.sel.adj2 && S.sel.adj3 && S.sel.adj4);
   const nounFull = !!S.sel.noun1;
@@ -14240,6 +14389,8 @@ function clickWord(w, clickedChip = null){
     else if(!S.sel.noun1) { S.sel.noun1 = w; targetSlot = 'noun1'; }
     else { S.sel.adj1 = w; targetSlot = 'adj1'; }
   }
+
+  // Multiple rarity words are now allowed (additive stacking makes them balanced)
 
   // Delay the render and slot effects to let pop-out animation play
   const delay = (clickedChip && !gfxSettings.lowFx) ? 120 : 0;
@@ -14370,14 +14521,7 @@ function setupEvents(){
           return;
         }
 
-        // Only one rarity word allowed - check if another slot already has one
-        // (unless we're replacing the rarity word in the same slot)
-        if(selected.type === 'rarity'){
-          const hasRarityElsewhere = ['adj1','adj2','adj3','adj4','noun1'].some(
-            slotKey => slotKey !== k && S.sel[slotKey] && S.sel[slotKey].type === 'rarity'
-          );
-          if(hasRarityElsewhere) return;
-        }
+        // Multiple rarity words are now allowed (additive stacking makes them balanced)
 
         // === PERFORMANCE TRACKING: Word Slot Placement ===
         const slotStart = performance.now();
@@ -14938,9 +15082,8 @@ function calc(opts={}){
       if (S.talents.includes('proficiency_focus') && S.hero && word.category === S.hero.good) add(chapterScaleW(8, chapter), 'Proficiency Focus', 'proficiency_focus');
     }
 
-    // Structural / composition
+    // Structural / composition (Isocolon is now a multiplier, handled separately)
     if (hasTwoAdj && slotKey.startsWith('adj') && S.talents.includes('hendiadys')) add(chapterScaleW(6, chapter), 'Hendiadys', 'hendiadys');
-    if (isAllSameTier && S.talents.includes('isocolon')) add(chapterScaleW(10, chapter), 'Isocolon', 'isocolon');
     if (word.elem !== undefined && S.enemy && S.enemy.weak && S.enemy.weak.includes(word.elem) && S.talents.includes('weakness_exploit')) {
       add(chapterScaleW(6, chapter), 'Weakness Exploit', 'weakness_exploit');
     }
@@ -15019,18 +15162,18 @@ function calc(opts={}){
       if(hasWeaponMaster){
         const wmMult = S.tempEffects.weaponMaster || 2;
         wCountDelta = parseFloat((wCountDelta * wmMult).toFixed(2));
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(wmMult,'scale')} Weapon Master W (${word.name})`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(wmMult - 1, 'add', '×')} Weapon Master W (${word.name})`);
       } else if(h.good === word.category){
         wCountDelta = parseFloat((wCountDelta * 2.0).toFixed(2));
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(2.0,'scale')} Proficiency W (${word.name})`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(1.0, 'add', '×')} Proficiency W (${word.name})`);
       } else if(h.bad === word.category){
         if(hasTalent('overcoming')){
           const overcomingMult = scaleTalentMult('overcoming', 1.5);
           wCountDelta = parseFloat((wCountDelta * overcomingMult).toFixed(2));
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(overcomingMult,'scale')} Overcoming W (${word.name})`);
+          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(overcomingMult - 1, 'add', '×')} Overcoming W (${word.name})`);
         } else {
           wCountDelta = parseFloat((wCountDelta * 0.5).toFixed(2));
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5,'scale', ' W')} Poor Proficiency (${word.name})`);
+          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5,'scale')} Poor Proficiency (${word.name})`);
         }
       }
     }
@@ -15220,7 +15363,7 @@ function calc(opts={}){
       wCountDelta *= gemMult; // Scale base for tracking
       wCountBonus *= gemMult; // Scale bonuses for tracking
       const gemLabel = hasCrownJewel ? `${word.name} Gem (Kohinoor)` : `${word.name} Gem`;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(gemMult,'scale')} ${gemLabel} (${wBeforeGem}W × ${gemMult})`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(gemMult - 1, 'add', '×')} ${gemLabel} (${wBeforeGem}W → ${wBeforeGem * gemMult}W)`);
     }
 
     // Add final word count contribution
@@ -15309,7 +15452,7 @@ function calc(opts={}){
           const wordData = wordDataMap.get(word);
           if(wordData){
             wordData.talentMults.push({ name: 'One With Nature', mult: 1.5 });
-            if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(1.5,'scale')} ${word.name} (One With Nature)`);
+            if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5, 'add', '×')} ${word.name} (One With Nature)`);
           }
         }
       });
@@ -15437,87 +15580,41 @@ function calc(opts={}){
     }
   }
 
-  // Stony Brook: Water + Earth → +12 W (split between matching elements)
-  if (hasTalent('stony_brook') && hasElements(allWords, [E.WATER, E.EARTH])) {
-    const bonus = scaleTalentBonus('stony_brook', 12);
-    const matchingWords = allWords.filter(w => w.elem === E.WATER || w.elem === E.EARTH);
-    const bonusPerWord = bonus / matchingWords.length;
-    matchingWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Stony Brook'));
-  }
+  // Stony Brook, Inferno, Verdant, Venom Strike, Twilight are now multipliers
+  // (handled in standard multiplier processing)
 
-  // Inferno: Fire + Water → +10 W (split between matching elements)
-  if (hasTalent('inferno') && hasElements(allWords, [E.FIRE, E.WATER])) {
-    const bonus = scaleTalentBonus('inferno', 10);
-    const matchingWords = allWords.filter(w => w.elem === E.FIRE || w.elem === E.WATER);
-    const bonusPerWord = bonus / matchingWords.length;
-    matchingWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Inferno'));
-  }
-
-  // Verdant: Earth + Light → +10 W (split between matching elements)
-  if (hasTalent('verdant') && hasElements(allWords, [E.EARTH, E.LIGHT])) {
-    const bonus = scaleTalentBonus('verdant', 10);
-    const matchingWords = allWords.filter(w => w.elem === E.EARTH || w.elem === E.LIGHT);
-    const bonusPerWord = bonus / matchingWords.length;
-    matchingWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Verdant'));
-  }
-
-  // Venom Strike: Poison + Lightning → +10 W (split between matching elements)
-  if (hasTalent('venom_strike') && hasElements(allWords, [E.POISON, E.LIGHTNING])) {
-    const bonus = scaleTalentBonus('venom_strike', 10);
-    const matchingWords = allWords.filter(w => w.elem === E.POISON || w.elem === E.LIGHTNING);
-    const bonusPerWord = bonus / matchingWords.length;
-    matchingWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Venom Strike'));
-  }
-
-  // Twilight: Dark + Physical → +10 W (split between matching elements)
-  if (hasTalent('twilight') && hasElements(allWords, [E.DARK, E.PHYS])) {
-    const bonus = scaleTalentBonus('twilight', 10);
-    const matchingWords = allWords.filter(w => w.elem === E.DARK || w.elem === E.PHYS);
-    const bonusPerWord = bonus / matchingWords.length;
-    matchingWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Twilight'));
-  }
-
-  // Spectrum: +2 W per unique Element (given to elemental words)
+  // Spectrum: +2 W per unique Element to EACH elemental word
   if (hasTalent('spectrum')) {
     const elementalWords = allWords.filter(w => w.elem !== undefined);
     const uniqueElements = new Set(elementalWords.map(w => w.elem));
     const basePerElement = scaleTalentBonus('spectrum', 2);
     const totalBonus = uniqueElements.size * basePerElement;
-    if (totalBonus > 0 && elementalWords.length > 0) {
-      const bonusPerWord = totalBonus / elementalWords.length;
-      elementalWords.forEach(word => addWBonusToWord(word, bonusPerWord, `Spectrum (${uniqueElements.size}E)`));
+    if (totalBonus > 0) {
+      elementalWords.forEach(word => addWBonusToWord(word, totalBonus, `Spectrum (${uniqueElements.size}E)`));
     }
   }
 
-  // Comfort Zone: Only 1 Element type → +6 W (to elemental words)
+  // Comfort Zone: Only 1 Element type → +6 W to EACH elemental word
   if (hasTalent('comfort_zone')) {
     const elementalWords = allWords.filter(w => w.elem !== undefined);
     const uniqueElements = new Set(elementalWords.map(w => w.elem));
     if (uniqueElements.size === 1 && elementalWords.length > 0) {
       const bonus = scaleTalentBonus('comfort_zone', 6);
-      const bonusPerWord = bonus / elementalWords.length;
-      elementalWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Comfort Zone'));
+      elementalWords.forEach(word => addWBonusToWord(word, bonus, 'Comfort Zone'));
     }
   }
 
-  // Elemental Mastery: Apply accumulated elemental W bonus to elemental words only
+  // Elemental Mastery: Apply FULL accumulated W bonus to EACH elemental word
   if (hasTalent('elemental_mastery') && S.elementalWBonus > 0) {
     const elementalWordsEM = allWords.filter(w => w.elem !== undefined);
-    if (elementalWordsEM.length > 0) {
-      const bonusPerWord = S.elementalWBonus / elementalWordsEM.length;
-      elementalWordsEM.forEach(word => addWBonusToWord(word, bonusPerWord, 'Elemental Mastery'));
-    }
+    elementalWordsEM.forEach(word => addWBonusToWord(word, S.elementalWBonus, 'Elemental Mastery'));
   }
 
-  // Weakness Exploit Amp: Apply bonus only to elemental words (tracked separately)
-  // S.weaknessExploitBonus tracks hits, multiply by level to get W bonus
-  if (hasTalent('weakness_exploit_amp') && S.weaknessExploitBonus > 0) {
-    const elementalWords = allWords.filter(w => w.elem !== undefined);
-    if (elementalWords.length > 0) {
-      const totalWBonus = scaleTalentBonus('weakness_exploit_amp', S.weaknessExploitBonus);
-      const bonusPerWord = totalWBonus / elementalWords.length;
-      elementalWords.forEach(word => addWBonusToWord(word, bonusPerWord, 'Weakness Exploit'));
-    }
+  // Weakness Exploit Amp: Apply FULL bonus to EACH word hitting enemy weakness
+  if (hasTalent('weakness_exploit_amp') && S.weaknessExploitBonus > 0 && S.enemy && S.enemy.weak) {
+    const totalWBonus = scaleTalentBonus('weakness_exploit_amp', S.weaknessExploitBonus);
+    const weaknessWords = allWords.filter(w => w.elem !== undefined && S.enemy.weak.includes(w.elem));
+    weaknessWords.forEach(word => addWBonusToWord(word, totalWBonus, 'Weakness Exploit'));
   }
 
   // --- SLOT-SPECIFIC +W TALENTS (intentional word attachment for REREAD synergy) ---
@@ -15617,12 +15714,15 @@ function calc(opts={}){
     }
   }
 
-  // Linguist: 3+ Types → each word gets +5 W
+  // Linguist: Rarity + Weapon + Elemental → each word gets +5 W
   if (hasTalent('linguist')) {
     const wordTypes = new Set(allWords.map(w => w.type));
-    if (wordTypes.size >= 3) {
+    const hasRarity = wordTypes.has('rarity');
+    const hasWeapon = wordTypes.has('weapon');
+    const hasElemental = wordTypes.has('elemental');
+    if (hasRarity && hasWeapon && hasElemental) {
       const bonus = scaleTalentBonus('linguist', 5);
-      distributeWBonusToAll(bonus, `Linguist (${wordTypes.size})`);
+      distributeWBonusToAll(bonus, 'Linguist');
     }
   }
 
@@ -15645,40 +15745,46 @@ function calc(opts={}){
     if (wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5,'scale')} Stick (no weapon)`);
   }
 
-  // Apply word multipliers (word.mult property, not in noun slot)
+  // Apply word multipliers ADDITIVELY (×2 + ×3 = 1 + 1 + 2 = ×4, not ×6)
+  // This encourages balanced builds where +W and modest multipliers work together
+  let wordMultBonus = 0;
   allWords.forEach(word => {
     if(word.mult !== undefined && word !== S.sel.noun1){
-      multiplicativeMult *= word.mult;
+      const bonus = word.mult - 1; // ×2 gives +1, ×3 gives +2, etc.
+      wordMultBonus += bonus;
       if(wantBreakdown){
-        breakdown.multipliers.push(`${fmtMod(word.mult,'scale')} ${word.name}`);
+        breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} ${word.name}`);
       }
     }
   });
+  if(wordMultBonus > 0){
+    multiplicativeMult += wordMultBonus; // Add to base 1×
+  }
 
-  // Apply all multiplier category talents via modular system
+  // Apply all multiplier category talents ADDITIVELY
   // Includes 'threshold' talents that return multipliers (Berserker, Fortuna, First Blood, etc.)
-  // Sort by multiplier value ascending so biggest multiplier applies last (better precision)
   const multTalents = S.talents
     .map(tid => TALENTS.find(t => t.id === tid))
     .filter(talent => talent && (talent.category === 'multiplier' || talent.category === 'multiplicative_mult' || talent.category === 'threshold'))
     .map(talent => ({ talent, mult: talent.apply(ctx) }))
-    .filter(({ mult }) => mult > 1.0)
-    .sort((a, b) => a.mult - b.mult); // Smallest first, biggest last
+    .filter(({ mult }) => mult > 1.0);
 
   multTalents.forEach(({ talent, mult }) => {
-    multiplicativeMult *= mult;
+    const bonus = mult - 1; // ×2 gives +1, ×3 gives +2, etc.
+    multiplicativeMult += bonus; // Additive stacking
     if (wantBreakdown) {
-      breakdown.multipliers.push(`${fmtMod(mult,'scale')} ${talent.name}`);
+      breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} ${talent.name}`);
     }
   });
 
-  // Legacy talents - all scale with level
+  // Legacy talents - all scale with level, now ADDITIVE
   if(hasTalent('dual_spec')){
     const elems = new Set(allWords.filter(w=>w.elem!==undefined).map(w=>w.elem));
     if(elems.size >= 2){
       const dualSpecMult = scaleTalentMult('dual_spec', 2.0);
-      multiplicativeMult *= dualSpecMult;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(dualSpecMult,'scale')} Dual Spec`);
+      const bonus = dualSpecMult - 1;
+      multiplicativeMult += bonus;
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Dual Spec`);
     }
   }
 
@@ -15686,16 +15792,17 @@ function calc(opts={}){
     const hasT2 = allWords.some(w=>!w.isStick && w.rarity===2);
     if(!hasT2 && allWords.length > 0){
       const minMaxMult = scaleTalentMult('min_max', 1.75);
-      multiplicativeMult *= minMaxMult;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(minMaxMult,'scale')} Min‑Max`);
+      const bonus = minMaxMult - 1;
+      multiplicativeMult += bonus;
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Min‑Max`);
     }
   }
 
   if(hasTalent('wordsmiths_fervor')){
     const basePerWord = scaleTalentBonus('wordsmiths_fervor', 0.1);
-    const fervorMult = (1 + basePerWord * wordCount);
-    multiplicativeMult *= fervorMult;
-    if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(fervorMult,'scale')} Wordsmith's Fervor`);
+    const fervorBonus = basePerWord * wordCount; // Already a bonus portion
+    multiplicativeMult += fervorBonus;
+    if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(fervorBonus, 'add', '×')} Wordsmith's Fervor`);
   }
 
   // ========================================
@@ -15731,8 +15838,8 @@ function calc(opts={}){
       const wContrib = getWordCountForReread(wordData) * rereadCount;
       breakdown.base.push(`${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
       if (wordData.mult) {
-        const totalMult = 1 + (wordData.mult - 1) * rereadCount;
-        breakdown.multipliers.push(`${fmtMod(totalMult, 'scale')} ${word.name} (${talentName} REREAD${countLabel})`);
+        const totalMultBonus = (wordData.mult - 1) * rereadCount;
+        breakdown.multipliers.push(`${fmtMod(totalMultBonus, 'add', '×')} ${word.name} (${talentName} REREAD${countLabel})`);
       }
     }
   };
@@ -15980,7 +16087,7 @@ function calc(opts={}){
       if(wordData.mult) retriggerMult *= wordData.mult;
       retriggeredWords.push({word: weaponWord, talent: "Cross the T's"});
       if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${weaponWord.name} <span class="mod-badge reread">REREAD</span> Cross the T's`);
-      if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${weaponWord.name} (Cross the T's)`);
+      if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${weaponWord.name} (Cross the T's)`);
     }
   }
 
@@ -15996,7 +16103,7 @@ function calc(opts={}){
         if(wordData.mult) retriggerMult *= wordData.mult;
         retriggeredWords.push({word: lastWord, talent: 'Count Cadence'});
         if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${lastWord.name} <span class="mod-badge reread">REREAD</span> Count Cadence`);
-        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${lastWord.name} (Count Cadence)`);
+        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${lastWord.name} (Count Cadence)`);
       }
     }
   }
@@ -16024,7 +16131,7 @@ function calc(opts={}){
           }
           retriggeredWords.push({word, talent: 'Ellipsis'});
           if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Ellipsis`);
-          if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${word.name} (Ellipsis)`);
+          if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${word.name} (Ellipsis)`);
         }
       }
     });
@@ -16044,7 +16151,7 @@ function calc(opts={}){
         }
         retriggeredWords.push({word, talent: 'Knowledge Eternal'});
         if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Knowledge Eternal`);
-        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult,'scale')} ${word.name} (Knowledge Eternal)`);
+        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${word.name} (Knowledge Eternal)`);
       }
     });
   }
@@ -16084,7 +16191,10 @@ function calc(opts={}){
       if(wordData){
         // baseAP += wordData.apContribution; // REMOVED: No AP from rereads
         wordCount += getWordCountForReread(wordData);
-        if(wordData.mult) multiplicativeMult *= wordData.mult;
+        if(wordData.mult) {
+          const bonus = wordData.mult - 1; // Additive
+          multiplicativeMult += bonus;
+        }
         retriggeredWords.push({word, talent: talentName});
         newRereads++;
         if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> ${talentName}`);
@@ -16148,15 +16258,15 @@ function calc(opts={}){
 
     // === ELEMENTAL BUILD CONVERTERS ===
 
-    // Prismatic Resonance: ×1.2 per unique element type (max 8)
+    // Prismatic Resonance: +0.2× per unique element type (additive stacking)
     if(hasTalent('prismatic_resonance') && loopIteration === 1){
       const uniqueElements = new Set(allWords.filter(w => w.elem !== undefined).map(w => w.elem));
-      const tiers = uniqueElements.size; // 1 tier per unique element (max 8)
+      const tiers = uniqueElements.size; // 1 tier per unique element
       if(tiers > 0){
-        const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
-        const mult = Math.pow(scaledMult, tiers);
-        multiplicativeMult *= mult;
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Prismatic Resonance (${tiers}/8 elements)`);
+        const scaledBonus = scaleTalentMult('prismatic_resonance', 1.2) - 1; // Get bonus portion
+        const bonus = scaledBonus * tiers; // Additive: +0.2 × count
+        multiplicativeMult += bonus;
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Prismatic Resonance (${tiers} elements)`);
       }
     }
 
@@ -16181,13 +16291,14 @@ function calc(opts={}){
 
     // === GOLD BUILD TALENTS (IN-COMBAT GOLD GENERATION) ===
 
-    // Midas Touch: Each elemental word in forge → +5 Gold IN COMBAT - scales with level
+    // Midas Touch: Gold now handled via goldBonus in talent definition (shows on result screen)
+    // Just add to breakdown for display purposes (gold is added post-combat via goldBonus)
     if(hasTalent('midas_touch') && loopIteration === 1){
       const elementalWords = allWords.filter(w => w.elem !== undefined);
       if(elementalWords.length > 0){
         const basePerWord = scaleTalentBonus('midas_touch', 5);
         const goldGained = elementalWords.length * basePerWord;
-        S.gold += goldGained;
+        // S.gold is NOT added here - goldBonus handles it post-combat
         if(wantBreakdown) breakdown.multipliers.push(`<span class="mod-badge gold">+${goldGained}g</span> Midas Touch (${elementalWords.length} elemental words)`);
       }
     }
@@ -16206,62 +16317,90 @@ function calc(opts={}){
 
     // Liquidate is now an economy talent (goldBonus) - handled in post-combat rewards
 
-    // Reread Amplifier: Each REREAD grants ×1.5 (stacking) - scales with level
+    // Reread Amplifier: Each REREAD grants +0.5× (additive stacking)
     if(hasTalent('reread_amplifier') && totalRereadCount > 0 && loopIteration === 1){
-      const scaledMult = scaleTalentMult('reread_amplifier', 1.5);
-      const mult = Math.pow(scaledMult, totalRereadCount);
-      multiplicativeMult *= mult;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Reread Amplifier (${totalRereadCount} REREADs)`);
+      const scaledBonus = scaleTalentMult('reread_amplifier', 1.5) - 1; // +0.5 per reread
+      const bonus = scaledBonus * totalRereadCount; // Additive
+      multiplicativeMult += bonus;
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Reread Amplifier (${totalRereadCount} REREADs)`);
     }
 
-    // Compound Interest: Each 50 Gold held → ×1.15 - scales with level
+    // Compound Interest: Each 50 Gold held → +0.15× (additive stacking)
     if(hasTalent('compound_interest') && loopIteration === 1){
       const stacks = Math.floor((S.gold || 0) / 50);
       if(stacks > 0){
-        const scaledMult = scaleTalentMult('compound_interest', 1.15);
-        const mult = Math.pow(scaledMult, stacks);
-        multiplicativeMult *= mult;
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Compound Interest (${stacks}×50 Gold)`);
+        const scaledBonus = scaleTalentMult('compound_interest', 1.15) - 1; // +0.15 per stack
+        const bonus = scaledBonus * stacks; // Additive
+        multiplicativeMult += bonus;
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Compound Interest (${stacks}×50 Gold)`);
       }
     }
 
-    // Overflow: Per 10 W above 50 → +0.5× per stack (stacks additively) - scales with level
+    // Overflow: Per 10 W above 50 → +0.5× per stack (additive, capped)
     if(hasTalent('overflow') && loopIteration === 1){
       const currentW = wordCount + globalWBonus;
       if(currentW > 50){
         const excessW = currentW - 50;
-        const stacks = Math.floor(excessW / 10);
+        const rawStacks = Math.floor(excessW / 10);
+        const level = getTalentLevel('overflow');
+        const maxStacks = 2 + level; // Level 1 = max 3 stacks, Level 2 = max 4, etc.
+        const stacks = Math.min(rawStacks, maxStacks);
         if(stacks > 0){
-          const scaledMult = scaleTalentMult('overflow', 1.5);
-          const mult = 1 + (stacks * (scaledMult - 1)); // Additive: 60W=×1.5, 70W=×2.0, 80W=×2.5
-          multiplicativeMult *= mult;
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(mult, 'scale')} Overflow (${stacks}×10 W above 50)`);
+          const bonus = stacks * 0.5; // Additive: +0.5× per stack
+          multiplicativeMult += bonus;
+          const capNote = rawStacks > maxStacks ? ' [MAX]' : '';
+          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Overflow (${stacks}/${maxStacks} stacks)${capNote}`);
         }
       }
     }
 
     // --- THRESHOLD PHASE (REREAD-count based) ---
 
-    // Crescendo: 6+ REREADs → REREAD ALL again (ONCE per forge)
-    // Only counts NON-Crescendo rereads for threshold - prevents 2-talent infinite loops
-    // Fires once like Chain Reaction - reaching Ultimate Weapon requires multiple synergies
+    // Crescendo: +1 REREAD per X REREADs (X decreases with level, then multiplier increases)
+    // Level 1-9: threshold = 11 - level (10, 9, 8, ..., 2)
+    // Level 10: 1:1 ratio (doubles REREADs)
+    // Level 11+: +N per 1 REREAD (N = level - 9, so triples at 11, quadruples at 12, etc.)
     const nonCrescendoRereads = totalRereadCount - crescendoRereads;
-    if(hasTalent('crescendo') && nonCrescendoRereads >= 6 && !triggeredThresholds.has('crescendo')){
-      triggeredThresholds.add('crescendo');
-      const newRereads = rereadAllWords('Crescendo');
-      crescendoRereads += newRereads; // Track Crescendo's contribution
-      totalRereadCount += newRereads;
-      if(newRereads > 0) continueLoop = true;
-      if(wantBreakdown) breakdown.multipliers.push(`<span class="mod-badge reread">REREAD ×${newRereads}</span> Crescendo (${nonCrescendoRereads} non-Crescendo REREADs ≥ 6)`);
+    if(hasTalent('crescendo') && !triggeredThresholds.has('crescendo')){
+      const crescLevel = getTalentLevel('crescendo');
+      let threshold, bonusPerThreshold;
+      if(crescLevel <= 9) {
+        threshold = 11 - crescLevel; // 10, 9, 8, ..., 2
+        bonusPerThreshold = 1;
+      } else {
+        threshold = 1; // 1:1 or better
+        bonusPerThreshold = crescLevel - 9; // 1 at lvl 10, 2 at lvl 11, etc.
+      }
+
+      const triggersFromRereads = Math.floor(nonCrescendoRereads / threshold);
+      if(triggersFromRereads > 0) {
+        triggeredThresholds.add('crescendo');
+        // REREAD ALL for each trigger (×bonusPerThreshold times each)
+        let totalNewRereads = 0;
+        for(let t = 0; t < triggersFromRereads; t++) {
+          for(let b = 0; b < bonusPerThreshold; b++) {
+            const newRereads = rereadAllWords('Crescendo');
+            crescendoRereads += newRereads;
+            totalRereadCount += newRereads;
+            totalNewRereads += newRereads;
+          }
+        }
+        if(totalNewRereads > 0) continueLoop = true;
+        const ratioText = bonusPerThreshold > 1
+          ? `REREAD ALL ×${bonusPerThreshold} per 1`
+          : `REREAD ALL per ${threshold}`;
+        if(wantBreakdown) breakdown.multipliers.push(`<span class="mod-badge reread">REREAD ALL ×${triggersFromRereads * bonusPerThreshold}</span> Crescendo (${nonCrescendoRereads} REREADs → ${ratioText})`);
+      }
     }
 
 
-    // Chain Reaction: 4+ REREADs → ×3 - scales with level
+    // Chain Reaction: 4+ REREADs → +2× (additive) - scales with level
     if(hasTalent('chain_reaction') && totalRereadCount >= 4 && !triggeredThresholds.has('chain_reaction')){
       triggeredThresholds.add('chain_reaction');
       const chainMult = scaleTalentMult('chain_reaction', 3);
-      multiplicativeMult *= chainMult;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(chainMult, 'scale')} Chain Reaction (${totalRereadCount} REREADs ≥ 4)`);
+      const bonus = chainMult - 1; // +2 at base
+      multiplicativeMult += bonus;
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Chain Reaction (${totalRereadCount} REREADs ≥ 4)`);
     }
 
     // Fortune's Favor: 200+ gold → REREAD ALL (ONCE per forge)
@@ -16295,20 +16434,20 @@ function calc(opts={}){
   // ========================================
   // PHASE 5: TALENT COUNT BASELINE
   // ========================================
-  // Scale from ×1.2 (1 talent) to ×2.0 (9+ talents)
-  const talentCountMult = S.talents.length > 0
-    ? Math.min(2.0, 1.1 + S.talents.length * 0.1)
-    : 1.0;
+  // +0.2× per talent - ADDITIVE (no cap)
+  const talentCountBonus = S.talents.length * 0.2;
   if (wantBreakdown && S.talents.length > 0) {
-    breakdown.multipliers.push(`${fmtMod(talentCountMult,'scale')} Talent Count (${S.talents.length})`);
+    breakdown.multipliers.push(`${fmtMod(talentCountBonus, 'add', '×')} Talent Count (${S.talents.length})`);
   }
+  // Add to multiplicativeMult for true additive stacking
+  multiplicativeMult += talentCountBonus;
 
   // ========================================
   // PHASE 6: CALCULATE DAMAGE
   // ========================================
-  // Formula: baseAP × wordCount × multiplicativeMult × talentCountMult
-  // (word_count_bonus talents are already added to wordCount in Phase 2)
-  let heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult * talentCountMult);
+  // Formula: baseAP × wordCount × multiplicativeMult
+  // All multipliers (rarity, talents, talent count) are now ADDITIVE in multiplicativeMult
+  let heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult);
 
   // Execute: Check if enemy would survive at ≤15% HP, trigger REREAD ALL
   if(hasTalent('execute') && !ultimateWeaponForged){
@@ -16322,24 +16461,24 @@ function calc(opts={}){
       const executeRereadCount = getTalentLevel('execute');
       const countLabel = executeRereadCount > 1 ? ` ×${executeRereadCount}` : '';
       if(wantBreakdown) breakdown.multipliers.push(`<span class="mod-badge reread">REREAD ALL${countLabel}</span> Execute (enemy at ${Math.round(remainingPercent * 100)}% HP)`);
-      // REREAD ALL words - BALANCE: No AP from rereads, only W and multipliers
-      let executeW = 0, executeMult = 1;
+      // REREAD ALL words - BALANCE: No AP from rereads, only W and multipliers (ADDITIVE)
+      let executeW = 0, executeMultBonus = 0;
       for(let i = 0; i < executeRereadCount; i++){
         allWords.forEach(word => {
           const wordData = wordDataMap.get(word);
           if(wordData){
             // executeAP += wordData.apContribution; // REMOVED: No AP from rereads
             executeW += getWordCountForReread(wordData);
-            if(wordData.mult) executeMult *= wordData.mult;
+            if(wordData.mult) executeMultBonus += (wordData.mult - 1); // Additive
             retriggeredWords.push({word, talent: 'Execute'});
             if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Execute`);
           }
         });
       }
-      // Recalculate damage with Execute bonuses (no AP)
+      // Recalculate damage with Execute bonuses (no AP, additive mult)
       wordCount += executeW;
-      multiplicativeMult *= executeMult;
-      heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult * talentCountMult);
+      multiplicativeMult += executeMultBonus;
+      heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult);
     }
   }
 
@@ -16393,7 +16532,7 @@ function calc(opts={}){
   }
 
   // For display: effective word count including all multipliers
-  const totalMultiplier = multiplicativeMult * talentCountMult;
+  const totalMultiplier = multiplicativeMult;
   let displayWordCount = Math.round(wordCount * totalMultiplier * 10) / 10;
 
   // Enemy does no damage in this simplified model
@@ -16405,6 +16544,7 @@ function calc(opts={}){
 
   if(wantBreakdown){
     breakdown.wordCount = wordCount;
+    breakdown.slotsFilled = allWords.length; // Raw slot count (before any modifiers)
   }
 
   return{
@@ -16627,10 +16767,11 @@ async function forge(){
     // In gem slot (noun1), words with mult should behave like nouns and contribute AP
     // rather than acting as multipliers. Only use mult in non-gem slots.
     if(word.mult !== undefined && slotKey !== 'noun1'){
+      const bonus = word.mult - 1;
       return {
         name: displayName,
         value: '',
-        tooltip: fmtMod(word.mult,'scale'),
+        tooltip: `+${bonus}×`,
         rarity: word.rarity,
         color: null
       };
@@ -17046,7 +17187,7 @@ async function afterCombat(){
 
       // Award XP to hero for completing the run (with boss bonus for ultimate achievement)
       if(S.hero && S.hero.name){
-        const xpGained = calcRunXP(S.roundIndex, true); // true = defeated boss equivalent
+        const xpGained = calcRunXP(S.roundIndex, true, S.hero.name); // true = defeated boss equivalent
         const result = awardHeroXP(S.hero.name, xpGained);
         S.lastRunXP = { xp: xpGained, ...result };
       }
@@ -17426,7 +17567,7 @@ async function afterCombat(){
       let newLevel = 1;
       const heroName = S.hero?.name || 'Hero';
       if (S.hero && S.hero.name) {
-        xpGained = calcRunXP(S.roundIndex, false);
+        xpGained = calcRunXP(S.roundIndex, false, S.hero.name);
         const result = awardHeroXP(S.hero.name, xpGained);
         leveledUp = result.leveledUp;
         newLevel = result.newLevel;
@@ -17921,8 +18062,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             ? '<span class="mod-badge word">+0 W</span>'
             : fmtMod(bossCount, 'word', ' W');
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${bossCount} bosses: ${badge}/Word</div>`;
-        } else if(talent.category === 'economy' && talent.goldBonus){
-          // Economy talents with goldBonus: show current gold bonus
+        } else if(talent.category === 'economy' && talent.goldBonus && talent.id !== 'liquidate'){
+          // Economy talents with goldBonus: show current gold bonus (except Liquidate which only applies in combat)
           try {
             const talentCtx = {
               state: S,
@@ -18036,7 +18177,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
           const badge = fmtMod(elementalW, 'word', ' W');
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">Global Bonus: ${badge}</div>`;
         } else if(talent.id === 'prismatic_resonance'){
-          // Prismatic Resonance: ×1.2 per unique element type (max 8)
+          // Prismatic Resonance: +0.2× per unique element type (additive)
           const scaledMult = scaleTalentMult('prismatic_resonance', 1.2);
           const levelText = getTalentLevel('prismatic_resonance') > 1 ? ` (Lv.${getTalentLevel('prismatic_resonance')})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${fmtMod(scaledMult, 'scale')} per element${levelText}</div>`;
@@ -18048,19 +18189,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
           const badge = fmtMod(totalW, 'word', ' W');
           const levelText = talentLevel > 1 ? ` (×${talentLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${hits} hits${levelText}: ${badge}</div>`;
-        } else if(talent.id === 'overflow'){
-          // Overflow: Per 10 W above 50 → ×1.5
-          const slots = Object.values(S.sel).filter(Boolean);
-          const baseW = slots.reduce((sum, w) => sum + (w.word?.length || w.name?.length || 0), 0);
-          if(baseW > 50){
-            const excessW = baseW - 50;
-            const stacks = Math.floor(excessW / 10);
-            const mult = Math.pow(1.5, stacks);
-            const multRound = Math.round(mult * 100) / 100;
-            accumulatedTotal = `<div style="font-size:10px;margin-top:6px;color:#4ade80">~${baseW} W: ${stacks} stacks = <span class="mod-badge scale">×${multRound}</span></div>`;
-          } else {
-            accumulatedTotal = `<div style="font-size:10px;margin-top:6px;color:#6b7280">~${baseW} W (need 50+)</div>`;
-          }
+        // Overflow: no tooltip (W calculated at forge time, not in shop)
         } else if(talent.category === 'threshold' && talent.apply){
           // Threshold talents: just show the multiplier value (don't show stale "active" status)
           // The description already explains the condition
@@ -18853,7 +18982,7 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
     }
 
     btnContainer.appendChild(backBtn);
-    btnContainer.appendChild(upgradeBtn);
+    // Note: Upgrade button removed from swap mode - only show back/skip
     if (skipBtn) btnContainer.appendChild(skipBtn);
     container.appendChild(btnContainer);
   }
@@ -19080,8 +19209,8 @@ async function showCombat(r,words,rewards){
         div.setAttribute("title", w.tooltip);
       }
       const rc=TC[w.rarity] || "";
-      // Add retrigger count display if word is retriggered
-      const retriggerText = w.retriggerCount && w.retriggerCount > 1 ? `<div class="combat-word-retrigger"><span class="mod-badge reread">×${w.retriggerCount}</span></div>` : '';
+      // Add retrigger count display if word is retriggered (REREAD count, not total triggers)
+      const retriggerText = w.retriggerCount && w.retriggerCount >= 1 ? `<div class="combat-word-retrigger"><span class="mod-badge reread">×${w.retriggerCount}</span></div>` : '';
       // Apply italic style for "of the" connector
       const italicClass = w.italic ? ' italic' : '';
       div.innerHTML=`<div class="combat-word-name ${rc}${italicClass}" ${w.color?`style=\"color:${w.color}\"`:''}>${w.name}</div>${retriggerText}`;
@@ -19095,7 +19224,8 @@ async function showCombat(r,words,rewards){
     // After tally: shatter effect, then reveal actual remaining HP
     const totalTriggers = words.reduce((sum, w) => sum + (w.retriggerCount || 1), 0);
     let triggersCompleted = 0;
-    let globalToneIndex = 0; // Rising tone counter that continues across all passes (for Shepard effect)
+    let globalToneIndex = 0;
+       // Rising tone counter that continues across all passes (for Shepard effect)
     const barOuter = barEnemy.parentElement; // Get the .bar-outer container for shake effect
     const barPreview = document.getElementById('bar-enemy-preview');
     // Keep enemy HP bar at 100% during tally
@@ -19123,6 +19253,14 @@ async function showCombat(r,words,rewards){
     const hasReverberation = S.talents && S.talents.includes('reverberation');
     const reverberationBase = hasReverberation ? scaleTalentBonus('reverberation', 2) : 0;
 
+    // Midas Touch: track gold per elemental word for floating badge display
+    const hasMidasTouch = S.talents && S.talents.includes('midas_touch');
+    const midasGoldPerWord = hasMidasTouch ? scaleTalentBonus('midas_touch', 5) : 0;
+
+    // Golden Reread: track gold per reread for floating badge display
+    const hasGoldenReread = S.talents && S.talents.includes('golden_reread');
+    const goldenRereadGold = hasGoldenReread ? scaleTalentBonus('golden_reread', 10) : 0;
+
     for(let passIdx = 0; passIdx < passes.length; passIdx++){
       const wordsInPass = passes[passIdx];
 
@@ -19149,6 +19287,10 @@ async function showCombat(r,words,rewards){
         if(isFirstAppearance){
           el.classList.add("show");
           wordShown[wordIdx] = true;
+          // Show floating gold for Midas Touch (elemental words give gold)
+          if (hasMidasTouch && w.wordRef && w.wordRef.elem !== undefined) {
+            showFloatingMidasGold(el, midasGoldPerWord);
+          }
         } else {
           // Add retrigger visual effect
           el.classList.add("retrigger");
@@ -19162,12 +19304,20 @@ async function showCombat(r,words,rewards){
           if (hasReverberation && reverberationBase > 0) {
             showFloatingReverberationW(el, reverberationBase);
           }
+          // Show floating gold for Midas Touch on rereads too (elemental words)
+          if (hasMidasTouch && w.wordRef && w.wordRef.elem !== undefined) {
+            showFloatingMidasGold(el, midasGoldPerWord);
+          }
+          // Show floating gold for Golden Reread (gold per reread)
+          if (hasGoldenReread && goldenRereadGold > 0) {
+            showFloatingMidasGold(el, goldenRereadGold);
+          }
         }
 
         // Play rising Shepard tone - continues ascending across all passes
         // Uses globalToneIndex which increments each trigger for infinite rising effect
         try{
-          playShepardTone(globalToneIndex, totalTriggers, isRetrigger);
+          playShepardTone(globalToneIndex, totalTriggers, isRetrigger, wordIdx, words.length);
           globalToneIndex++;
           // Add alternating click sound
           const clickSound = useClickAlt ? 'click alt.ogg' : 'click.ogg';
@@ -19306,8 +19456,8 @@ async function showCombat(r,words,rewards){
                 elemEffects[w.wordRef.elem]();
               }
 
-              // Floating +W animation for Elemental Mastery (only on first appearance)
-              if (isFirstAppearance && S.talents && S.talents.includes('elemental_mastery')) {
+              // Floating +W animation for Elemental Mastery (on every trigger including rereads)
+              if (S.talents && S.talents.includes('elemental_mastery')) {
                 let wBonus = 1; // Base +1W from Elemental Mastery
                 // Check for Weakness Exploit Amp bonus
                 if (S.talents.includes('weakness_exploit_amp') && S.enemy && S.enemy.weak && S.enemy.weak.includes(w.wordRef.elem)) {
@@ -19815,29 +19965,32 @@ async function showShop(skipTransition = false){
     }
   };
 
-  // Either do our own transition or just set up visuals (caller handled transition)
-  if (skipTransition) {
-    setupShopVisuals();
-  } else {
-    await playSceneTransition(setupShopVisuals);
-  }
-
-  // Fade out spotlight tint after shop is visible
-  const spotlightTint = $("#spotlight-tint");
-  if(spotlightTint) {
-    spotlightTint.classList.remove("full");
-    await dly(RHYTHM.EIGHTH);
-    spotlightTint.classList.remove("show");
-  }
-
-  // Re-enable exit shop button after scene fully loads (double-click guard)
-  setTimeout(() => {
-    const exitBtn = document.getElementById("exit-shop-btn");
-    if(exitBtn){
-      exitBtn.disabled = false;
-      exitBtn.classList.remove('btn-disabled');
+  // Use try/finally to ensure button is ALWAYS re-enabled
+  try {
+    // Either do our own transition or just set up visuals (caller handled transition)
+    if (skipTransition) {
+      setupShopVisuals();
+    } else {
+      await playSceneTransition(setupShopVisuals);
     }
-  }, 500);
+
+    // Fade out spotlight tint after shop is visible
+    const spotlightTint = $("#spotlight-tint");
+    if(spotlightTint) {
+      spotlightTint.classList.remove("full");
+      await dly(RHYTHM.EIGHTH);
+      spotlightTint.classList.remove("show");
+    }
+  } finally {
+    // Re-enable exit shop button after scene fully loads (double-click guard)
+    setTimeout(() => {
+      const exitBtn = document.getElementById("exit-shop-btn");
+      if(exitBtn){
+        exitBtn.disabled = false;
+        exitBtn.classList.remove('btn-disabled');
+      }
+    }, 500);
+  }
 }
 
 function rollShop(){
@@ -19963,12 +20116,12 @@ function renderShop(){
     }
   }
 
-  // Render Round and Chapter Pills
+  // Render Round and Chapter Pills (Endless Mode after round 27)
   const roundEl = document.getElementById("shop-round-num");
-  if(roundEl) roundEl.textContent = `${S.roundIndex}`;
+  if(roundEl) roundEl.textContent = S.roundIndex <= 27 ? `${S.roundIndex} / 27` : `${S.roundIndex}`;
   const shopChapter = Math.floor((S.roundIndex - 1) / 9) + 1;
   const chapterEl = document.getElementById("shop-chapter-num");
-  if(chapterEl) chapterEl.textContent = `${shopChapter}`;
+  if(chapterEl) chapterEl.textContent = S.roundIndex <= 27 ? `${shopChapter} of 3` : 'Endless';
 
   const invEl = document.getElementById("shop-inventory");
   if(invEl){
@@ -20365,8 +20518,9 @@ function renderShopWordBank(animate = true){
     if(word.elem !== undefined){
       elemHtml = `<div class="chip-elem" style="color:${EC[word.elem]}">${EN[word.elem]}</div>`;
     } else if(word.mult && word.mult !== 1){
-      // Non-elemental words (Common->Legendary adjectives) show multiplier as a badge with mono font
-      elemHtml = `<span class="mod-badge scale" style="margin-top:2px;font-size:9px">×${word.mult}</span>`;
+      // Non-elemental words (Common->Legendary adjectives) show multiplier bonus (additive)
+      const bonus = word.mult - 1;
+      elemHtml = `<span class="mod-badge scale" style="margin-top:2px;font-size:9px">+${bonus}×</span>`;
     }
 
     // Generate color tab and tier classes based on word type
@@ -21540,7 +21694,8 @@ function goldBurst(x, y) {
 function showFloatingMultiplier(element, multiplier) {
   const badge = document.createElement('div');
   badge.className = 'floating-multiplier';
-  badge.innerHTML = `<span class="mod-badge scale">×${multiplier.toFixed(2)}</span>`;
+  const bonus = (multiplier - 1).toFixed(1);
+  badge.innerHTML = `<span class="mod-badge scale">+${bonus}×</span>`;
   badge.style.cssText = `
     position: absolute;
     left: 50%;
@@ -21562,6 +21717,27 @@ function showFloatingReverberationW(element, bonus) {
   const badge = document.createElement('div');
   badge.className = 'floating-reverberation';
   badge.innerHTML = `<span class="mod-badge reread">+${bonus}W</span>`;
+  badge.style.cssText = `
+    position: absolute;
+    left: 50%;
+    top: -35px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUp 0.8s ease-out forwards;
+  `;
+  element.style.position = 'relative';
+  element.appendChild(badge);
+  setTimeout(() => badge.remove(), 800);
+}
+
+/**
+ * Floating gold badge for Midas Touch during tally (elemental words)
+ */
+function showFloatingMidasGold(element, gold) {
+  const badge = document.createElement('div');
+  badge.className = 'floating-midas';
+  badge.innerHTML = `<span class="mod-badge gold">+${gold}g</span>`;
   badge.style.cssText = `
     position: absolute;
     left: 50%;
@@ -22276,7 +22452,7 @@ const GFX_SETTINGS_KEY = 'wordyweapon_gfx';
 // Default graphics settings
 let gfxSettings = {
   lowFx: false,  // Master toggle: disables sparks, parallax, transitions, combat effects, expensive GPU animations
-  zoom: 100,  // UI zoom percentage (85-115)
+  zoom: 100,  // UI zoom percentage (75-150)
   brightness: 100  // Brightness percentage (80-150) for HDR monitors
 };
 
@@ -22287,6 +22463,8 @@ function loadGfxSettings() {
     if (saved) {
       gfxSettings = { ...gfxSettings, ...JSON.parse(saved) };
     }
+    // Clamp zoom to valid range (50-200)
+    gfxSettings.zoom = Math.max(50, Math.min(200, gfxSettings.zoom));
   } catch (e) {
     console.warn('Failed to load graphics settings', e);
   }
@@ -22324,18 +22502,14 @@ function applyGfxSettings() {
   const brightnessVal = gfxSettings.brightness / 100;
   document.body.style.filter = brightnessVal !== 1 ? `brightness(${brightnessVal})` : '';
 
-  // Apply UI scale (85-115%)
-  const gameContainer = document.getElementById('game-container');
-  if (gameContainer) {
-    const scaleVal = gfxSettings.zoom / 100;
-    if (scaleVal !== 1) {
-      gameContainer.style.transform = `scale(${scaleVal})`;
-      gameContainer.style.transformOrigin = 'center center';
-    } else {
-      gameContainer.style.transform = '';
-      gameContainer.style.transformOrigin = '';
-    }
+  // Apply UI scale via Electron's zoom (25-200%)
+  // Send zoom preference to main process
+  if (window.electronAudio && window.electronAudio.isElectron) {
+    const { ipcRenderer } = require('electron');
+    ipcRenderer.invoke('set-user-zoom', gfxSettings.zoom);
   }
+  // Store settings globally
+  window.gfxSettings = gfxSettings;
 }
 
 // Open graphics settings overlay
@@ -22390,14 +22564,18 @@ function initGfxSettingsListeners() {
   const scaleSlider = document.getElementById('gfx-scale');
   const scaleValue = document.getElementById('gfx-scale-value');
   if (scaleSlider) {
-    scaleSlider.oninput = () => {
+    // Update on mouse release only
+    scaleSlider.onchange = () => {
       const val = parseInt(scaleSlider.value, 10);
       if (scaleValue) scaleValue.textContent = `${val}%`;
       gfxSettings.zoom = val;
       applyGfxSettings();
-    };
-    scaleSlider.onchange = () => {
       saveGfxSettings();
+    };
+    // Update display while dragging (but don't apply zoom)
+    scaleSlider.oninput = () => {
+      const val = parseInt(scaleSlider.value, 10);
+      if (scaleValue) scaleValue.textContent = `${val}%`;
     };
   }
 
@@ -22476,8 +22654,9 @@ function formatReelItem(word) {
     const elemColor = EC[word.elem] || '#9ca3af';
     detailHtml = `<span style="color:${elemColor}">${EN[word.elem]}</span>`;
   } else if (word.mult && word.mult > 1) {
-    // Non-elemental with multiplier
-    detailHtml = `<span class="reel-mult">×${word.mult}</span>`;
+    // Non-elemental with multiplier (show additive bonus)
+    const bonus = word.mult - 1;
+    detailHtml = `<span class="reel-mult">+${bonus}×</span>`;
   }
 
   // Wrap content with classes
@@ -23110,11 +23289,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     confirmYes.onmouseenter = sfxHover;
   }
 
+  // Reset forge button - clears all selected slots
+  const resetBtnInit = document.getElementById('reset-btn');
+  if(resetBtnInit) {
+    resetBtnInit.onclick = () => {
+      stopAllRarityDrones(); // Stop drones when resetting
+      S.sel = { item: null, adj1: null, adj2: null, adj3: null, adj4: null, noun1: null };
+      S.pendingWord = null;
+      render(); // Same as clicking to unslot
+      playSfxBack();
+    };
+  }
+
   // Forfeit button in forge
   const forfeitBtnInit = document.getElementById('forfeit-btn');
   if(forfeitBtnInit) {
     forfeitBtnInit.onclick = () => {
-      const xpPreview = S.hero ? calcRunXP(S.roundIndex, false) : 0;
+      const xpPreview = S.hero ? calcRunXP(S.roundIndex, false, S.hero.name) : 0;
       showConfirmModal('Forfeit Run?', `End this run and receive ${xpPreview} XP.`, 'forfeit');
     };
     forfeitBtnInit.onmouseenter = sfxHover;
@@ -23396,15 +23587,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     talentSelectViewBtn.onmouseenter = sfxHover;
   }
 
-  // Add Enter key handler for Forge Weapon button
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){
-      const forgeBtn = document.getElementById('forge-btn');
-      if(forgeBtn && !forgeBtn.disabled){
-        forgeBtn.click();
-      }
-    }
-  });
+  // Enter key handler for Forge Weapon button - DISABLED
+  // Was causing issues with exit shop button and other interactions
+  // document.addEventListener('keydown', (e) => {
+  //   if(e.key === 'Enter'){
+  //     const forgeBtn = document.getElementById('forge-btn');
+  //     if(forgeBtn && !forgeBtn.disabled){
+  //       forgeBtn.click();
+  //     }
+  //   }
+  // });
 
   // Portrait click handlers - cycle through dialogue with talking sound
   const heroPortrait = document.querySelector('.hero-portrait');

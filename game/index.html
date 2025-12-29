@@ -104,12 +104,11 @@
   </symbol>
 </svg>
 
-<!-- Game Container: Fixed 1920x1080 render resolution, CSS-scaled to fit screen -->
-<div id="game-container">
+<!-- Fixed viewport elements (always fill screen, never scale) -->
 <div id="flame-bg"></div>
 <canvas id="fx-canvas"></canvas>
 
-  <div id="header">
+<div id="header">
     <div id="stats-pills">
       <div class="stat-pill gold-pill" id="gold-pill"><svg class="icon"><use href="#icon-coin"/></svg> <span id="gold">30</span><span id="gold-interest" style="opacity:0.6;margin-left:2px"></span></div>
       <div class="stat-pill" id="round-pill">Round <span id="round-num">1</span> · Ch. <span id="chapter-num">1</span></div>
@@ -122,6 +121,10 @@
     </div>
   </div>
 
+<!-- Game Container: Scalable content area -->
+<div id="game-container">
+
+  
 <!-- Sound Control Panel - centered modal style -->
 <div id="sound-panel" class="hidden">
   <div class="sound-panel-header">
@@ -270,11 +273,16 @@
     <button id="forge-btn" disabled>FORGE WEAPON</button>
   </div>
   <button id="forfeit-btn" title="End run early and cash out XP">FORFEIT</button>
+  <button id="reset-btn" title="Reset forge selections">RESET</button>
 </div>
 
 <!-- Spotlight tint: dark overlay shown behind focused modals like combat results and crate opening -->
 <div id="spotlight-tint"></div>
 
+</div><!-- End game-content -->
+</div><!-- End game-container -->
+
+<!-- Overlays (outside game-container for proper fixed positioning) -->
 <div class="overlay" id="combat-overlay">
   <!-- Combat intro dialogue (enemy then hero) -->
   <div id="combat-intro-dialogue" style="display:none">
@@ -405,6 +413,7 @@
   <div class="modal" style="min-width:700px;max-width:900px;position:relative">
     <button id="hero-select-close" style="position:absolute;top:12px;right:12px;font-size:20px;background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px 8px">✕</button>
     <div class="modal-title gold">SELECT YOUR HERO</div>
+    <div style="text-align:center;font-size:12px;color:#9ca3af;margin-bottom:12px">Goal: Defeat the Chapter 3 Boss <span style="color:#f472b6">(Round 27)</span></div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
       <button id="hero-prev" style="font-size:24px;padding:8px 16px">◀</button>
       <div id="hero-carousel" style="flex:1;overflow:hidden">
@@ -612,10 +621,10 @@
       <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:12px">
         <span style="display:flex;flex-direction:column;gap:2px">
           <span>UI Scale</span>
-          <span style="font-size:10px;color:#9ca3af">Adjust interface size (85-115%)</span>
+          <span style="font-size:10px;color:#9ca3af">Adjust interface size (50-200%)</span>
         </span>
         <div style="display:flex;align-items:center;gap:8px">
-          <input type="range" id="gfx-scale" min="85" max="115" value="100" style="width:80px;accent-color:#f4d03f">
+          <input type="range" id="gfx-scale" min="50" max="200" value="100" style="width:80px;accent-color:#f4d03f">
           <span id="gfx-scale-value" style="font-size:12px;min-width:36px;text-align:right">100%</span>
         </div>
       </label>
@@ -728,7 +737,7 @@
   <div id="debug-log-status"></div>
 </div>
 
-</div><!-- End game-container -->
+
 
 <!-- Tone.js for generative music system -->
 <script src="Tone.min.js"></script>

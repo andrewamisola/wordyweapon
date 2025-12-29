@@ -83,3 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('[Preload] electronAudio set:', window.electronAudio);
 console.log('[Preload] steamAPI available:', !!window.steamAPI);
+
+
+// Listen for scale updates from main process
+// Store auto-scale globally for combining with user scale
+// window.fitScale = 1; // No longer needed
+
+// Scaling is now handled by Electron's setZoomFactor in main.js
+// No CSS transform needed - everything scales uniformly

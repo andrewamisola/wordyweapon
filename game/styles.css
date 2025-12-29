@@ -28,22 +28,22 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
   height: 100vh;
   height: 100lvh; /* Modern viewport height with fallback */
   position: relative;
-  overflow: hidden;
-  background:radial-gradient(circle at 20% 20%,rgba(244,208,63,0.06),transparent 30%),linear-gradient(135deg,#0a0a0a,#080808 40%,#0c0c0c);
-  background-blend-mode:overlay;
+  overflow: visible;
+  background:transparent;
+  /* background now transparent - flame-bg shows through */
 
   /* Flexbox layout: header at top, battle+forge centered as unit */
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding-top: 60px; /* Space for fixed header */
   padding-bottom: 40px; /* Bottom padding */
 }
 
 /* FX Canvas: Matches viewport, positioned absolutely */
 #fx-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -321,13 +321,13 @@ body{font-family:var(--font-sans);background:#000;color:#e5e7eb;min-height:100vh
 
   transition: opacity var(--quarter-beat) ease;
 }
-#flame-bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;background:black;--flame-opacity:0.3;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-scale .5s ease;overflow:hidden}
+#flame-bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none;background:#0a0a0a;--flame-opacity:0.3;--flame-scale:1;--mouse-x:0%;--mouse-y:0%;transition:--flame-opacity .5s ease,--flame-scale .5s ease;overflow:hidden}
 #flame-bg::before,#flame-bg::after{content:'';position:absolute;border-radius:50%;opacity:var(--flame-opacity);transition:opacity var(--beat) ease,transform var(--half-beat) ease,background calc(var(--beat) * 2) ease;left:50%;top:50%;transform-origin:center;will-change:transform,opacity}
 /* Orange/yellow glow - pre-baked soft gradient (no blur filter needed) */
 /* Larger size + gradual fade simulates the blur effect */
-#flame-bg::after{width:180vw;height:110vh;background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(25,94%,53%) 5%,hsl(24,93%,50%) 10%,hsl(23,91%,47%) 15%,hsl(22,88%,43%) 20%,hsl(20,85%,38%) 25%,hsl(18,80%,32%) 30%,hsl(16,70%,25%) 35%,hsl(14,55%,18%) 40%,hsl(12,40%,12%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
+#flame-bg::after{width:250vw;height:150vh;background:radial-gradient(ellipse,hsl(25,95%,55%) 0%,hsl(25,94%,53%) 5%,hsl(24,93%,50%) 10%,hsl(23,91%,47%) 15%,hsl(22,88%,43%) 20%,hsl(20,85%,38%) 25%,hsl(18,80%,32%) 30%,hsl(16,70%,25%) 35%,hsl(14,55%,18%) 40%,hsl(12,40%,12%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * 0.3),calc(-50% + var(--mouse-y) * 0.3)) scale(var(--flame-scale));animation:flame-drift-outer 18s ease-in-out infinite;z-index:1}
 /* Red core - pre-baked soft gradient (no blur filter needed) */
-#flame-bg::before{width:110vw;height:80vh;background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(1,89%,48%) 5%,hsl(2,87%,45%) 10%,hsl(3,85%,42%) 15%,hsl(4,82%,38%) 20%,hsl(5,78%,33%) 25%,hsl(6,70%,27%) 30%,hsl(7,58%,20%) 35%,hsl(8,45%,14%) 40%,hsl(9,30%,9%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
+#flame-bg::before{width:180vw;height:120vh;background:radial-gradient(ellipse,hsl(0,90%,50%) 0%,hsl(1,89%,48%) 5%,hsl(2,87%,45%) 10%,hsl(3,85%,42%) 15%,hsl(4,82%,38%) 20%,hsl(5,78%,33%) 25%,hsl(6,70%,27%) 30%,hsl(7,58%,20%) 35%,hsl(8,45%,14%) 40%,hsl(9,30%,9%) 45%,rgba(0,0,0,0) 55%);transform:translate(calc(-50% + var(--mouse-x) * -0.2),calc(-50% + var(--mouse-y) * -0.2)) scale(var(--flame-scale));animation:flame-drift-core 12s ease-in-out infinite;z-index:2}
 /* Purple flame for pre-boss shop - pre-baked soft gradient */
 #flame-bg.boss-shop-mode::after{background:radial-gradient(ellipse,hsl(280,85%,55%) 0%,hsl(278,82%,50%) 10%,hsl(275,78%,44%) 20%,hsl(272,72%,36%) 30%,hsl(270,60%,26%) 40%,hsl(268,45%,16%) 48%,rgba(0,0,0,0) 55%)}
 #flame-bg.boss-shop-mode::before{background:radial-gradient(ellipse,hsl(290,90%,50%) 0%,hsl(288,87%,46%) 10%,hsl(286,82%,40%) 20%,hsl(284,75%,33%) 30%,hsl(282,62%,24%) 40%,hsl(280,45%,15%) 48%,rgba(0,0,0,0) 55%)}
@@ -369,15 +369,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .tag.str{color:#4ade80;border-color:#4ade8055}.tag.weak{color:#f87171;border-color:#f8717155}.tag.prof{color:#60a5fa;border-color:#60a5fa55}.tag.neutral{color:#9ca3af;border-color:#9ca3af55}.tag.ability{color:#d8b4fe;border-color:#a855f7;background:rgba(168,85,247,0.15)}
 .tag.irony{color:#e879f9;border-color:#d946ef;background:rgba(217,70,239,0.15)}.irony-badge{display:inline-block;background:linear-gradient(135deg,#d946ef,#a855f7);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
 #header{
-  flex-shrink:0; /* Don't shrink */
-  width:100%;
-  max-width:min(1100px, 95vw);
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
   display:flex;
   justify-content:space-between;
   align-items:center;
   padding:12px 24px;
-  position:relative;
-  z-index:100
+  max-width:100%;
+  z-index:100;
+  pointer-events:auto
 }
 /* Hide header when main menu is showing (game hasn't started) */
 body.menu-active #header{display:none}
@@ -3768,3 +3770,30 @@ body.low-fx .crate-reel.spinning .crate-reel-strip {
 /* Color coding for performance issues */
 .debug-warn { color: #fbbf24 !important; }
 .debug-bad { color: #ef4444 !important; }
+
+
+/* Reset button - opposite of forfeit */
+#reset-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  padding: 6px 14px;
+  font-size: 11px;
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  border: 1px solid #3b82f655;
+  border-radius: 6px;
+  color: #93c5fd;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+}
+#reset-btn:hover {
+  opacity: 1;
+  background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  border-color: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+#reset-btn:active {
+  transform: scale(0.96);
+}
