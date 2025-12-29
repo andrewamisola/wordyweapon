@@ -14095,7 +14095,10 @@ function formatDamageBreakdown(source){
   } else {
     html += `<div class="tooltip-line" style="font-size:10px;color:#9ca3af">None</div>`;
   }
-  html += `<div class="breakdown-total"><span class="label">Total ×</span><span class="value">${fmtMod(c.totalMultiplier,'scale')}</span></div>`;
+  // Show ×1 baseline plus additive bonus (e.g., "×1 +0.4×" instead of "×1.4")
+  const multBonus = c.totalMultiplier - 1;
+  const bonusBadge = multBonus !== 0 ? ` ${fmtMod(multBonus, 'scalebonus', '×')}` : '';
+  html += `<div class="breakdown-total"><span class="label">Total ×</span><span class="value"><span class="mod-badge scale">×1</span>${bonusBadge}</span></div>`;
   html += '</div>';
 
   // Rereads section (if any) - consolidate by talent/source
