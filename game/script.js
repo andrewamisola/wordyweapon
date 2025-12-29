@@ -12263,7 +12263,8 @@ function updateHealthBars(){
       const totalW = c.breakdown ? c.breakdown.wordCount : c.wordCount;
       badges.push(`<span class="mod-badge word">${fmtVal(totalW)} W</span>`);
 
-      // Show multiplier if > 1 (display as additive bonus)
+      // Show ×1 baseline plus additive bonus (e.g., "×1 +0.8×" instead of just "+0.8×")
+      badges.push(`<span class="mod-badge scale">×1</span>`);
       if(c.totalMultiplier > 1){
         const bonus = (c.totalMultiplier - 1).toFixed(1);
         badges.push(`<span class="mod-badge scale">+${bonus}×</span>`);
