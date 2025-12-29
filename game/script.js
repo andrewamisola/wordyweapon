@@ -4125,12 +4125,17 @@ function rarityToAP(tier){
 }
 
 // Format a modifier value as a styled badge span
-// type: 'ap' for +AP, 'mult' for +mult, 'scale' for ×mult
+// type: 'ap' for +AP, 'mult' for +mult, 'scale' for ×mult, 'scalebonus' for +×mult (additive to ×1 baseline)
 function fmtMod(value, type = 'ap', suffix = '') {
   if (value === 0 || (type === 'scale' && value === 1)) return '';
+  // 'scalebonus' is for additive multiplier bonuses - only negative if < 0, not < 1
   const isNeg = type === 'scale' ? value < 1 : value < 0;
   let cls, prefix;
-  if (isNeg) {
+  if (type === 'scalebonus') {
+    // Additive multiplier bonus: always pink with '+' prefix, only neg if actually < 0
+    cls = value < 0 ? 'neg' : 'scale';
+    prefix = value < 0 ? '' : '+';
+  } else if (isNeg) {
     cls = 'neg';
     prefix = type === 'scale' ? '×' : '';
   } else if (type === 'ap') {
@@ -13689,7 +13694,7 @@ function mkTooltip(w, opts={}){
 
   // Show multiplier line for words with mult (show as bonus, e.g., +1× for ×2)
   if(w.mult){
-    lines.push(`<div class="tooltip-line">Multiplier: ${fmtMod(w.mult - 1, 'add', '×')}</div>`);
+    lines.push(`<div class="tooltip-line">Multiplier: ${fmtMod(w.mult - 1, 'scalebonus', '×')}</div>`);
   }
   // Show AP for all word types
   if(w.type === "weapon" || w.type === "elemental" || w.type === "rarity"){
@@ -13986,7 +13991,8 @@ function formatDamageBreakdown(source){
       if (data.mode === 'ap') {
         result.push(`${fmtMod(data.total, 'ap', ' AP')} ${name}${countStr}`);
       } else if (data.mode === 'mult') {
-        result.push(`${fmtMod(data.total, 'scale')} ${name}${countStr}`);
+        // Use 'scalebonus' for additive multiplier bonuses - shows as +0.4× in pink, not ×0.4 in red
+        result.push(`${fmtMod(data.total, 'scalebonus', '×')} ${name}${countStr}`);
       } else if (data.mode === 'word') {
         result.push(`${fmtMod(data.total, 'word', ' W')} ${name}${countStr}`);
       }
@@ -15162,15 +15168,15 @@ function calc(opts={}){
       if(hasWeaponMaster){
         const wmMult = S.tempEffects.weaponMaster || 2;
         wCountDelta = parseFloat((wCountDelta * wmMult).toFixed(2));
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(wmMult - 1, 'add', '×')} Weapon Master W (${word.name})`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(wmMult - 1, 'scalebonus', '×')} Weapon Master W (${word.name})`);
       } else if(h.good === word.category){
         wCountDelta = parseFloat((wCountDelta * 2.0).toFixed(2));
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(1.0, 'add', '×')} Proficiency W (${word.name})`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(1.0, 'scalebonus', '×')} Proficiency W (${word.name})`);
       } else if(h.bad === word.category){
         if(hasTalent('overcoming')){
           const overcomingMult = scaleTalentMult('overcoming', 1.5);
           wCountDelta = parseFloat((wCountDelta * overcomingMult).toFixed(2));
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(overcomingMult - 1, 'add', '×')} Overcoming W (${word.name})`);
+          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(overcomingMult - 1, 'scalebonus', '×')} Overcoming W (${word.name})`);
         } else {
           wCountDelta = parseFloat((wCountDelta * 0.5).toFixed(2));
           if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5,'scale')} Poor Proficiency (${word.name})`);
@@ -15363,7 +15369,7 @@ function calc(opts={}){
       wCountDelta *= gemMult; // Scale base for tracking
       wCountBonus *= gemMult; // Scale bonuses for tracking
       const gemLabel = hasCrownJewel ? `${word.name} Gem (Kohinoor)` : `${word.name} Gem`;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(gemMult - 1, 'add', '×')} ${gemLabel} (${wBeforeGem}W → ${wBeforeGem * gemMult}W)`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(gemMult - 1, 'scalebonus', '×')} ${gemLabel} (${wBeforeGem}W → ${wBeforeGem * gemMult}W)`);
     }
 
     // Add final word count contribution
@@ -15452,7 +15458,7 @@ function calc(opts={}){
           const wordData = wordDataMap.get(word);
           if(wordData){
             wordData.talentMults.push({ name: 'One With Nature', mult: 1.5 });
-            if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5, 'add', '×')} ${word.name} (One With Nature)`);
+            if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(0.5, 'scalebonus', '×')} ${word.name} (One With Nature)`);
           }
         }
       });
@@ -15753,7 +15759,7 @@ function calc(opts={}){
       const bonus = word.mult - 1; // ×2 gives +1, ×3 gives +2, etc.
       wordMultBonus += bonus;
       if(wantBreakdown){
-        breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} ${word.name}`);
+        breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} ${word.name}`);
       }
     }
   });
@@ -15773,7 +15779,7 @@ function calc(opts={}){
     const bonus = mult - 1; // ×2 gives +1, ×3 gives +2, etc.
     multiplicativeMult += bonus; // Additive stacking
     if (wantBreakdown) {
-      breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} ${talent.name}`);
+      breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} ${talent.name}`);
     }
   });
 
@@ -15784,7 +15790,7 @@ function calc(opts={}){
       const dualSpecMult = scaleTalentMult('dual_spec', 2.0);
       const bonus = dualSpecMult - 1;
       multiplicativeMult += bonus;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Dual Spec`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Dual Spec`);
     }
   }
 
@@ -15794,7 +15800,7 @@ function calc(opts={}){
       const minMaxMult = scaleTalentMult('min_max', 1.75);
       const bonus = minMaxMult - 1;
       multiplicativeMult += bonus;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Min‑Max`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Min‑Max`);
     }
   }
 
@@ -15802,7 +15808,7 @@ function calc(opts={}){
     const basePerWord = scaleTalentBonus('wordsmiths_fervor', 0.1);
     const fervorBonus = basePerWord * wordCount; // Already a bonus portion
     multiplicativeMult += fervorBonus;
-    if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(fervorBonus, 'add', '×')} Wordsmith's Fervor`);
+    if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(fervorBonus, 'scalebonus', '×')} Wordsmith's Fervor`);
   }
 
   // ========================================
@@ -15839,7 +15845,7 @@ function calc(opts={}){
       breakdown.base.push(`${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
       if (wordData.mult) {
         const totalMultBonus = (wordData.mult - 1) * rereadCount;
-        breakdown.multipliers.push(`${fmtMod(totalMultBonus, 'add', '×')} ${word.name} (${talentName} REREAD${countLabel})`);
+        breakdown.multipliers.push(`${fmtMod(totalMultBonus, 'scalebonus', '×')} ${word.name} (${talentName} REREAD${countLabel})`);
       }
     }
   };
@@ -16087,7 +16093,7 @@ function calc(opts={}){
       if(wordData.mult) retriggerMult *= wordData.mult;
       retriggeredWords.push({word: weaponWord, talent: "Cross the T's"});
       if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${weaponWord.name} <span class="mod-badge reread">REREAD</span> Cross the T's`);
-      if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${weaponWord.name} (Cross the T's)`);
+      if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'scalebonus', '×')} ${weaponWord.name} (Cross the T's)`);
     }
   }
 
@@ -16103,7 +16109,7 @@ function calc(opts={}){
         if(wordData.mult) retriggerMult *= wordData.mult;
         retriggeredWords.push({word: lastWord, talent: 'Count Cadence'});
         if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${lastWord.name} <span class="mod-badge reread">REREAD</span> Count Cadence`);
-        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${lastWord.name} (Count Cadence)`);
+        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'scalebonus', '×')} ${lastWord.name} (Count Cadence)`);
       }
     }
   }
@@ -16131,7 +16137,7 @@ function calc(opts={}){
           }
           retriggeredWords.push({word, talent: 'Ellipsis'});
           if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Ellipsis`);
-          if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${word.name} (Ellipsis)`);
+          if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'scalebonus', '×')} ${word.name} (Ellipsis)`);
         }
       }
     });
@@ -16151,7 +16157,7 @@ function calc(opts={}){
         }
         retriggeredWords.push({word, talent: 'Knowledge Eternal'});
         if(wantBreakdown) breakdown.base.push(`${fmtMod(getWordCountForReread(wordData), 'word', ' W')} ${word.name} <span class="mod-badge reread">REREAD</span> Knowledge Eternal`);
-        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'add', '×')} ${word.name} (Knowledge Eternal)`);
+        if(wantBreakdown && wordData.mult) breakdown.multipliers.push(`${fmtMod(wordData.mult - 1, 'scalebonus', '×')} ${word.name} (Knowledge Eternal)`);
       }
     });
   }
@@ -16266,7 +16272,7 @@ function calc(opts={}){
         const scaledBonus = scaleTalentMult('prismatic_resonance', 1.2) - 1; // Get bonus portion
         const bonus = scaledBonus * tiers; // Additive: +0.2 × count
         multiplicativeMult += bonus;
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Prismatic Resonance (${tiers} elements)`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Prismatic Resonance (${tiers} elements)`);
       }
     }
 
@@ -16322,7 +16328,7 @@ function calc(opts={}){
       const scaledBonus = scaleTalentMult('reread_amplifier', 1.5) - 1; // +0.5 per reread
       const bonus = scaledBonus * totalRereadCount; // Additive
       multiplicativeMult += bonus;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Reread Amplifier (${totalRereadCount} REREADs)`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Reread Amplifier (${totalRereadCount} REREADs)`);
     }
 
     // Compound Interest: Each 50 Gold held → +0.15× (additive stacking)
@@ -16332,7 +16338,7 @@ function calc(opts={}){
         const scaledBonus = scaleTalentMult('compound_interest', 1.15) - 1; // +0.15 per stack
         const bonus = scaledBonus * stacks; // Additive
         multiplicativeMult += bonus;
-        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Compound Interest (${stacks}×50 Gold)`);
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Compound Interest (${stacks}×50 Gold)`);
       }
     }
 
@@ -16349,7 +16355,7 @@ function calc(opts={}){
           const bonus = stacks * 0.5; // Additive: +0.5× per stack
           multiplicativeMult += bonus;
           const capNote = rawStacks > maxStacks ? ' [MAX]' : '';
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Overflow (${stacks}/${maxStacks} stacks)${capNote}`);
+          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Overflow (${stacks}/${maxStacks} stacks)${capNote}`);
         }
       }
     }
@@ -16400,7 +16406,7 @@ function calc(opts={}){
       const chainMult = scaleTalentMult('chain_reaction', 3);
       const bonus = chainMult - 1; // +2 at base
       multiplicativeMult += bonus;
-      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Chain Reaction (${totalRereadCount} REREADs ≥ 4)`);
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'scalebonus', '×')} Chain Reaction (${totalRereadCount} REREADs ≥ 4)`);
     }
 
     // Fortune's Favor: 200+ gold → REREAD ALL (ONCE per forge)
@@ -16437,7 +16443,7 @@ function calc(opts={}){
   // +0.2× per talent - ADDITIVE (no cap)
   const talentCountBonus = S.talents.length * 0.2;
   if (wantBreakdown && S.talents.length > 0) {
-    breakdown.multipliers.push(`${fmtMod(talentCountBonus, 'add', '×')} Talent Count (${S.talents.length})`);
+    breakdown.multipliers.push(`${fmtMod(talentCountBonus, 'scalebonus', '×')} Talent Count (${S.talents.length})`);
   }
   // Add to multiplicativeMult for true additive stacking
   multiplicativeMult += talentCountBonus;
