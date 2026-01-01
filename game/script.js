@@ -1826,7 +1826,7 @@ function createCaesuraTree() {
 function createReedTree() {
   const p = 'rd';
   return {
-    capstone: { id: 'one_with_nature', name: "One With Nature", desc: "Earth words buff Water +50%, vice versa" },
+    capstone: { id: 'one_with_nature', name: "One With Nature", desc: "Earth + Water together: +0.5× each" },
     nodes: [
       // Row 0: Start
       { id: `${p}_seedling`, name: "Growth", type: "minor", maxPoints: 1, row: 0, col: 2,
@@ -1882,7 +1882,7 @@ function createReedTree() {
 
       // Row 7: Capstone
       { id: `${p}_capstone`, name: "One With Nature", type: "capstone", maxPoints: 1, row: 7, col: 2,
-        desc: "Earth/Water buff each other +50%", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_wildgrowth`, points: 1}, {id: `${p}_harmony`, points: 1}] },
+        desc: "Earth + Water together: +0.5× each", bonusPerPoint: 1, bonusType: "capstone", requires: [{id: `${p}_wildgrowth`, points: 1}, {id: `${p}_harmony`, points: 1}] },
     ]
   };
 }
@@ -15513,12 +15513,12 @@ function calc(opts={}){
     }
   });
 
-  // Reed - One With Nature Capstone: Earth words buff Water +50%, vice versa
+  // Reed - One With Nature Capstone: Earth + Water together: +0.5× each
   if(hasCapstone('Reed') && h.name === 'Reed'){
     const hasEarth = allWords.some(w => w.elem === E.EARTH);
     const hasWater = allWords.some(w => w.elem === E.WATER);
     if(hasEarth && hasWater){
-      // Apply +50% to all Earth and Water words
+      // Apply +0.5× to all Earth and Water words
       allWords.forEach(word => {
         if(word.elem === E.EARTH || word.elem === E.WATER){
           const wordData = wordDataMap.get(word);
@@ -18237,37 +18237,26 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
     const buttonContainer = document.createElement("div");
     buttonContainer.className = "talent-reroll-container";
 
-    // Add Skip button - only for Chapter bosses to skip talent selection entirely
-    if (isChapterBoss) {
+    // Add Skip button - whenever at talent cap and don't want to swap
+    // Skip goes to upgrade selection (2 for chapter boss, 1 for mini boss)
+    if (isAtCap) {
       const skipBtn = document.createElement("button");
       skipBtn.className = "talent-skip-btn";
-      skipBtn.textContent = "Skip";
-      skipBtn.title = "Skip this talent selection and proceed to shop";
+      skipBtn.textContent = `Skip → ${upgradeCount} Upgrade${upgradeCount > 1 ? 's' : ''}`;
+      skipBtn.title = `Keep your current talents and choose ${upgradeCount} to upgrade`;
       skipBtn.onclick = async () => {
-        // Play skip sound (descending notes)
+        // Play skip sound (ascending for positive action)
         try {
-          playTone(330, 0.15, 'sine', 0.12);
-          setTimeout(() => playTone(294, 0.2, 'sine', 0.1), RHYTHM.QUARTER);
+          playTone(440, 0.1, 'sine', 0.12);
+          setTimeout(() => playTone(523, 0.15, 'sine', 0.1), RHYTHM.QUARTER);
         } catch(err) {}
 
-        // Mark all picks as skipped
-        while (selectedTalents.length < maxPicks) {
-          selectedTalents.push('__skip__');
-        }
-
         await dly(RHYTHM.BEAT);
-
-        // Save run state before proceeding to shop
         await saveRun();
-
-        // Brief pause to let skip animation settle
         await dly(RHYTHM.QUARTER);
 
-        // Close overlay and proceed to shop
-        await playSceneTransition(async () => {
-          $("#talent-overlay").classList.remove("show");
-          await showShop(true);
-        });
+        // Transition to upgrade selection (2 upgrades for chapter boss)
+        await showUpgradeSelection(upgradeCount, container);
       };
 
       buttonContainer.appendChild(skipBtn);
