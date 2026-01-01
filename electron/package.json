@@ -38,6 +38,9 @@
       "preload.js",
       "game/**/*"
     ],
+    "extraFiles": [
+      "steam_appid.txt"
+    ],
     "mac": {
       "category": "public.app-category.games",
       "icon": "game/icon.png",

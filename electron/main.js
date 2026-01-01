@@ -122,10 +122,16 @@ function initSteam() {
 
 // Steam Cloud save/load functions
 function steamCloudSave(key, data) {
-  if (!steamClient) return false;
+  if (!steamClient) {
+    console.log('Steam Cloud save skipped - Steam not initialized');
+    return false;
+  }
   try {
     const filename = `${key}.json`;
-    return steamClient.cloud.writeFile(filename, JSON.stringify(data));
+    const jsonData = JSON.stringify(data);
+    const result = steamClient.cloud.writeFile(filename, jsonData);
+    console.log(`Steam Cloud SAVE: ${filename} (${jsonData.length} bytes) - ${result ? 'SUCCESS' : 'FAILED'}`);
+    return result;
   } catch (e) {
     console.warn('Steam Cloud save failed:', e);
     return false;
@@ -133,13 +139,18 @@ function steamCloudSave(key, data) {
 }
 
 function steamCloudLoad(key) {
-  if (!steamClient) return null;
+  if (!steamClient) {
+    console.log('Steam Cloud load skipped - Steam not initialized');
+    return null;
+  }
   try {
     const filename = `${key}.json`;
     if (steamClient.cloud.fileExists(filename)) {
       const content = steamClient.cloud.readFile(filename);
+      console.log(`Steam Cloud LOAD: ${filename} (${content.length} bytes) - SUCCESS`);
       return JSON.parse(content);
     }
+    console.log(`Steam Cloud LOAD: ${filename} - FILE NOT FOUND`);
   } catch (e) {
     console.warn('Steam Cloud load failed:', e);
   }
