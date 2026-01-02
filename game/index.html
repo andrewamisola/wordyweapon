@@ -116,8 +116,8 @@
     </div>
     <div id="title"><img src="assets/logo-light.png" alt="Wordy Weapon" class="logo-img"></div>
     <div id="header-controls">
-      <button id="sound-btn" title="Sound Settings">🔊</button>
-      <button id="pause-btn">Menu</button>
+      <button id="sound-btn" title="Sound Settings" aria-label="Sound Settings">🔊</button>
+      <button id="pause-btn" aria-label="Open pause menu">Menu</button>
     </div>
   </div>
 
@@ -129,7 +129,7 @@
 <div id="sound-panel" class="hidden">
   <div class="sound-panel-header">
     <span>Sound Settings</span>
-    <button id="sound-panel-close">✕</button>
+    <button id="sound-panel-close" aria-label="Close sound settings">✕</button>
   </div>
   <div class="sound-slider-row">
     <label for="vol-master">Master</label>
@@ -270,10 +270,10 @@
   <!-- Display available consumables during forging -->
   <div id="consumables-bar"></div>
   <div id="buttons">
-    <button id="forge-btn" disabled>FORGE WEAPON</button>
+    <button id="forge-btn" disabled aria-label="Forge weapon and attack">FORGE WEAPON</button>
   </div>
-  <button id="forfeit-btn" title="End run early and cash out XP">FORFEIT</button>
-  <button id="reset-btn" title="Reset forge selections">RESET</button>
+  <button id="forfeit-btn" title="End run early and cash out XP" aria-label="Forfeit run and collect XP">FORFEIT</button>
+  <button id="reset-btn" title="Reset forge selections" aria-label="Reset word selections">RESET</button>
 </div>
 
 <!-- Spotlight tint: dark overlay shown behind focused modals like combat results and crate opening -->
@@ -314,11 +314,11 @@
     </div>
     <div id="combat-result"><div id="combat-result-title"></div><div id="combat-result-detail"></div></div>
     <div id="combat-breakdown-row">
-      <button id="combat-breakdown-btn" class="breakdown-pill" type="button">Damage Breakdown <span class="info-icon">ⓘ</span></button>
+      <button id="combat-breakdown-btn" class="breakdown-pill" type="button" aria-label="Show damage breakdown">Damage Breakdown <span class="info-icon" aria-hidden="true">ⓘ</span></button>
       <div id="combat-breakdown-tooltip" class="tooltip"></div>
     </div>
     <div class="modal-buttons">
-      <button id="combat-continue">CONTINUE</button>
+      <button id="combat-continue" aria-label="Continue to next round">CONTINUE</button>
     </div>
   </div>
 </div>
@@ -372,14 +372,14 @@
               <div id="shop-sort-btns" class="shop-sort-btns">
                 <button data-sort="type" class="active">Type</button>
                 <button data-sort="rarity">Rarity</button>
-                <button id="sort-dir-btn">↓</button>
+                <button id="sort-dir-btn" aria-label="Toggle sort direction">↓</button>
               </div>
             </div>
             <div id="shop-word-bank" class="card-surface shop-word-bank"></div>
           </div>
           <div class="shop-column-actions">
-            <button id="sell-word-btn" class="shop-action-btn" disabled>Sell Selected</button>
-            <button id="deselect-btn" class="shop-action-btn">Deselect</button>
+            <button id="sell-word-btn" class="shop-action-btn" disabled aria-label="Sell selected word">Sell Selected</button>
+            <button id="deselect-btn" class="shop-action-btn" aria-label="Deselect word">Deselect</button>
           </div>
         </div>
 
@@ -400,7 +400,7 @@
 
       <div class="shop-row shop-row-actions">
         <div class="shop-actions card-surface" style="justify-content:center">
-          <button id="exit-shop-btn" class="primary">EXIT SHOP</button>
+          <button id="exit-shop-btn" class="primary" aria-label="Exit shop and start next round">EXIT SHOP</button>
         </div>
       </div>
     </div>
@@ -411,15 +411,15 @@
 
 <div class="overlay" id="hero-select-overlay">
   <div class="modal" style="min-width:700px;max-width:900px;position:relative">
-    <button id="hero-select-close" style="position:absolute;top:12px;right:12px;font-size:20px;background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px 8px">✕</button>
+    <button id="hero-select-close" aria-label="Close hero selection" style="position:absolute;top:12px;right:12px;font-size:20px;background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px 8px">✕</button>
     <div class="modal-title gold">SELECT YOUR HERO</div>
     <div style="text-align:center;font-size:12px;color:#9ca3af;margin-bottom:12px">Goal: Defeat the Chapter 3 Boss <span style="color:#f472b6">(Round 27)</span></div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <button id="hero-prev" style="font-size:24px;padding:8px 16px">◀</button>
+      <button id="hero-prev" aria-label="Previous hero" style="font-size:24px;padding:8px 16px">◀</button>
       <div id="hero-carousel" style="flex:1;overflow:hidden">
         <div id="hero-card-container" style="display:flex;transition:transform 0.3s ease"></div>
       </div>
-      <button id="hero-next" style="font-size:24px;padding:8px 16px">▶</button>
+      <button id="hero-next" aria-label="Next hero" style="font-size:24px;padding:8px 16px">▶</button>
     </div>
     <div id="difficulty-selector" style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
       <button class="diff-btn selected" data-diff="0">Apprentice</button>
@@ -486,12 +486,12 @@
 <div class="overlay" id="skill-tree-overlay">
   <div class="modal skill-tree-modal">
     <div class="skill-tree-header">
-      <button id="skill-tree-back-btn" class="skill-tree-nav-btn">◀</button>
+      <button id="skill-tree-back-btn" class="skill-tree-nav-btn" aria-label="Previous hero">◀</button>
       <div class="skill-tree-hero-info">
         <div class="skill-tree-hero-name" id="skill-tree-hero-name">Graham Moor</div>
         <div class="skill-tree-hero-level" id="skill-tree-hero-level">Level 1</div>
       </div>
-      <button id="skill-tree-next-btn" class="skill-tree-nav-btn">▶</button>
+      <button id="skill-tree-next-btn" class="skill-tree-nav-btn" aria-label="Next hero">▶</button>
     </div>
     <div class="skill-tree-xp-bar">
       <div class="skill-tree-xp-fill" id="skill-tree-xp-fill"></div>
@@ -502,8 +502,8 @@
       <!-- Nodes rendered dynamically -->
     </div>
     <div class="skill-tree-footer">
-      <button id="skill-tree-respec-btn" class="skill-tree-btn">RESPEC</button>
-      <button id="skill-tree-close-btn" class="skill-tree-btn">CLOSE</button>
+      <button id="skill-tree-respec-btn" class="skill-tree-btn" aria-label="Reset skill points">RESPEC</button>
+      <button id="skill-tree-close-btn" class="skill-tree-btn" aria-label="Close skill tree">CLOSE</button>
     </div>
   </div>
 </div>
@@ -639,7 +639,7 @@
       <button id="gfx-reset-data" style="padding:8px 20px;border-radius:8px;background:#1f1215;border:1px solid #7f1d1d;color:#fca5a5;font-size:12px;width:160px">Reset Data</button>
     </div>
     <div style="margin-top:16px">
-      <button id="gfx-close" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
+      <button id="gfx-close" aria-label="Close settings" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
     </div>
   </div>
 </div>
@@ -675,7 +675,7 @@
       </div>
     </div>
     <div style="margin-top:20px">
-      <button id="credits-close" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
+      <button id="credits-close" aria-label="Close credits" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
     </div>
   </div>
 </div>
@@ -687,7 +687,7 @@
     <div id="stats-container" class="stats-grid"></div>
     <div style="text-align:center;margin-top:16px;display:flex;justify-content:center;gap:10px">
       <button id="stats-reset" class="btn-danger">Reset Data</button>
-      <button id="achievements-close" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
+      <button id="achievements-close" aria-label="Close achievements" style="padding:8px 24px;border-radius:8px;background:#1f2937;border:1px solid #374151">Close</button>
     </div>
   </div>
 </div>
@@ -698,7 +698,7 @@
     <div class="modal-title gold" style="text-align:center;letter-spacing:0.12em;margin-bottom:8px;font-size:15px">YOUR TALENTS</div>
     <div id="talent-viewer-content" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;max-height:62vh;overflow-y:auto;padding:6px 16px"></div>
     <div style="text-align:center;margin-top:12px">
-      <button id="talent-viewer-close" style="padding:8px 24px;border-radius:6px;background:#1f2937;border:1px solid #374151;font-size:12px">Close</button>
+      <button id="talent-viewer-close" aria-label="Close talent viewer" style="padding:8px 24px;border-radius:6px;background:#1f2937;border:1px solid #374151;font-size:12px">Close</button>
     </div>
   </div>
 </div>
@@ -722,7 +722,7 @@
 <div id="debug-overlay" class="hidden">
   <div id="debug-header">
     <span>PERFORMANCE (F3)</span>
-    <button id="debug-copy-log">Copy Log</button>
+    <button id="debug-copy-log" aria-label="Copy performance log">Copy Log</button>
   </div>
   <div id="debug-stats">
     <div class="debug-row"><span>FPS:</span><span id="debug-fps">--</span></div>

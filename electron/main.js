@@ -21,6 +21,32 @@ let steamClient = null;
 let smartBaseZoom = 1.0; // Calculated based on display characteristics
 let userZoom = 1.0; // User's zoom preference from slider (0.25 - 2.0)
 let moveDebounceTimer = null;
+let serverConnections = new Set(); // Track HTTP connections for clean shutdown
+
+// Window state persistence
+const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
+
+function loadWindowState() {
+  try {
+    if (fs.existsSync(windowStatePath)) {
+      return JSON.parse(fs.readFileSync(windowStatePath, 'utf8'));
+    }
+  } catch (e) {
+    console.log('Could not load window state:', e.message);
+  }
+  return { fullscreen: true }; // Default to fullscreen
+}
+
+function saveWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const state = { fullscreen: mainWindow.isFullScreen() };
+    fs.writeFileSync(windowStatePath, JSON.stringify(state));
+    console.log('Window state saved:', state);
+  } catch (e) {
+    console.log('Could not save window state:', e.message);
+  }
+}
 
 // === SMART AUTO-SCALING ===
 // Estimate physical screen diagonal in inches from resolution and DPI scale
@@ -284,6 +310,12 @@ function startLocalServer(callback) {
     });
   });
 
+  // Track connections for clean shutdown
+  localServer.on('connection', (conn) => {
+    serverConnections.add(conn);
+    conn.on('close', () => serverConnections.delete(conn));
+  });
+
   localServer.listen(SERVER_PORT, '127.0.0.1', () => {
     console.log(`Local server running at http://127.0.0.1:${SERVER_PORT}`);
     if (callback) callback();
@@ -304,6 +336,9 @@ function createWindow() {
   const windowWidth = Math.floor(BASE_WIDTH * scale);
   const windowHeight = Math.floor(BASE_HEIGHT * scale);
 
+  // Load saved window state (fullscreen preference)
+  const savedState = loadWindowState();
+
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
@@ -313,7 +348,7 @@ function createWindow() {
     icon: app.isPackaged
       ? path.join(__dirname, 'game', 'icon.png')
       : path.join(__dirname, '..', 'game', 'icon.png'),
-    fullscreen: true,  // Start in fullscreen by default
+    fullscreen: savedState.fullscreen,  // Restore saved fullscreen state
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,  // Required for preload to use require('electron')
@@ -368,6 +403,10 @@ function createWindow() {
     }
   });
 
+  mainWindow.on('close', () => {
+    saveWindowState(); // Save fullscreen state before closing
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -404,10 +443,34 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (localServer) {
-    localServer.close();
+  console.log('All windows closed, shutting down...');
+
+  // Give Steam Cloud a moment to finish any pending saves
+  setTimeout(() => {
+    // Close the local HTTP server properly
+    if (localServer) {
+      // Destroy all active connections immediately
+      for (const conn of serverConnections) {
+        conn.destroy();
+      }
+      serverConnections.clear();
+
+      localServer.close(() => {
+        console.log('Local server closed');
+      });
+    }
+
+    // Quit the app
+    app.quit();
+  }, 500); // 500ms grace period for Steam Cloud
+});
+
+app.on('before-quit', () => {
+  // Ensure window is destroyed
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+    mainWindow = null;
   }
-  app.quit();
 });
 
 app.on('activate', () => {

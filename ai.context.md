@@ -63,17 +63,28 @@ BPM = 136               // Music tempo (UI animations sync to beats)
 
 ## Session Management
 
-**Before clearing/compacting**, save session state:
+**Before clearing/compacting**, update the handoff file:
+- Edit `.claude/HANDOFF.md` with current task state
+- Update `SESSION_STATE.md` with what was implemented
+
+Helper scripts (optional):
 ```bash
+# Unix/Mac
 .claude/hooks/session-save.sh
+
+# Windows
+.claude\hooks\session-save.bat
 ```
-Then fill in the "What Was Being Worked On" sections in `.claude/HANDOFF.md`.
 
-The next session will automatically load the handoff and resume where you left off.
+The next session should read `HANDOFF.md` and `SESSION_STATE.md` to resume.
 
-**After completing a handoff task**, delete it:
+**After completing a handoff task**, clear the handoff:
 ```bash
+# Unix/Mac
 rm .claude/HANDOFF.md
+
+# Windows
+del .claude\HANDOFF.md
 ```
 
 ## Response Format
@@ -90,6 +101,11 @@ Example:
 > **Found:** The multiplier was being applied before the base damage instead of after
 > **Did:** Moved the multiplier calculation to line 14950, after base damage is summed
 > **Diff:** Damage now correctly shows 150 instead of 75 for the same word combo
+
+## Git Safety
+- **NEVER push or pull unless explicitly instructed**
+- **ALWAYS make a backup copy before any revert, reset, or destructive git operation**
+- When in doubt, ask first
 
 ## Notes
 - script.js is monolithic (tech debt) - be careful with large edits

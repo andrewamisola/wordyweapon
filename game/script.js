@@ -363,18 +363,23 @@ function addFxAnimation(anim) {
 }
 
 // --- LIGHTNING EFFECT (CodePen inspired) ---
+// Track active lightning count to prevent performance issues with many rereads
+let activeLightningCount = 0;
+const MAX_LIGHTNING_BOLTS = 6; // Cap concurrent lightning effects
+
 class LightningBolt {
   constructor(x1, y1, x2, y2, color) {
     this.segments = [];
     this.color = color || '#ffffff';
     this.life = 1.0;
-    this.decay = 0.05;
-    this.generate(x1, y1, x2, y2, 80); // 80 = displacement
+    this.decay = 0.08; // Faster decay (was 0.05) to clear quicker
+    this.generate(x1, y1, x2, y2, 60); // Reduced displacement (was 80)
+    activeLightningCount++;
   }
 
   generate(x1, y1, x2, y2, displace) {
-    // Increased threshold from 2 to 5 = fewer segments = better performance
-    if (displace < 5) {
+    // Higher threshold = fewer segments = better performance
+    if (displace < 10) { // Increased from 5 to 10
       this.segments.push({ x1, y1, x2, y2 });
     } else {
       let midX = (x1 + x2) / 2;
@@ -387,14 +392,18 @@ class LightningBolt {
   }
 
   update(ctx) {
-    if (this.life <= 0) return false;
+    if (this.life <= 0) {
+      activeLightningCount--;
+      return false;
+    }
 
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = this.life * (0.8 + Math.random() * 0.2);
 
-    // Glow pass FIRST (only in normal FX mode) - reduced blur for performance
-    if (!gfxSettings.lowFx) {
-      ctx.shadowBlur = 8; // Reduced from 15
+    // Skip shadowBlur entirely when many effects active (major perf gain)
+    const useGlow = !gfxSettings.lowFx && activeLightningCount <= 3;
+    if (useGlow) {
+      ctx.shadowBlur = 6;
       ctx.shadowColor = this.color;
     }
 
@@ -405,11 +414,11 @@ class LightningBolt {
       ctx.lineTo(s.x2, s.y2);
     });
     ctx.strokeStyle = this.color;
-    ctx.lineWidth = 2 + Math.random() * 2;
+    ctx.lineWidth = 2 + Math.random() * 1.5;
     ctx.stroke();
 
     // Reset shadow immediately
-    ctx.shadowBlur = 0;
+    if (useGlow) ctx.shadowBlur = 0;
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -417,6 +426,11 @@ class LightningBolt {
     this.life -= this.decay;
     return true;
   }
+}
+
+// Helper to check if lightning can be spawned
+function canSpawnLightning() {
+  return activeLightningCount < MAX_LIGHTNING_BOLTS;
 }
 
 // --- METAL CLASH EFFECT (Physical element - impact sparks + shockwave) ---
@@ -1104,9 +1118,16 @@ function playElementalEffect(fromSlot, targetElement, word) {
   // Physical element has no special FX (just dust puff from slot)
   switch (type) {
     case 'lightning':
-      // Flash white then color (reduced from 3 bolts to 2 for performance)
-      addFxAnimation(new LightningBolt(x1, y1, x2, y2, '#ffffff'));
-      setTimeout(() => addFxAnimation(new LightningBolt(x1, y1, x2, y2, color)), RHYTHM.EIGHTH);
+      // Flash white then color - skip if too many active (prevents lag with many rereads)
+      if (canSpawnLightning()) {
+        addFxAnimation(new LightningBolt(x1, y1, x2, y2, '#ffffff'));
+        // Only spawn second bolt if we have headroom
+        if (canSpawnLightning()) {
+          setTimeout(() => {
+            if (canSpawnLightning()) addFxAnimation(new LightningBolt(x1, y1, x2, y2, color));
+          }, RHYTHM.EIGHTH);
+        }
+      }
       break;
     case 'light':
       addFxAnimation(new EnergyBeam(x1, y1, x2, y2, color, false));
@@ -1983,7 +2004,7 @@ const HEROES=[
   {
     id:"mage",
     name:"Belle Lettres",
-    str:[E.LIGHT,E.DARK,E.POISON], // Fixed strengths
+    str:[E.FIRE,E.WATER,E.EARTH,E.LIGHTNING], // World & Sky elements
     weak:[], // Weaknesses randomize each battle (set by passive)
     good:"magic",
     bad:"slash",
@@ -2009,12 +2030,12 @@ const HEROES=[
     ],
     passive:{
       name:"Sheltered",
-      desc:"2 random weaknesses each battle",
+      desc:"2 random weaknesses each battle (Body & Soul)",
       phase:"ENEMY_SETUP",
       apply:(ctx)=>{
-        // Pick 2 random elements as weaknesses (excluding her strengths)
-        const possibleWeaks = [E.PHYS, E.FIRE, E.WATER, E.EARTH, E.LIGHTNING];
-        const shuffled = possibleWeaks.sort(() => Math.random() - 0.5);
+        // Pick 2 random elements as weaknesses from Body & Soul (opposite of her World & Sky strengths)
+        const bodySoulElements = [E.PHYS, E.POISON, E.LIGHT, E.DARK];
+        const shuffled = [...bodySoulElements].sort(() => Math.random() - 0.5);
         const weaknesses = shuffled.slice(0, 2);
         // Store on hero for this battle
         if(ctx.hero) ctx.hero.weak = weaknesses;
@@ -2890,7 +2911,7 @@ const TALENTS = [
   {
     id: 'hendiadys',
     name: 'Hendiadys',
-    desc: '2+ Adjective slots filled: <span class="mod-badge word">+6 W</span>',
+    desc: '2+ Adjective slots filled: <span class="mod-badge word">+6 W</span> per Adjective',
     flavor: "Expression of a single idea using two words joined by 'and'.",
     rarity: 'common',
     category: 'generator',
@@ -3259,7 +3280,7 @@ const TALENTS = [
   {
     id: 'lexicon_growth',
     name: 'Lexicon Growth',
-    desc: '<span class="mod-badge scale">×1.25</span> per Boss defeated',
+    desc: '<span class="mod-badge scale">×1.25</span> per Boss (compounds)',
     flavor: "Your vocabulary expands with each victory.",
     rarity: 'uncommon',
     category: 'multiplier',
@@ -3270,7 +3291,7 @@ const TALENTS = [
   {
     id: 'momentum',
     name: 'Momentum',
-    desc: '<span class="mod-badge word">+0.2 W</span> per Word per Round (max R10)',
+    desc: 'Each Word: <span class="mod-badge word">+0.2 W</span> per Round (max R10)',
     flavor: "Victory begets victory.",
     rarity: 'common',
     category: 'converter',
@@ -3326,7 +3347,7 @@ const TALENTS = [
   {
     id: 'linguistic_density',
     name: 'Linguistic Density',
-    desc: '<span class="mod-badge word">+5 W</span> per Word if 4+ Words',
+    desc: 'Each Word: <span class="mod-badge word">+5 W</span> if 4+ Words',
     flavor: "Dense language packs tremendous force.",
     rarity: 'uncommon',
     category: 'converter',
@@ -3394,16 +3415,16 @@ const TALENTS = [
     category: 'retrigger',
     apply: (ctx) => 0 // Handled in retrigger phase
   },
-  // T3 - Scaling multiplier, rewards W building
+  // T3 - Conditional multiplier, rewards W building
   {
     id: 'overflow',
-    calcType: 'additive',
+    calcType: 'sequential',
     name: 'Overflow',
-    desc: '<span class="mod-badge scale">+0.5×</span> per 10 W above 50 (max stacks scale)',
+    desc: '<span class="mod-badge scale">×1.25</span> per Level if 50+ W',
     flavor: "More than the vessel can hold.",
     rarity: 'rare',
-    category: 'converter',
-    apply: (ctx) => 0 // Handled in converter phase
+    category: 'threshold',
+    apply: (ctx) => 0 // Handled in sequential multiplier phase
   },
   // T3 - Scaling multiplier, easy (just use elements)
   {
@@ -3521,7 +3542,7 @@ const TALENTS = [
   {
     id: 'irony',
     name: 'Irony',
-    desc: "One Enemy Resistance becomes Weakness",
+    desc: '1 Enemy Resistance → Weakness; <span class="mod-badge scale">×2</span> when hit (+1× per Lv.)',
     flavor: "A figure of speech where the intended meaning is opposite to the literal meaning.",
     rarity: 'common',
     category: 'effect',
@@ -3566,7 +3587,7 @@ const TALENTS = [
   {
     id: 'slow_burn',
     name: 'Slow Burn',
-    desc: '<span class="mod-badge word">+2 W</span> Weapon per Round',
+    desc: 'Weapon: <span class="mod-badge word">+2 W</span> per Round',
     flavor: "Patience rewards the persistent.",
     rarity: 'common',
     category: 'generator',
@@ -3622,11 +3643,10 @@ const TALENTS = [
     rarity: 'common',
     category: 'multiplier',
     apply: (ctx) => {
-      // Check if weapon slot exists and is the "first" word (leftmost filled slot)
+      // Weapon must be filled and no adjectives before it (canonical order: adj1,adj2,item,adj3,adj4,noun1)
       if (!ctx.sel.item) return 1.0;
-      const slots = ['item', 'adj1', 'adj2', 'adj3', 'adj4', 'noun1'];
-      const firstFilledSlot = slots.find(s => ctx.sel[s]);
-      return firstFilledSlot === 'item' ? 1.5 : 1.0;
+      const adjsBefore = ['adj1', 'adj2'].some(s => ctx.sel[s]);
+      return adjsBefore ? 1.0 : 1.5;
     }
   },
 
@@ -3680,7 +3700,7 @@ const TALENTS = [
   {
     id: 'steady_hand',
     name: 'Steady Hand',
-    desc: '<span class="mod-badge word">+3 W</span> Weapon',
+    desc: 'Weapon: <span class="mod-badge word">+3 W</span>',
     flavor: "A firm grip yields consistent results.",
     rarity: 'common',
     category: 'generator',
@@ -3690,7 +3710,7 @@ const TALENTS = [
   {
     id: 'first_blood',
     name: 'First Blood',
-    desc: '<span class="mod-badge word">+10 W</span> Weapon (Ch.1 only)',
+    desc: 'Weapon: <span class="mod-badge word">+10 W</span> (Ch.1 only)',
     flavor: "Write when the iron is hot.",
     rarity: 'common',
     category: 'generator',
@@ -3710,7 +3730,7 @@ const TALENTS = [
   {
     id: 'linguist',
     name: 'Linguist',
-    desc: '<span class="mod-badge word">+5 W</span> per Word if Rarity + Weapon + Elemental',
+    desc: 'Each Word: <span class="mod-badge word">+5 W</span> if Rarity + Weapon + Elemental',
     flavor: "A polyglot of destruction.",
     rarity: 'common',
     category: 'generator',
@@ -3720,7 +3740,7 @@ const TALENTS = [
   {
     id: 'condensed',
     name: 'Condensed',
-    desc: '<span class="mod-badge word">+8 W</span> per Word if ≤3 Words',
+    desc: 'Each Word: <span class="mod-badge word">+8 W</span> if ≤3 Words',
     flavor: "Less is more.",
     rarity: 'common',
     category: 'generator',
@@ -3784,7 +3804,7 @@ const TALENTS = [
   {
     id: 'bibliophile',
     name: 'Bibliophile',
-    desc: '<span class="mod-badge word">+1 W</span> per Word',
+    desc: 'Each Word: <span class="mod-badge word">+1 W</span>',
     flavor: "Knowledge is power.",
     rarity: 'common',
     category: 'generator',
@@ -3992,14 +4012,14 @@ const WORDS=[
   {id:"mace",name:"Mace",type:"weapon",category:"blunt",rarity:T.T1,desc:"A heavy bludgeon."},
   {id:"warhammer",name:"Warhammer",type:"weapon",category:"blunt",rarity:T.T2,desc:"A crushing war weapon."},
   {id:"maul",name:"Maul",type:"weapon",category:"blunt",rarity:T.T3,desc:"A massive two-handed hammer."},
-  // Rarity words - Pure multipliers (non-elemental, ADDITIVE stacking)
+  // Rarity words - W multipliers (non-elemental, ADDITIVE stacking into multiplicativeMult)
   // mult value is the total (1 + bonus), bonus = mult - 1
-  {id:"adj_common",name:"Common",type:"rarity",mult:1.5,rarity:T.T1,desc:"+0.5× multiplier"},
-  {id:"adj_uncommon",name:"Uncommon",type:"rarity",mult:2.0,rarity:T.T1,desc:"+1× multiplier"},
-  {id:"adj_magic",name:"Magic",type:"rarity",mult:3.0,rarity:T.T2,desc:"+2× multiplier"},
-  {id:"adj_rare",name:"Rare",type:"rarity",mult:4.0,rarity:T.T2,desc:"+3× multiplier"},
-  {id:"adj_epic",name:"Epic",type:"rarity",mult:5.0,rarity:T.T3,desc:"+4× multiplier"},
-  {id:"adj_legendary",name:"Legendary",type:"rarity",mult:10.0,rarity:T.T3,desc:"+9× multiplier"},
+  {id:"adj_common",name:"Common",type:"rarity",mult:1.5,rarity:T.T1,desc:"W ×1.5"},
+  {id:"adj_uncommon",name:"Uncommon",type:"rarity",mult:2.0,rarity:T.T1,desc:"W ×2"},
+  {id:"adj_magic",name:"Magic",type:"rarity",mult:3.0,rarity:T.T2,desc:"W ×3"},
+  {id:"adj_rare",name:"Rare",type:"rarity",mult:4.0,rarity:T.T2,desc:"W ×4"},
+  {id:"adj_epic",name:"Epic",type:"rarity",mult:5.0,rarity:T.T3,desc:"W ×5"},
+  {id:"adj_legendary",name:"Legendary",type:"rarity",mult:10.0,rarity:T.T3,desc:"W ×10"},
   // Elemental words (noun + adjective forms)
   // FIRE
   {id:"fire_n",name:"Fire",type:"elemental",elem:E.FIRE,rarity:T.T1,desc:"Fire",nounForm:"Fire",adjPrimary:"Fiery",adjAlt:"Fiery"},
@@ -4291,10 +4311,11 @@ function normalizeTalentText(desc){
   return text.replace(/\s+/g, ' ').trim();
 }
 
-function formatTalentDesc(talent, talentId = null){
+function formatTalentDesc(talent, talentId = null, previewLevel = null){
   const desc = normalizeTalentText(talent?.desc || '');
   // Get talent level for scaling numbers in description
-  const level = talentId ? getTalentLevel(talentId) : (talent?.id ? getTalentLevel(talent.id) : 1);
+  // Use previewLevel if provided, otherwise get from state
+  const level = previewLevel !== null ? previewLevel : (talentId ? getTalentLevel(talentId) : (talent?.id ? getTalentLevel(talent.id) : 1));
 
   if (level <= 1) {
     return fmtTalentDesc(desc);
@@ -4337,7 +4358,6 @@ function formatTalentDesc(talent, talentId = null){
       return `REREAD ×${scaled}`;
     })
     // Scale standalone REREAD (implies ×1) - show ×N at level 2+
-    // Exclude REREAD after threshold pattern "N+ " (e.g., "6+ REREAD" should not scale)
     .replace(/(?<!\d+\+\s*)\bREREAD\b(?!\s*×)(?!\s*ALL)/g, () => {
       return level > 1 ? `REREAD ×${level}` : 'REREAD';
     })
@@ -4415,23 +4435,18 @@ function formatTalentDescUpgradePreview(talent, talentId = null){
       return `REREAD <span class="upgrade-old">×${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
     })
     // Scale standalone REREAD with old→new preview
-    // Exclude REREAD after threshold pattern "N+ " or "per " (e.g., "6+ REREAD", "per REREAD" should not scale)
     .replace(/(?<!\d+\+\s*)(?<!per\s)\bREREAD\b(?!\s*×)(?!\s*ALL)/gi, () => {
-      const oldVal = currentLevel;
-      const newVal = nextLevel;
       if (currentLevel === 1) {
-        return `REREAD <span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
+        return `REREAD <span class="upgrade-arrow">→</span><span class="upgrade-new">×${nextLevel}</span>`;
       }
-      return `REREAD <span class="upgrade-old">×${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
+      return `REREAD <span class="upgrade-old">×${currentLevel}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${nextLevel}</span>`;
     })
     // Scale REREAD ALL with old→new preview
     .replace(/REREAD\s*ALL(?!\s*×)/g, () => {
-      const oldVal = currentLevel;
-      const newVal = nextLevel;
       if (currentLevel === 1) {
-        return `REREAD ALL <span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
+        return `REREAD ALL <span class="upgrade-arrow">→</span><span class="upgrade-new">×${nextLevel}</span>`;
       }
-      return `REREAD ALL <span class="upgrade-old">×${oldVal}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${newVal}</span>`;
+      return `REREAD ALL <span class="upgrade-old">×${currentLevel}</span><span class="upgrade-arrow">→</span><span class="upgrade-new">×${nextLevel}</span>`;
     });
 
   // Special handling for Crescendo - show threshold decrease or multiplier increase
@@ -5283,43 +5298,43 @@ const WEAPON_SVG={
     <linearGradient id="sc-crown" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e6c547"/><stop offset="100%" stop-color="#a8891f"/></linearGradient>
   </defs>
   <g id="scepter-root">
-    <rect x="44" y="50" width="12" height="72" rx="3" fill="url(#sc-shaft)"/>
-    <rect x="46" y="52" width="5" height="68" fill="#ffffff" opacity="0.15"/>
-    <circle cx="50" cy="22" r="28" fill="url(#sc-orb)"/>
-    <circle cx="50" cy="17" r="18" fill="#ffffff" opacity="0.2"/>
-    <path d="M50 22 A18 18 0 0 1 64 36" fill="none" stroke="#0f172a" stroke-width="3" opacity="0.1"/>
-    <path d="M36 44 L50 36 L64 44 L50 50 Z" fill="url(#sc-crown)"/>
-    <path d="M38 45 L50 38 L62 45" fill="#ffffff" opacity="0.2"/>
+    <rect x="44" y="58" width="12" height="64" rx="3" fill="url(#sc-shaft)"/>
+    <rect x="46" y="60" width="5" height="60" fill="#ffffff" opacity="0.15"/>
+    <circle cx="50" cy="32" r="26" fill="url(#sc-orb)"/>
+    <circle cx="50" cy="28" r="16" fill="#ffffff" opacity="0.2"/>
+    <path d="M50 32 A16 16 0 0 1 62 44" fill="none" stroke="#0f172a" stroke-width="3" opacity="0.1"/>
+    <path d="M38 52 L50 45 L62 52 L50 58 Z" fill="url(#sc-crown)"/>
+    <path d="M40 53 L50 47 L60 53" fill="#ffffff" opacity="0.2"/>
   </g>`,
   gem:`<g id="scepter-gem">
-    <circle cx="50" cy="22" r="12" fill="GEMCOLOR"/>
-    <circle cx="50" cy="19" r="7" fill="#ffffff" opacity="0.35"/>
-    <circle cx="50" cy="6" r="6" fill="GEMCOLOR" opacity="0.5"/>
-    <circle cx="36" cy="28" r="4" fill="GEMCOLOR" opacity="0.4"/>
-    <circle cx="64" cy="28" r="4" fill="GEMCOLOR" opacity="0.4"/>
+    <circle cx="50" cy="32" r="11" fill="GEMCOLOR"/>
+    <circle cx="50" cy="29" r="6" fill="#ffffff" opacity="0.35"/>
+    <circle cx="50" cy="18" r="5" fill="GEMCOLOR" opacity="0.5"/>
+    <circle cx="38" cy="36" r="4" fill="GEMCOLOR" opacity="0.4"/>
+    <circle cx="62" cy="36" r="4" fill="GEMCOLOR" opacity="0.4"/>
   </g>`,
   adj1:`<g id="sc-adj1">
     <defs><linearGradient id="sc-adj1-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="ADJ1COLOR" stop-opacity="0.75"/><stop offset="100%" stop-color="ADJ1COLOR" stop-opacity="0"/></linearGradient></defs>
-    <circle cx="50" cy="22" r="30" fill="url(#sc-adj1-grad)" opacity="0.4"/>
-    <path d="M26 22 A24 24 0 0 1 50 -2" stroke="ADJ1COLOR" stroke-width="4" fill="none" opacity="0.55" stroke-linecap="round"/>
-    <path d="M24 20 A26 26 0 0 1 48 -4" stroke="#ffffff" stroke-width="1.5" fill="none" opacity="0.25"/>
+    <circle cx="50" cy="32" r="28" fill="url(#sc-adj1-grad)" opacity="0.4"/>
+    <path d="M28 32 A22 22 0 0 1 50 10" stroke="ADJ1COLOR" stroke-width="4" fill="none" opacity="0.55" stroke-linecap="round"/>
+    <path d="M26 30 A24 24 0 0 1 48 8" stroke="#ffffff" stroke-width="1.5" fill="none" opacity="0.25"/>
   </g>`,
   adj2:`<g id="sc-adj2">
     <defs><linearGradient id="sc-adj2-grad" x1="100%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="ADJ2COLOR" stop-opacity="0.5"/><stop offset="100%" stop-color="ADJ2COLOR" stop-opacity="0"/></linearGradient></defs>
-    <circle cx="50" cy="22" r="28" fill="url(#sc-adj2-grad)" opacity="0.3"/>
-    <path d="M74 22 A24 24 0 0 1 50 46" stroke="ADJ2COLOR" stroke-width="3" fill="none" opacity="0.35"/>
+    <circle cx="50" cy="32" r="26" fill="url(#sc-adj2-grad)" opacity="0.3"/>
+    <path d="M72 32 A22 22 0 0 1 50 54" stroke="ADJ2COLOR" stroke-width="3" fill="none" opacity="0.35"/>
   </g>`,
   adj3:`<g id="sc-adj3">
     <defs><radialGradient id="sc-adj3-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="ADJ3COLOR" stop-opacity="0.75"/><stop offset="100%" stop-color="ADJ3COLOR" stop-opacity="0.1"/></radialGradient></defs>
-    <circle cx="50" cy="22" r="20" fill="url(#sc-adj3-glow)" opacity="0.45"/>
-    <circle cx="50" cy="22" r="10" fill="ADJ3COLOR" opacity="0.3"/>
-    <circle cx="50" cy="20" r="5" fill="#ffffff" opacity="0.45"/>
+    <circle cx="50" cy="32" r="18" fill="url(#sc-adj3-glow)" opacity="0.45"/>
+    <circle cx="50" cy="32" r="9" fill="ADJ3COLOR" opacity="0.3"/>
+    <circle cx="50" cy="30" r="4" fill="#ffffff" opacity="0.45"/>
   </g>`,
   adj4:`<g id="sc-adj4">
     <defs><radialGradient id="sc-adj4-aura" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="ADJ4COLOR" stop-opacity="0.25"/><stop offset="60%" stop-color="ADJ4COLOR" stop-opacity="0.08"/><stop offset="100%" stop-color="ADJ4COLOR" stop-opacity="0"/></radialGradient></defs>
-    <circle cx="50" cy="22" r="42" fill="url(#sc-adj4-aura)"/>
-    <circle cx="50" cy="22" r="36" fill="none" stroke="ADJ4COLOR" stroke-width="2" opacity="0.18"/>
-    <circle cx="50" cy="22" r="50" fill="none" stroke="ADJ4COLOR" stroke-width="1.5" opacity="0.1"/>
+    <circle cx="50" cy="32" r="38" fill="url(#sc-adj4-aura)"/>
+    <circle cx="50" cy="32" r="32" fill="none" stroke="ADJ4COLOR" stroke-width="2" opacity="0.18"/>
+    <circle cx="50" cy="32" r="44" fill="none" stroke="ADJ4COLOR" stroke-width="1.5" opacity="0.1"/>
   </g>`},
 
   // BLUNT CATEGORY - Heavy, solid weapons with weight
@@ -6112,7 +6127,8 @@ const TALENT_SVG = {
     <circle cx="50" cy="65" r="32" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.25"/>
     <circle cx="50" cy="65" r="26" fill="none" stroke="#c084fc" stroke-width="2" opacity="0.35"/>
     <rect x="30" y="55" width="40" height="20" rx="4" fill="url(#rc-badge)"/>
-    <text x="50" y="69" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">EPIC</text>
+    <rect x="32" y="57" width="36" height="16" rx="3" fill="#fff" opacity="0.15"/>
+    <ellipse cx="42" cy="63" rx="4" ry="3" fill="#fff" opacity="0.3"/>
     <path d="M30 65 L20 65 M70 65 L80 65 M50 45 L50 35 M50 85 L50 95" stroke="#c084fc" stroke-width="2" opacity="0.5"/>
   </svg>`,
 
@@ -6798,25 +6814,28 @@ const TALENT_SVG = {
     <circle cx="68" cy="75" r="4" fill="none" stroke="#92400e" stroke-width="0.8"/>
   </svg>`,
 
-  // Prismatic Resonance - Rainbow prism (×1.2 per element type)
+  // Prismatic Resonance - Rainbow prism triangle with chromatic gradient
   prismatic_resonance: `<svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="pr-prism" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#7dd3fc"/></linearGradient>
-      <radialGradient id="pr-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9333ea" stop-opacity="0.5"/><stop offset="100%" stop-color="#9333ea" stop-opacity="0"/></radialGradient>
+      <linearGradient id="pr-rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ef4444"/><stop offset="16%" stop-color="#f97316"/>
+        <stop offset="33%" stop-color="#eab308"/><stop offset="50%" stop-color="#22c55e"/>
+        <stop offset="66%" stop-color="#3b82f6"/><stop offset="83%" stop-color="#8b5cf6"/>
+        <stop offset="100%" stop-color="#ec4899"/>
+      </linearGradient>
+      <linearGradient id="pr-shine" x1="30%" y1="0%" x2="70%" y2="100%">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.5"/><stop offset="50%" stop-color="#fff" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0.2"/>
+      </linearGradient>
+      <radialGradient id="pr-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a855f7" stop-opacity="0.5"/><stop offset="100%" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
     </defs>
-    <ellipse cx="50" cy="65" rx="45" ry="55" fill="url(#pr-glow)"/>
-    <ellipse cx="50" cy="65" rx="40" ry="48" fill="none" stroke="#9333ea" stroke-width="1.5" opacity="0.3"/>
-    <path d="M50 25 L75 85 L25 85 Z" fill="url(#pr-prism)" opacity="0.9"/>
-    <path d="M50 25 L50 85" stroke="#fff" stroke-width="1" opacity="0.3"/>
-    <path d="M35 55 L65 55" stroke="#fff" stroke-width="1" opacity="0.2"/>
-    <path d="M75 85 L85 95" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L88 90" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L90 85" stroke="#eab308" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L88 80" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L85 75" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
-    <path d="M75 85 L80 70" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
-    <ellipse cx="42" cy="45" rx="5" ry="4" fill="#fff" opacity="0.4"/>
-    <circle cx="30" cy="35" r="2" fill="#fff" opacity="0.5"/>
+    <ellipse cx="50" cy="65" rx="42" ry="50" fill="url(#pr-glow)"/>
+    <path d="M50 20 L80 90 L20 90 Z" fill="url(#pr-rainbow)"/>
+    <path d="M50 20 L80 90 L20 90 Z" fill="url(#pr-shine)"/>
+    <path d="M50 20 L80 90 L20 90 Z" fill="none" stroke="#fff" stroke-width="2" opacity="0.4"/>
+    <path d="M50 30 L70 80 L30 80 Z" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+    <ellipse cx="42" cy="50" rx="6" ry="5" fill="#fff" opacity="0.35"/>
+    <circle cx="35" cy="40" r="2" fill="#fff" opacity="0.5"/>
   </svg>`,
 
   // Weakness Exploit Amp - Target with amplifier waves (bonus W on weakness hit)
@@ -7774,7 +7793,7 @@ function renderSkillTree() {
       const skillId = el.dataset.skill;
       const hero = el.dataset.hero;
       if (deallocateSkillPoint(hero, skillId)) {
-        playSfxClick(); // Use click sound for deallocation
+        sfxClick(); // Use click sound for deallocation
         renderSkillTree();
       }
     };
@@ -11652,7 +11671,7 @@ function updateDifficultyDesc(descEl, diff) {
 }
 
 function showHeroSelect(){
-  currentHeroIndex = 0;
+  currentHeroIndex = PStats.lastViewedHeroIndex || 0;
   // Update skill points badges
   updateSkillBadges();
 
@@ -11759,12 +11778,14 @@ function showHeroSelect(){
 
   $("#hero-prev").onclick = () => {
     currentHeroIndex = (currentHeroIndex - 1 + HEROES.length) % HEROES.length;
+    PStats.lastViewedHeroIndex = currentHeroIndex;
     updateCarousel();
   };
   $("#hero-prev").onmouseenter=sfxHover;
 
   $("#hero-next").onclick = () => {
     currentHeroIndex = (currentHeroIndex + 1) % HEROES.length;
+    PStats.lastViewedHeroIndex = currentHeroIndex;
     updateCarousel();
   };
   $("#hero-next").onmouseenter=sfxHover;
@@ -11928,7 +11949,11 @@ function newEnc(){
   const isChapterBossRound = S.roundIndex % 9 === 0;
 
   if(!S.nextEnemyData){
-    const baseEnemy = ENEMIES[Math.random()*ENEMIES.length|0] || ENEMIES[0];
+    // Prevent back-to-back same enemy type
+    const availableEnemies = ENEMIES.length > 1
+      ? ENEMIES.filter(e => e.id !== S.lastEnemyId)
+      : ENEMIES;
+    const baseEnemy = availableEnemies[Math.random()*availableEnemies.length|0] || ENEMIES[0];
     S.nextEnemyData = {...baseEnemy};
     randomizeEnemyElements(S.nextEnemyData);
   }
@@ -12045,6 +12070,8 @@ function newEnc(){
   // Apply ENEMY_SETUP modifiers (hero passives, future boss modifiers)
   applyModifiers('ENEMY_SETUP', {hero: S.hero, enemy: S.enemy, state: S});
 
+  // Track last enemy ID to prevent back-to-back repeats
+  if(S.nextEnemyData) S.lastEnemyId = S.nextEnemyData.id;
   // Consume cached preview so the next shop call will roll a fresh foe
   S.nextEnemyData = null;
 
@@ -12349,23 +12376,26 @@ function updateHealthBars(){
     $("#preview-hero-dmg").textContent = fmtBig(heroDmg);
     $("#preview-base-ap").textContent = ''; // Clear the old subtext
 
-    // Build badges showing TOTAL values (not just bonuses)
+    // Build badges showing the 2-bucket formula: AP × (W × Mult)
     const badgesEl = document.getElementById('preview-bonus-badges');
     if(badgesEl){
-      const badges = [];
+      // Show total AP separate (it's not affected by the multiplier)
+      const apBadge = `<span class="mod-badge add">${fmtVal(c.baseAP)} AP</span>`;
 
-      // Show total AP
-      badges.push(`<span class="mod-badge add">${fmtVal(c.baseAP)} AP</span>`);
+      // Show BASE W (raw word count, before rarity/additive multipliers)
+      const rawW = c.breakdown ? c.breakdown.rawWordCount : c.wordCount;
+      const effectiveW = c.breakdown ? c.breakdown.wordCount : c.wordCount;
+      const wBadge = `<span class="mod-badge word">${fmtVal(rawW)} W</span>`;
 
-      // Show total W (word count)
-      const totalW = c.breakdown ? c.breakdown.wordCount : c.wordCount;
-      badges.push(`<span class="mod-badge word">${fmtVal(totalW)} W</span>`);
+      // Calculate combined multiplier: (effectiveW / rawW) × sequentialMult
+      // This shows rarity multipliers + sequential multipliers as one "×Mult" value
+      const wMult = rawW > 0 ? effectiveW / rawW : 1;
+      const combinedMult = wMult * c.totalMultiplier;
+      const multDisplay = combinedMult.toFixed(1).replace(/\.0$/, '');
+      const multBadge = `<span class="mod-badge scale">×${multDisplay}</span>`;
 
-      // Show total multiplier as single badge
-      const multDisplay = c.totalMultiplier.toFixed(1).replace(/\.0$/, '');
-      badges.push(`<span class="mod-badge scale">×${multDisplay}</span>`);
-
-      badgesEl.innerHTML = badges.join('');
+      // Divider between AP and W×Mult to show multiplier only affects W
+      badgesEl.innerHTML = `${apBadge}<span class="preview-divider">×</span>${wBadge}${multBadge}`;
     }
 
     // Highlight preview panel when damage meets or exceeds enemy HP
@@ -12390,15 +12420,7 @@ function updateHealthBars(){
 
     // Hide hero damage preview since enemy no longer deals damage
     $("#hero-damage-preview").style.display="none";
-
-    // Color code the damage number based on outcome
-    if(heroDmg >= e.hp){
-      $("#preview-hero-dmg").style.color = "#4ade80";
-      $("#preview-hero-dmg").style.fontWeight = "bold";
-    } else {
-      $("#preview-hero-dmg").style.color = "#fb923c";
-      $("#preview-hero-dmg").style.fontWeight = "";
-    }
+    // Color is handled by CSS via .goal-achieved class on the panel
   }else{
     // Show 0 damage when no weapon selected
     $("#preview-hero-dmg").textContent="0";
@@ -12683,19 +12705,10 @@ function updateSlotCalcs(){
     // Build multiplier text
     let multParts = [];
 
-    // Word's intrinsic multiplier (not in gem slot) - show as additive bonus
-    if (word.mult !== undefined && slotKey !== 'noun1') {
-      const bonus = (word.mult - 1).toFixed(1);
-      multParts.push(`<span class="mod-badge scale">+${bonus}×</span>`);
-    }
-
-    // Talent-based per-word multipliers (e.g., Eclipse ×2.5, One With Nature ×1.5) - show as additive
-    if (wordData.talentMults && wordData.talentMults.length > 0) {
-      wordData.talentMults.forEach(tm => {
-        const bonus = (tm.mult - 1).toFixed(1);
-        multParts.push(`<span class="mod-badge scale" title="${tm.name}">+${bonus}×</span>`);
-      });
-    }
+    // Word's intrinsic multiplier (rarity words like Magic, Rare, Epic, Legendary)
+    // and talent-based per-word multipliers (Eclipse, One With Nature, etc.)
+    // are all folded into the W count in the 2-bucket system, so we don't show
+    // separate "×" badges here - the +W badge already reflects their contribution
 
     const multText = multParts.join(' ');
 
@@ -13189,15 +13202,6 @@ function openTalentViewer(){
     content.appendChild(passiveSection);
   }
 
-  // Display talent multiplier (each talent = +0.2x) - lowkey, centered under passive
-  if(S.talents && S.talents.length > 0){
-    const talentBonus = S.talents.length * 0.2;
-    const multPill = document.createElement('div');
-    multPill.style.cssText = 'text-align:center;font-size:11px;color:#6b7280;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #374151;grid-column:1/-1';
-    multPill.innerHTML = `Talent Multiplier: <span class="mod-badge scale" style="font-size:10px;padding:2px 6px">+${talentBonus.toFixed(1)}×</span>`;
-    content.appendChild(multPill);
-  }
-
   if(!S.talents || S.talents.length === 0){
     const noTalents = document.createElement('div');
     noTalents.style.cssText = 'text-align:center;color:#9ca3af;padding:20px';
@@ -13333,8 +13337,27 @@ function openTalentViewer(){
           ? '<span class="mod-badge add">+0 AP</span>'
           : fmtMod(totalVal, 'ap', ' AP');
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${wordsSold} sold × 0.2 = ${badge}/Word</div>`;
+      } else if(t.id === 'elemental_bounty'){
+        // Elemental Bounty: +3g per unique element in forge
+        const uniqueElems = new Set(allWords.filter(w => w.elem !== undefined).map(w => w.elem));
+        const elemCount = uniqueElems.size;
+        const goldAmt = elemCount * 3;
+        if(elemCount > 0){
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#fbbf24">${elemCount} elements × 3 = <span style="font-weight:bold">+${goldAmt}g</span></div>`;
+        } else {
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">Add elemental words to forge</div>`;
+        }
+      } else if(t.id === 'treasure_hunter'){
+        // Treasure Hunter: +5g per T3 word (incl. REREAD)
+        const t3Count = allWords.filter(w => w.rarity === 3).length;
+        const goldAmt = t3Count * 5;
+        if(t3Count > 0){
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#fbbf24">${t3Count} T3 words × 5 = <span style="font-weight:bold">+${goldAmt}g</span></div>`;
+        } else {
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">Add T3 words to forge</div>`;
+        }
       } else if(t.category === 'economy' && t.goldBonus && t.id !== 'liquidate'){
-        // Economy talents: show current gold bonus (except Liquidate which only shows in combat result)
+        // Generic economy talents: show current gold bonus
         try {
           const goldAmt = t.goldBonus(talentCtx);
           if(goldAmt > 0){
@@ -13361,16 +13384,18 @@ function openTalentViewer(){
         const bonus = stacks * basePerStack;
         const badge = fmtMod(bonus, 'word', ' W');
         const levelText = getTalentLevel('tithe') > 1 ? ` (Lv.${getTalentLevel('tithe')})` : '';
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${spent}g spent ÷ 20 × ${basePerStack} = ${badge}${levelText}</div>`;
+        const displayPerStack = Number.isInteger(basePerStack) ? basePerStack : basePerStack.toFixed(1);
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">${spent}g spent ÷ 20 × ${displayPerStack} = ${badge}${levelText}</div>`;
       } else if(t.id === 'momentum'){
         // Momentum: +0.2 W per Word per round played (max 10) - scales with level
         const roundsPlayed = Math.min((S.roundIndex || 1) - 1, 10);
         const basePerRound = scaleTalentBonus('momentum', 0.2);
         const bonusPerWord = roundsPlayed * basePerRound;
         const levelText = getTalentLevel('momentum') > 1 ? ` (Lv.${getTalentLevel('momentum')})` : '';
+        const displayPerRound = Number.isInteger(basePerRound) ? basePerRound : basePerRound.toFixed(1);
         // Override description to show current total W per word
         scaledDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord.toFixed(1)} W</span>`;
-        scalingTotal = `<div style="font-size:11px;margin-top:4px">${basePerRound} W × ${roundsPlayed} rounds${levelText}</div>`;
+        scalingTotal = `<div style="font-size:11px;margin-top:4px">${displayPerRound} W × ${roundsPlayed} rounds${levelText}</div>`;
       } else if(t.id === 'word_historian'){
         // Word Historian: +0.25 W per Word used this run - scales with level
         const wordsUsed = S.wordsUsedThisRun || 0;
@@ -13438,25 +13463,18 @@ function openTalentViewer(){
         const bonusRound = Math.round(bonus * 100) / 100;
         scalingTotal = `<div style="font-size:11px;margin-top:4px">${gold}g ÷ 50 = ${stacks} stacks: <span class="mod-badge scale">+${bonusRound.toFixed(2)}×</span></div>`;
       } else if(t.id === 'overflow'){
-        // Overflow: Per 10 W above 50 → +0.5× per stack (capped at 10 + 2 per level)
+        // Overflow: ×1.25 per level if 50+ W (threshold multiplier)
         const slots = [S.sel?.item, S.sel?.adj1, S.sel?.adj2, S.sel?.adj3, S.sel?.adj4, S.sel?.noun1].filter(Boolean);
         const baseW = slots.reduce((sum, w) => sum + (w.word?.length || w.name?.length || 0), 0);
         const level = getTalentLevel('overflow');
-        const maxStacks = 10 + (level - 1) * 2; // Start at 10, +2 per upgrade
-        const nextMaxStacks = maxStacks + 2;
-        if(baseW > 50){
-          const excessW = baseW - 50;
-          const rawStacks = Math.floor(excessW / 10);
-          const stacks = Math.min(rawStacks, maxStacks);
-          const bonus = stacks * 0.5;
-          const bonusRound = Math.round(bonus * 100) / 100;
-          const capNote = rawStacks > maxStacks ? ' [MAX]' : '';
-          const upgradePreview = level < 5 ? ` <span class="dim">→ max ${nextMaxStacks}</span>` : '';
-          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#4ade80">${baseW} W: ${stacks}/${maxStacks} stacks = <span class="mod-badge scale">+${bonusRound.toFixed(1)}×</span>${capNote}${upgradePreview}</div>`;
+        const mult = 1 + (0.25 * level);
+        const nextMult = 1 + (0.25 * (level + 1));
+        if(baseW >= 50){
+          const upgradePreview = level < 5 ? ` <span class="dim">→ ×${nextMult.toFixed(2)}</span>` : '';
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#4ade80">${baseW} W: <span class="mod-badge scale">×${mult.toFixed(2)}</span>${upgradePreview}</div>`;
         } else {
           const needed = 50 - baseW;
-          const upgradePreview = level < 5 ? ` <span class="dim">→ max ${nextMaxStacks}</span>` : '';
-          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">${baseW} W (need ${needed} more) | max ${maxStacks}${upgradePreview}</div>`;
+          scalingTotal = `<div style="font-size:11px;margin-top:4px;color:#6b7280">${baseW} W (need ${needed} more for <span class="mod-badge scale">×${mult.toFixed(2)}</span>)</div>`;
         }
       } else if(t.id === 'word_hoard'){
         // Word Hoard: Each Word in inventory → +0.2 W - scales with level
@@ -13559,7 +13577,7 @@ function openTalentViewer(){
             <span class="${rc}" style="font-size:13px;font-weight:600">${t.name}</span>
             ${effectivenessHtml}
           </div>
-          <div style="font-size:11px;color:#d1d5db;line-height:1.4">${scaledDesc || formatTalentDesc(t, t.id)}</div>
+          <div style="font-size:11px;color:#d1d5db;line-height:1.4">${scaledDesc || getDynamicTalentDesc(t)}</div>
           ${scalingTotal ? `<div style="font-size:10px;margin-top:6px;color:#9ca3af">${scalingTotal.replace(/<div[^>]*>|<\/div>/g, '')}</div>` : ''}
         </div>
       `;
@@ -13623,9 +13641,9 @@ function mkChip(w,disabled,isStickChip){
   if(w.elem!==undefined){
     elemHtml=`<div class="chip-elem" style="color:${EC[w.elem]}">${EN[w.elem]}</div>`;
   } else if(w.mult && w.mult !== 1){
-    // Non-elemental words (Common->Legendary adjectives) show multiplier as a badge with mono font
-    const bonus = (w.mult - 1).toFixed(1);
-    elemHtml=`<span class="mod-badge scale" style="margin-top:2px;font-size:9px">+${bonus}×</span>`;
+    // Non-elemental words (Common->Legendary adjectives) show W multiplier in pink
+    const multVal = w.mult % 1 === 0 ? w.mult : w.mult.toFixed(1);
+    elemHtml=`<span class="mod-badge scale" style="margin-top:2px;font-size:9px">W ×${multVal}</span>`;
   }
 
   // Generate color tab and tier classes based on word type
@@ -14133,76 +14151,64 @@ function formatDamageBreakdown(source){
     return extractMult(b) - extractMult(a); // Highest first
   });
 
-  // Build HTML with two-column layout
+  // Build HTML with AP at top, then W × Mult side by side
   let html = '<div class="tooltip-title">Damage Breakdown</div>';
-  html += '<div class="breakdown-grid">';
 
-  // Left column: AP Sources
-  html += '<div class="breakdown-col">';
-  html += '<div class="breakdown-section-title">AP Sources</div>';
+  // === AP SECTION (separate at top) ===
+  html += '<div class="breakdown-section" style="border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px">';
+  html += '<div class="breakdown-section-title">Attack Power (AP)</div>';
   baseWordLines.forEach(line => {
-    html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0">${line}</div>`;
+    html += `<div class="tooltip-line">${line}</div>`;
   });
   if(consolidatedTalentAP.length){
     consolidatedTalentAP.forEach(line => {
-      html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0;color:#4ade80">${line}</div>`;
+      html += `<div class="tooltip-line" style="color:#4ade80">${line}</div>`;
     });
   }
+  html += `<div class="breakdown-total"><span class="label">Total AP</span><span class="value"><span class="mod-badge add">${fmtNum(c.baseAP)} AP</span></span></div>`;
   html += '</div>';
 
-  // Right column: Word Count
-  html += '<div class="breakdown-col">';
-  html += '<div class="breakdown-section-title">Word Count</div>';
-  html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0">${fmtMod(c.breakdown.slotsFilled || c.breakdown.wordCount,'word',' W')} Slots Filled</div>`;
+  // === WORD COUNT SECTION (stacked, not grid) ===
+  html += '<div class="breakdown-section">';
+  html += '<div class="breakdown-section-title">Word Count (W)</div>';
+  html += `<div class="tooltip-line">${fmtMod(c.breakdown.slotsFilled || c.breakdown.rawWordCount || c.breakdown.wordCount,'word',' W')} Slots Filled</div>`;
   if(consolidatedWordCount.length){
     consolidatedWordCount.forEach(line => {
-      html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0">${line}</div>`;
+      html += `<div class="tooltip-line">${line}</div>`;
     });
   }
+  const baseW = c.breakdown.rawWordCount || c.breakdown.slotsFilled || c.breakdown.wordCount;
+  html += `<div class="breakdown-total"><span class="label">Base W</span><span class="value"><span class="mod-badge word">${fmtNum(baseW)} W</span></span></div>`;
   html += '</div>';
 
-  html += '</div>'; // End grid
-
-  // Compact totals row for quick read
-  html += `<div class="breakdown-row" style="justify-content:center;gap:12px;margin:6px 0 8px 0;flex-wrap:wrap">`;
-  html += `<div class="breakdown-total" style="min-width:120px"><span class="label">Total AP</span><span class="value">${fmtNum(c.baseAP)}</span></div>`;
-  html += `<div class="breakdown-total" style="min-width:120px"><span class="label">Total W</span><span class="value">${fmtNum(c.breakdown.wordCount)}</span></div>`;
-  html += `</div>`;
-
-  // Combined Multipliers section - additive and sequential with divider
+  // === MULTIPLIERS SECTION (stacked below W) ===
   const hasAdditiveMults = consolidatedScaleMult.length > 0;
   const hasSequentialMults = c.breakdown && c.breakdown.sequential && c.breakdown.sequential.length > 0;
-  const additiveMult = hasSequentialMults && c.sequentialMult > 0 ? c.totalMultiplier / c.sequentialMult : c.totalMultiplier;
+  const hasMults = hasAdditiveMults || hasSequentialMults;
 
-  if(hasAdditiveMults || hasSequentialMults){
-    html += '<div class="breakdown-section">';
-    html += '<div class="breakdown-section-title">Multipliers</div>';
-
-    // Additive multipliers (sum together)
+  html += '<div class="breakdown-section">';
+  html += '<div class="breakdown-section-title">Multipliers (×)</div>';
+  if(hasMults){
     if(hasAdditiveMults){
       consolidatedScaleMult.forEach(line => {
         const pinkLine = line.replace(/mod-badge neg/g, 'mod-badge scale');
-        html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0">${pinkLine}</div>`;
+        html += `<div class="tooltip-line">${pinkLine}</div>`;
       });
     }
-
-    // Divider if both types exist
-    if(hasAdditiveMults && hasSequentialMults){
-      html += `<div style="border-top:1px solid #374151;margin:4px 0"></div>`;
-    }
-
-    // Sequential multipliers (multiply together)
     if(hasSequentialMults){
       c.breakdown.sequential.forEach(line => {
-        html += `<div class="tooltip-line" style="font-size:10px;line-height:1.3;margin:1px 0">${line}</div>`;
+        html += `<div class="tooltip-line">${line}</div>`;
       });
     }
-
-    // Show combined total
-    const totalDisplay = c.totalMultiplier.toFixed(2).replace(/\.?0+$/, '');
-    html += `<div class="breakdown-total"><span class="label">Total ×</span><span class="value"><span class="mod-badge scale">×${totalDisplay}</span></span></div>`;
-    html += '</div>';
+  } else {
+    html += `<div class="tooltip-line dim">No multipliers</div>`;
   }
+  // Calculate combined multiplier (W mult × sequential mult)
+  const wMult = baseW > 0 ? c.breakdown.wordCount / baseW : 1;
+  const combinedMult = wMult * c.totalMultiplier;
+  const totalDisplay = combinedMult.toFixed(2).replace(/\.?0+$/, '');
+  html += `<div class="breakdown-total"><span class="label">Total ×</span><span class="value"><span class="mod-badge scale">×${totalDisplay}</span></span></div>`;
+  html += '</div>';
 
   // Rereads section (if any) - consolidate by talent/source
   if(rereadLines.length){
@@ -14239,31 +14245,36 @@ function formatDamageBreakdown(source){
     rereadBySource.forEach(({ count, totalW }, talent) => {
       const label = count > 1 ? `${count} words` : '1 word';
       const wDisplay = totalW > 0 ? ` <span class="mod-badge word">+${totalW % 1 === 0 ? totalW : totalW.toFixed(1)} W</span>` : '';
-      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px"><span class="mod-badge reread">REREAD</span> ${label} (${talent})${wDisplay}</div>`;
+      html += `<div class="tooltip-line breakdown-reread"><span class="mod-badge reread">REREAD</span> ${label} (${talent})${wDisplay}</div>`;
     });
 
     // Then show aggregate/threshold rereads
     aggregateLines.forEach(line => {
-      html += `<div class="tooltip-line breakdown-reread" style="font-size:10px">${line}</div>`;
+      html += `<div class="tooltip-line breakdown-reread">${line}</div>`;
     });
 
     html += '</div>';
   }
 
 
-  // Final damage formula: (AP × W) × Multiplier with total in separate box
+  // Final totals - clean and beautiful
   const finalDmg = c.heroDmg;
-  const hasMult = c.totalMultiplier > 1.001;
-  let formulaStr;
-  if (hasMult) {
-    formulaStr = `(${fmtNum(c.baseAP)} AP × ${fmtNum(c.breakdown.wordCount)} W) × ${fmtNum(c.totalMultiplier)}`;
-  } else {
-    formulaStr = `${fmtNum(c.baseAP)} AP × ${fmtNum(c.breakdown.wordCount)} W`;
+  const baseWForFormula = c.breakdown.rawWordCount || c.breakdown.slotsFilled || c.breakdown.wordCount;
+  const wMultForFormula = baseWForFormula > 0 ? c.breakdown.wordCount / baseWForFormula : 1;
+  const combinedMultForFormula = wMultForFormula * c.totalMultiplier;
+  const multStr = combinedMultForFormula.toFixed(1).replace(/\.0$/, '');
+
+  html += `<div class="breakdown-final">`;
+  html += `<div class="breakdown-final-row">`;
+  html += `<span class="mod-badge add" style="font-size:12px;padding:4px 8px">${fmtNum(c.baseAP)} AP</span>`;
+  html += `<span class="breakdown-final-x">×</span>`;
+  html += `<span class="mod-badge word" style="font-size:12px;padding:4px 8px">${fmtNum(baseWForFormula)} W</span>`;
+  if(combinedMultForFormula > 1.001){
+    html += `<span class="breakdown-final-x">×</span>`;
+    html += `<span class="mod-badge scale" style="font-size:12px;padding:4px 8px">×${multStr}</span>`;
   }
-  html += `<div class="breakdown-formula-row">`;
-  html += `<div class="breakdown-formula">${formulaStr}</div>`;
-  html += `<div class="breakdown-formula-equals">=</div>`;
-  html += `<div class="breakdown-formula-total">${finalDmg}</div>`;
+  html += `</div>`;
+  html += `<div class="breakdown-final-result">${finalDmg === Infinity ? '∞' : fmtNum(finalDmg)}</div>`;
   html += `</div>`;
 
   return html;
@@ -14567,7 +14578,8 @@ function ensureWeaponLayers(target){
   if(needsRecreate){
     // New modular layers: base, gem (noun1), adj1-4 effects
     // Weapon tilted 15deg right for depth with parallax
-    host.innerHTML = `<div class="weapon-layered" style="transform:rotate(15deg)"><div class="weapon-shadow"></div><svg class="weapon-layer base" viewBox="0 0 100 130"></svg><svg class="weapon-layer gem" viewBox="0 0 100 130"></svg><svg class="weapon-layer adj adj1" viewBox="0 0 100 130"></svg><svg class="weapon-layer adj adj2" viewBox="0 0 100 130"></svg><svg class="weapon-layer adj adj3" viewBox="0 0 100 130"></svg><svg class="weapon-layer adj adj4" viewBox="0 0 100 130"></svg><div class="weapon-glow"></div></div>`;
+    // overflow="visible" prevents hard clipping on adjective glow effects
+    host.innerHTML = `<div class="weapon-layered" style="transform:rotate(15deg)"><div class="weapon-shadow"></div><svg class="weapon-layer base" viewBox="0 0 100 130" overflow="visible"></svg><svg class="weapon-layer gem" viewBox="0 0 100 130" overflow="visible"></svg><svg class="weapon-layer adj adj1" viewBox="0 0 100 130" overflow="visible"></svg><svg class="weapon-layer adj adj2" viewBox="0 0 100 130" overflow="visible"></svg><svg class="weapon-layer adj adj3" viewBox="0 0 100 130" overflow="visible"></svg><svg class="weapon-layer adj adj4" viewBox="0 0 100 130" overflow="visible"></svg><div class="weapon-glow"></div></div>`;
     attachParallaxTilt(host.querySelector('.weapon-layered'));
   }
   const wrapper = host.querySelector('.weapon-layered');
@@ -14975,8 +14987,7 @@ function buildWeaponNameFromParts(parts=buildWeaponNameParts()){
 function getCombatants(){
   const defaultHero={hp:100,str:[],weak:[],good:null,bad:null,name:"Hero"};
   const defaultEnemy={hp:50,ap:0,weak:[],res:[],name:"Enemy"};
-  if(!S.hero) console.warn("[combat] Missing hero data; using defaults");
-  if(!S.enemy) console.warn("[combat] Missing enemy data; using defaults");
+  // Note: Missing hero/enemy is expected during initialization (before run starts)
 
   // Deep copy hero and enemy to avoid shared array references
   const hero = {...defaultHero,...(S.hero||{})};
@@ -15109,8 +15120,10 @@ function calc(opts={}){
     }
   }
 
-  // Track which resistance Irony has flipped (only affects ONE resistance)
+  // Track which resistance Irony has flipped (always 1, but hitting it gives level-based multiplier)
   let ironyFlippedElement = null;
+  let ironyHitCount = 0; // Count how many words hit the flipped weakness
+  const ironyLevel = hasTalent('irony') ? getTalentLevel('irony') : 0;
 
   // Check for opposing elements for Oxy (opposing pairs deal 0)
   const bossAbilityDisabled = S.tempEffects && S.tempEffects.disableBossAbility;
@@ -15239,27 +15252,34 @@ function calc(opts={}){
       }
     }
 
-    // Weapon proficiency affects AP (like elemental matrix)
+    // Weapon proficiency affects AP - track for breakdown
+    let profMult = 1;
+    let profNote = '';
     if(slotKey === 'item' && !word.isStick && word.category){
       if(hasWeaponMaster){
         const wmMult = S.tempEffects.weaponMaster || 3;
-        // AP multiplier handled in elemMult section
+        profMult = wmMult;
+        profNote = `×${wmMult} WM`;
       } else if(h.good === word.category){
         // Good proficiency: ×2 AP
+        profMult = 2;
+        profNote = '×2 prof';
         tierValue *= 2;
-        if(wantBreakdown) breakdown.base.push(`<span class="mod-badge scale">×2</span> Proficiency (${word.name})`);
       } else if(h.bad === word.category){
         if(hasTalent('overcoming')){
           const overcomingMult = scaleTalentMult('overcoming', 1.5);
+          profMult = overcomingMult;
+          profNote = `×${fmtNum(overcomingMult)} OC`;
           tierValue *= overcomingMult;
-          if(wantBreakdown) breakdown.base.push(`<span class="mod-badge scale">×${fmtNum(overcomingMult)}</span> Overcoming (${word.name})`);
         } else {
           // Bad proficiency: ×0.5 AP
+          profMult = 0.5;
+          profNote = '×0.5 weak';
           tierValue *= 0.5;
-          if(wantBreakdown) breakdown.base.push(`<span class="mod-badge scale">×0.5</span> Weak Proficiency (${word.name})`);
         }
       }
     }
+    // profNote and profMult are used later in breakdown generation
 
     // Determine how this word contributes to base AP and the effective word count.
     // Elemental interactions combine both hero and enemy affinities:
@@ -15326,11 +15346,12 @@ function calc(opts={}){
       const heroAffinity = heroStrong ? 'strong' : heroWeak ? 'weak' : 'neutral';
       let enemyAffinity = enemyWeak ? 'weak' : enemyStrong ? 'strong' : 'neutral';
 
-      // Irony: ONE enemy resistance becomes weakness (first one encountered)
-      if(hasTalent('irony') && enemyAffinity === 'strong'){
-        // Only flip if this is the element we already flipped, or we haven't flipped any yet
-        if(ironyFlippedElement === null || ironyFlippedElement === elem){
-          ironyFlippedElement = elem;
+      // Irony: enemy resistances become weaknesses (scales with talent level)
+      if(ironyLevel > 0 && enemyAffinity === 'strong'){
+        // Irony flips 1 resistance to weakness; track hits for level-based multiplier
+        if(ironyFlippedElement === elem || ironyFlippedElement === null){
+          if(ironyFlippedElement === null) ironyFlippedElement = elem;
+          ironyHitCount++; // Count this hit for later multiplier
           enemyAffinity = 'weak';
           flipped = true;
         }
@@ -15460,8 +15481,15 @@ function calc(opts={}){
         breakdown.base.push(`<span style="color:#ef4444">0 AP</span> ${word.name} (Wordless: need 6+ Words)`);
       } else {
         // AP badge always green, text always white
+        // If proficiency applied, show mini-breakdown so players know ×2 was already applied
         const apDisplay = Number.isInteger(apContribution) ? apContribution : apContribution.toFixed(1);
-        breakdown.base.push(`<span class="mod-badge add">+${apDisplay} AP</span> <span style="color:#fff!important">${word.name}</span>`);
+        let apLine = `<span class="mod-badge add">+${apDisplay} AP</span> <span style="color:#fff!important">${word.name}</span>`;
+        if(profNote && profMult !== 1){
+          const baseAP = apContribution / profMult;
+          const baseDisplay = Number.isInteger(baseAP) ? baseAP : baseAP.toFixed(1);
+          apLine += ` <span style="color:#9ca3af;font-size:9px">(${baseDisplay} ${profNote})</span>`;
+        }
+        breakdown.base.push(apLine);
       }
     }
 
@@ -15799,9 +15827,10 @@ function calc(opts={}){
   }
 
   // ========================================
-  // PHASE 3: MULTIPLICATIVE BONUSES (×Mult Talents)
+  // PHASE 3: MULTIPLIERS (×Mult)
+  // All multipliers combine into one total (displayed as single "Mult" to player)
   // ========================================
-  let multiplicativeMult = 1.0;
+  let multiplicativeMult = 1.0; // Base multiplier pool
 
   // Stick penalty: 0.5× total damage as punishment for not having a real weapon
   if (s.item && s.item.isStick) {
@@ -15937,7 +15966,7 @@ function calc(opts={}){
     const talent = TALENTS.find(t => t.id === tid);
     if (talent && talent.category === 'retrigger') {
       // Each retrigger talent identifies which words to retrigger and adds their contribution
-      // Reread count scales with talent level
+      // REREAD count scales with talent level
       const rereadCount = getTalentLevel(tid);
 
       // Anaphora: First word triggers twice
@@ -16437,22 +16466,22 @@ function calc(opts={}){
       }
     }
 
-    // Overflow: Per 10 W above 50 → +0.5× per stack (additive, capped)
+    // Overflow: ×1.25 per level if 50+ W (threshold multiplier)
     if(hasTalent('overflow') && loopIteration === 1){
       const currentW = wordCount + globalWBonus;
-      if(currentW > 50){
-        const excessW = currentW - 50;
-        const rawStacks = Math.floor(excessW / 10);
+      if(currentW >= 50){
         const level = getTalentLevel('overflow');
-        const maxStacks = 10 + (level - 1) * 2; // Level 1 = max 10 stacks, +2 per upgrade
-        const stacks = Math.min(rawStacks, maxStacks);
-        if(stacks > 0){
-          const bonus = stacks * 0.5; // Additive: +0.5× per stack
-          multiplicativeMult += bonus;
-          const capNote = rawStacks > maxStacks ? ' [MAX]' : '';
-          if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(bonus, 'add', '×')} Overflow (${stacks}/${maxStacks} stacks)${capNote}`);
-        }
+        const overflowMult = 1 + (0.25 * level); // Lv.1=×1.25, Lv.2=×1.50, etc.
+        sequentialMult *= overflowMult;
+        if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(overflowMult, 'scale')} Overflow (${currentW} W)`);
       }
+    }
+
+    // Irony: ×(1+level) when hitting the flipped weakness
+    if(ironyHitCount > 0 && loopIteration === 1){
+      const ironyMult = 1 + ironyLevel; // Lv.1=×2, Lv.2=×3, Lv.3=×4, etc.
+      sequentialMult *= ironyMult;
+      if(wantBreakdown) breakdown.multipliers.push(`${fmtMod(ironyMult, 'scale')} Irony (${ironyHitCount} hit${ironyHitCount > 1 ? 's' : ''})`);
     }
 
     // --- THRESHOLD PHASE (REREAD-count based) ---
@@ -16533,23 +16562,16 @@ function calc(opts={}){
   wordCount += globalWBonus;
 
   // ========================================
-  // PHASE 5: TALENT COUNT BASELINE
+  // PHASE 5: CALCULATE DAMAGE
   // ========================================
-  // +0.2× per talent - ADDITIVE (no cap)
-  const talentCountBonus = S.talents.length * 0.2;
-  if (wantBreakdown && S.talents.length > 0) {
-    breakdown.multipliers.push(`${fmtMod(talentCountBonus, 'add', '×')} Talent Count (${S.talents.length})`);
-  }
-  // Add to multiplicativeMult for true additive stacking
-  multiplicativeMult += talentCountBonus;
-
-  // ========================================
-  // PHASE 6: CALCULATE DAMAGE
-  // ========================================
-  // Balatro-style: Additive bonuses pool (multiplicativeMult), then sequential multipliers chain
-  // multiplicativeMult already contains: base 1.0 + word bonuses + additive talents + legacy talents + retrigger bonuses
-  // sequentialMult contains: product of all sequential talent multipliers (starts at 1.0)
-  let heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult * sequentialMult);
+  // Simple 2-bucket formula: AP × W × Mult
+  // - AP: Base attack power from words
+  // - W: Effective word count (base W × additive bonuses)
+  // - Mult: Sequential multipliers only
+  //
+  // multiplicativeMult IS the additive pool - fold it into W
+  const effectiveW = wordCount * multiplicativeMult;
+  let heroDmg = Math.floor(baseAP * effectiveW * sequentialMult);
 
   // Execute: Check if enemy would survive at ≤15% HP, trigger REREAD ALL
   if(hasTalent('execute') && !ultimateWeaponForged){
@@ -16580,7 +16602,8 @@ function calc(opts={}){
       // Recalculate damage with Execute bonuses (no AP, additive mult)
       wordCount += executeW;
       multiplicativeMult += executeMultBonus;
-      heroDmg = Math.floor(baseAP * wordCount * multiplicativeMult * sequentialMult);
+      const newEffectiveW = wordCount * multiplicativeMult;
+      heroDmg = Math.floor(baseAP * newEffectiveW * sequentialMult);
     }
   }
 
@@ -16633,10 +16656,12 @@ function calc(opts={}){
     }
   }
 
-  // For display: effective word count including all multipliers
-  // Balatro-style: totalMultiplier = multiplicativeMult (contains rarity words + additive talents) * sequentialMult
-  const totalMultiplier = multiplicativeMult * sequentialMult;
-  let displayWordCount = Math.round(wordCount * totalMultiplier * 10) / 10;
+  // For display: 2-bucket system (W and Mult)
+  // effectiveW already calculated above = wordCount * multiplicativeMult
+  // totalMultiplier = just sequentialMult (the ×Mult chain)
+  const totalMultiplier = sequentialMult;
+  const finalEffectiveW = wordCount * multiplicativeMult; // Recalculate in case Execute modified it
+  let displayWordCount = Math.round(finalEffectiveW * 10) / 10;
 
   // Enemy does no damage in this simplified model
   let enemyDmg = 0;
@@ -16646,7 +16671,8 @@ function calc(opts={}){
   const enemyFin = Math.max(0, enemyMax - heroDmg);
 
   if(wantBreakdown){
-    breakdown.wordCount = wordCount;
+    breakdown.wordCount = displayWordCount; // Effective W (includes additive bonuses)
+    breakdown.rawWordCount = wordCount; // Raw W before additive bonuses
     breakdown.slotsFilled = allWords.length; // Raw slot count (before any modifiers)
   }
 
@@ -16872,11 +16898,11 @@ async function forge(){
     // In gem slot (noun1), words with mult should behave like nouns and contribute AP
     // rather than acting as multipliers. Only use mult in non-gem slots.
     if(word.mult !== undefined && slotKey !== 'noun1'){
-      const bonus = word.mult - 1;
+      const multVal = word.mult % 1 === 0 ? word.mult : word.mult.toFixed(1);
       return {
         name: displayName,
         value: '',
-        tooltip: `+${bonus}×`,
+        tooltip: `W ×${multVal}`,
         rarity: word.rarity,
         color: null
       };
@@ -17071,186 +17097,34 @@ async function forge(){
   showCombat(c, words, rewards);
 }
 
-/**
- * Calculate weight boosts for word drops based on player's talents.
- * Talents that affect specific elements or weapon types increase their drop chance.
- * Returns { elements: {elem_id: multiplier}, weaponTypes: {type: multiplier} }
- */
-function getTalentWeightBoosts(){
-  const boosts = {
-    elements: {},
-    weaponTypes: {}
-  };
-
-  if(!S.talents || S.talents.length === 0) return boosts;
-
-  const hasTalent = (id) => S.talents.includes(id);
-  const BOOST = 2.5; // 150% weight increase for talent-related words
-
-  // Family-based talent boosts
-  // World & Sky family: Fire, Water, Earth, Lightning
-  if(hasTalent('world_sky_ink') || hasTalent('world_sky_focus')) {
-    WORLD_SKY.forEach(elem => boosts.elements[elem] = BOOST);
-  }
-  // Body & Soul family: Physical, Poison, Light, Dark
-  if(hasTalent('body_soul_ink') || hasTalent('body_soul_focus')) {
-    BODY_SOUL.forEach(elem => boosts.elements[elem] = BOOST);
-  }
-
-  // Dual-element synergy talents boost both elements (kept 6 of 12)
-  if(hasTalent('magma_core')){ // Fire + Earth
-    boosts.elements[E.FIRE] = (boosts.elements[E.FIRE] || 1) * BOOST;
-    boosts.elements[E.EARTH] = (boosts.elements[E.EARTH] || 1) * BOOST;
-  }
-  if(hasTalent('tempest')){ // Water + Lightning
-    boosts.elements[E.WATER] = (boosts.elements[E.WATER] || 1) * BOOST;
-    boosts.elements[E.LIGHTNING] = (boosts.elements[E.LIGHTNING] || 1) * BOOST;
-  }
-  if(hasTalent('eclipse')){ // Light + Dark
-    boosts.elements[E.LIGHT] = (boosts.elements[E.LIGHT] || 1) * BOOST;
-    boosts.elements[E.DARK] = (boosts.elements[E.DARK] || 1) * BOOST;
-  }
-  if(hasTalent('necrotoxin')){ // Dark + Poison
-    boosts.elements[E.DARK] = (boosts.elements[E.DARK] || 1) * BOOST;
-    boosts.elements[E.POISON] = (boosts.elements[E.POISON] || 1) * BOOST;
-  }
-  if(hasTalent('blessed_steel')){ // Light + Physical
-    boosts.elements[E.LIGHT] = (boosts.elements[E.LIGHT] || 1) * BOOST;
-    boosts.elements[E.PHYS] = (boosts.elements[E.PHYS] || 1) * BOOST;
-  }
-  if(hasTalent('static_earth')){ // Earth + Lightning
-    boosts.elements[E.EARTH] = (boosts.elements[E.EARTH] || 1) * BOOST;
-    boosts.elements[E.LIGHTNING] = (boosts.elements[E.LIGHTNING] || 1) * BOOST;
-  }
-
-  // Proficiency Focus boosts preferred weapon type
-  if(hasTalent('proficiency_focus') && S.hero && S.hero.good) {
-    boosts.weaponTypes[S.hero.good] = 2.0;
-  }
-
-  return boosts;
-}
-
-function buildWeightedPool(words, heroSkew = true){
+function buildWeightedPool(words){
   const pool = [];
-
-  // Get talent-based weight bonuses for elements and weapon types
-  const talentBoosts = getTalentWeightBoosts();
-
-  // Separate words into hero-favored and other categories
-  const heroStrWords = [];
-  const otherWords = [];
-  const heroWeapons = [];
-  const otherWeapons = [];
-
+  // Simple rank-based weights: T1 (common) = 11, T2 (uncommon) = 7, T3 (rare) = 2
   words.forEach(w => {
-    if(heroSkew && S.hero){
-      if(w.type === 'weapon'){
-        if(w.category === S.hero.good){
-          heroWeapons.push(w);
-        } else {
-          otherWeapons.push(w);
-        }
-      } else if(w.elem !== undefined && S.hero.str && S.hero.str.includes(w.elem)){
-        heroStrWords.push(w);
-      } else {
-        otherWords.push(w);
-      }
-    } else {
-      // No hero skew - use base weights
-      const rank = w.rarity || 0;
-      const weight = rank === 0 ? 11 : rank === 2 ? 7 : 2;
-      for(let i = 0; i < weight; i++) pool.push(w);
-    }
+    const rank = w.rarity || 0;
+    const weight = rank === 0 ? 11 : rank === 2 ? 7 : 2;
+    for(let i = 0; i < weight; i++) pool.push(w);
   });
-
-  // With hero skew: 50% hero strength elements, 35% hero weapons
-  if(heroSkew && S.hero){
-    // For non-weapons: 50% from hero strength pool, 50% from others
-    // Weight hero words 3x to achieve ~50% when pools are unequal
-    // Also apply talent-based element boosts
-    heroStrWords.forEach(w => {
-      const rank = w.rarity || 0;
-      let weight = (rank === 0 ? 11 : rank === 2 ? 7 : 2) * 3;
-      // Apply talent boost for this element
-      if(w.elem !== undefined && talentBoosts.elements[w.elem]){
-        weight = Math.floor(weight * talentBoosts.elements[w.elem]);
-      }
-      for(let i = 0; i < weight; i++) pool.push(w);
-    });
-    otherWords.forEach(w => {
-      const rank = w.rarity || 0;
-      let weight = rank === 0 ? 11 : rank === 2 ? 7 : 2;
-      // Apply talent boost for this element
-      if(w.elem !== undefined && talentBoosts.elements[w.elem]){
-        weight = Math.floor(weight * talentBoosts.elements[w.elem]);
-      }
-      for(let i = 0; i < weight; i++) pool.push(w);
-    });
-
-    // For weapons: 35% from hero proficiency pool
-    // Weight hero weapons 2x to achieve ~35%
-    // Also apply talent-based weapon type boosts
-    heroWeapons.forEach(w => {
-      const rank = w.rarity || 0;
-      let weight = (rank === 0 ? 11 : rank === 2 ? 7 : 2) * 2;
-      // Apply talent boost for this weapon type
-      if(w.category && talentBoosts.weaponTypes[w.category]){
-        weight = Math.floor(weight * talentBoosts.weaponTypes[w.category]);
-      }
-      for(let i = 0; i < weight; i++) pool.push(w);
-    });
-    otherWeapons.forEach(w => {
-      const rank = w.rarity || 0;
-      let weight = rank === 0 ? 11 : rank === 2 ? 7 : 2;
-      // Apply talent boost for this weapon type
-      if(w.category && talentBoosts.weaponTypes[w.category]){
-        weight = Math.floor(weight * talentBoosts.weaponTypes[w.category]);
-      }
-      for(let i = 0; i < weight; i++) pool.push(w);
-    });
-  }
-
   return pool;
 }
 
 function rollBossLootDrops(){
-  // Boss rewards strongly favor hero's proficiency and elements
+  // Boss rewards: 1 weapon + 3 words (guaranteed T3 + 2 random)
   const weapons = WORDS.filter(w => w.type === 'weapon');
-
-  // 80% chance to drop hero's proficient weapon type
-  const goodWeapons = weapons.filter(w => w.category === S.hero?.good);
-  const weaponDrop = (Math.random() < 0.8 && goodWeapons.length > 0)
-    ? goodWeapons[Math.floor(Math.random() * goodWeapons.length)]
-    : weapons[Math.floor(Math.random() * weapons.length)];
+  const weaponDrop = weapons[Math.floor(Math.random() * weapons.length)];
 
   const nonWeapons = WORDS.filter(w => w.type !== 'weapon' && !w.hiddenInBank);
-
-  // For T3 pool, prioritize hero's strength elements (70% chance)
-  const heroStrElements = S.hero?.str || [];
   const tier3Pool = nonWeapons.filter(w => (w.rarity || 0) >= 3);
-  const tier3HeroStr = tier3Pool.filter(w => w.elem !== undefined && heroStrElements.includes(w.elem));
-
-  const guaranteedT3 = (Math.random() < 0.7 && tier3HeroStr.length > 0)
-    ? tier3HeroStr[Math.floor(Math.random() * tier3HeroStr.length)]
-    : (tier3Pool.length > 0 ? tier3Pool[Math.floor(Math.random() * tier3Pool.length)] : null);
 
   const wordDrops = [];
-  if(guaranteedT3) wordDrops.push(guaranteedT3);
-
-  // For additional word drops, also favor hero's strength elements (70% chance each)
-  const heroStrWords = nonWeapons.filter(w => w.elem !== undefined && heroStrElements.includes(w.elem));
-  const desiredWordCount = 3;
-  for(let i = wordDrops.length; i < desiredWordCount; i++){
+  // Guaranteed T3 word
+  if(tier3Pool.length > 0){
+    wordDrops.push(tier3Pool[Math.floor(Math.random() * tier3Pool.length)]);
+  }
+  // 2 more random words
+  for(let i = wordDrops.length; i < 3; i++){
     if(nonWeapons.length === 0) break;
-    // 70% chance to pick from hero strength elements
-    if(Math.random() < 0.7 && heroStrWords.length > 0){
-      const randWord = heroStrWords[Math.floor(Math.random() * heroStrWords.length)];
-      if(randWord) wordDrops.push(randWord);
-    } else {
-      const randWord = nonWeapons[Math.floor(Math.random() * nonWeapons.length)];
-      if(randWord) wordDrops.push(randWord);
-    }
+    wordDrops.push(nonWeapons[Math.floor(Math.random() * nonWeapons.length)]);
   }
 
   return { weapon: weaponDrop, words: wordDrops };
@@ -17777,32 +17651,364 @@ function massUpgradeRandomTalents(count = 2) {
   return upgradedTalents;
 }
 
-// Scale a talent bonus by its level (ACCELERATING growth for additive bonuses)
-// Additive bonuses need multiplicative upgrades to keep up with HP curve
-// Pattern: Lv1=×1, Lv2=×1.67, Lv3=×2.67, Lv4=×4 (each level adds more than the last)
-// Example: +3 → +5 → +8 → +12
+// Scale a talent bonus by its level (linear: level = multiplier)
 function scaleTalentBonus(talentId, baseValue) {
   const level = getTalentLevel(talentId);
-  // Formula: (4 + level * (level + 1)) / 6 gives accelerating growth
-  const scale = (4 + level * (level + 1)) / 6;
-  return baseValue * scale;
+  return baseValue * level;
 }
 
-// Scale a talent multiplier by its level (ADDITIVE upgrade for multipliers)
-// Multipliers use conservative additive upgrades to prevent explosive scaling
-// Pattern: ×2 → ×2.5 → ×3 (adds flat +0.5 per level, not ×1.5 each time)
-// Rate: 50% of bonus portion per level (e.g., ×2 has +1 bonus, so +0.5 per level)
+// Scale a talent multiplier by its level (linear)
+// Bonus portion scales with level: ×2 at Lv1 → ×3 at Lv2 → ×4 at Lv3
 function scaleTalentMult(talentId, baseMult) {
   const level = getTalentLevel(talentId);
-  if (level <= 1) return baseMult;
-  // Add 50% of the bonus portion per extra level (controlled growth)
   const bonusPortion = baseMult - 1.0;
-  return baseMult + (level - 1) * (bonusPortion * 0.5);
+  return 1.0 + (bonusPortion * level);
+}
+
+// Generate dynamic talent description with current scaled values
+// This replaces static numbers with level-scaled values using badges
+// Optional previewLevel param allows showing what values will be at a different level
+function getDynamicTalentDesc(talent, previewLevel = null) {
+  const t = talent;
+  const level = previewLevel !== null ? previewLevel : getTalentLevel(t.id);
+  const scale = level; // Linear scaling: level = multiplier
+
+  // Helper to format scaled +W values
+  const wBadge = (base) => {
+    const v = base * scale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge word">+${vStr} W</span>`;
+  };
+
+  // Helper to format scaled ×Mult values
+  const multBadge = (base) => {
+    const v = 1.0 + (base - 1.0) * scale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge scale">×${vStr}</span>`;
+  };
+
+  // Helper for REREAD badge
+  const rereadBadge = (text = 'REREAD') => `<span class="mod-badge reread">${text}</span>`;
+
+  // Helper for gold badge
+  const goldBadge = (base) => {
+    const v = base * scale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge gold">+${vStr} Gold</span>`;
+  };
+
+  // Dynamic descriptions by talent ID
+  const dynamicDescs = {
+    // === GENERATORS (+W) ===
+    world_sky_focus: () => `Each World & Sky Word: ${wBadge(5)}`,
+    body_soul_focus: () => `Each Body & Soul Word: ${wBadge(5)}`,
+    proficiency_focus: () => `Proficient Weapon: ${wBadge(8)}`,
+    weakness_exploit: () => `Each Word hitting Weakness: ${wBadge(6)}`,
+    hendiadys: () => `2+ Adjective slots filled: ${wBadge(6)} per Adjective`,
+    alliteration: () => `Each Word with 2+ consecutive same first letters: ${wBadge(8)}`,
+    steady_hand: () => `Weapon: ${wBadge(3)}`,
+    first_blood: () => `Weapon (Ch.1 only): ${wBadge(10)}`,
+    comfort_zone: () => `Each Elemental Word: ${wBadge(6)} if 1 Element type`,
+    linguist: () => `Each Word: ${wBadge(5)} if Rarity + Weapon + Elemental`,
+    condensed: () => `Each Word: ${wBadge(8)} if ≤3 Words`,
+    spectrum: () => `Each Elemental Word: ${wBadge(2)} per unique Element`,
+    bibliophile: () => `Each Word: ${wBadge(1)}`,
+
+    // === MULTIPLIERS (×Mult) ===
+    isocolon: () => `${multBadge(2)} if all Words same Tier`,
+    stony_brook: () => `${multBadge(2)} if Water + Earth`,
+    magma_core: () => `${multBadge(2)} if Fire + Earth`,
+    tempest: () => `${multBadge(2)} if Lightning + Water`,
+    eclipse: () => `${multBadge(2)} if Light + Dark`,
+    necrotoxin: () => `${multBadge(2)} if Dark + Poison`,
+    blessed_steel: () => `${multBadge(2)} if Light + Physical`,
+    static_earth: () => `${multBadge(2)} if Lightning + Earth`,
+    synecdoche: () => `${multBadge(4)} when 3+ Words same Element`,
+    minimalist: () => `${multBadge(3)} if 2 Words`,
+    maximalist: () => `${multBadge(2.5)} if 6 slots filled`,
+    dual_spec: () => `${multBadge(2)} if both Hero Strong Elements`,
+    weak_point: () => `${multBadge(1.5)} if hitting Weakness`,
+    monolith: () => `${multBadge(4)} if all Words T3`,
+    trinity: () => `${multBadge(2.5)} if 3 Words`,
+    glass_cannon: () => `${multBadge(5)} if 1 Word`,
+    focused_fire: () => `${multBadge(2.5)} if 1 Hero Strong Element`,
+    opening_strike: () => `${multBadge(1.5)} if Weapon first`,
+    inferno: () => `${multBadge(2)} if Fire + Water`,
+    verdant: () => `${multBadge(2)} if Earth + Light`,
+    venom_strike: () => `${multBadge(2)} if Poison + Lightning`,
+    twilight: () => `${multBadge(2)} if Dark + Physical`,
+
+    // === RETRIGGERS (REREAD) ===
+    anaphora: () => `${rereadBadge()} First Word`,
+    epistrophe: () => `${rereadBadge()} Last Word`,
+    gemination: () => `${rereadBadge()} each Word if 2+ same Tier`,
+    diacope: () => `${rereadBadge('REREAD ALL')} if all 4 World/Sky or Body/Soul`,
+    resonance: () => `${rereadBadge()} each Hero Strong Element Word`,
+    amplify: () => `${rereadBadge()} Weapon`,
+    gem_resonance: () => `${rereadBadge()} Gem`,
+    execute: () => `${rereadBadge('REREAD ALL')} if enemy ≤15% HP`,
+    polysyndeton: () => `${rereadBadge()} highest AP Word if 3+ Element types`,
+    anadiplosis: () => `${rereadBadge()} Words with adjacent same Element`,
+    chiasmus: () => `${rereadBadge()} First & Last if same Element`,
+
+    // === CONVERTERS ===
+    echo_chamber: () => `${wBadge(5)} per REREAD`,
+    residual: () => `<span class="mod-badge add">+${(0.2 * scale).toFixed(1)} AP</span> per +W bonus`,
+    golden_tongue: () => `Each Adj: ${wBadge(1)} per 20 Gold`,
+    echo_profits: () => `${goldBadge(2)} per REREAD`,
+    elemental_bounty: () => `${goldBadge(3)} per unique Element`,
+    treasure_hunter: () => `${goldBadge(5)} per T3 Word (incl. REREAD)`,
+    tithe: () => `Gem: ${wBadge(2)} per 20 Gold spent`,
+
+    // === GOLD BUILD ===
+    midas_touch: () => `${goldBadge(5)} per Elemental Word (in combat)`,
+    golden_reread: () => `${goldBadge(10)} per REREAD (in combat)`,
+    fortunes_favor: () => `${rereadBadge('REREAD ALL')} if 200+ Gold`,
+    liquidate: () => `<span class="mod-badge gold">+1 Gold</span> per 5 W scored`,
+
+    // === THRESHOLDS ===
+    chain_reaction: () => `${multBadge(3)} if 4+ REREAD`,
+    fortuna: () => `${multBadge(2)} if 100+ Gold`,
+    capital_punishment: () => `${multBadge(2.5)} if Boss or Miniboss`,
+    perfectionist: () => `${multBadge(3)} if 6 slots, no Resisted`,
+
+    // === SCALING MULTIPLIERS ===
+    berserker: () => `${multBadge(1.5)} per Chapter (compounds)`,
+    lexicon_growth: () => `${multBadge(1.25)} per Boss (compounds)`,
+    cascade: () => `<span class="mod-badge scale">+${(0.5 * scale).toFixed(1)}×</span> per unique Element`,
+    overflow: () => `<span class="mod-badge scale">×${(1 + 0.25 * scale).toFixed(2)}</span> if 50+ W`,
+    reread_amplifier: () => `<span class="mod-badge scale">+${(0.5 * scale).toFixed(1)}×</span> per REREAD (stacks)`,
+    compound_interest: () => `<span class="mod-badge scale">+${(0.15 * scale).toFixed(2)}×</span> per 50 Gold`,
+    prismatic_resonance: () => `${multBadge(1.25)} per unique Element type`,
+
+    // === CONVERTERS (per-run scaling) ===
+    momentum: () => `Each Word: ${wBadge(0.2)} per Round (max R10)`,
+    word_historian: () => `Gem: ${wBadge(0.25)} per Word used this run`,
+    reverberation: () => `Each Adj: ${wBadge(2)} per REREAD this run`,
+    verbose_surplus: () => `${wBadge(10)} per Adjective slot filled`,
+    linguistic_density: () => `Each Word: ${wBadge(5)} if 4+ Words`,
+    elemental_mastery: () => `${wBadge(1)} per Elemental Word this run (stacks)`,
+    weakness_exploit_amp: () => `${wBadge(1)} to words hitting Weakness (stacks permanently)`,
+    word_hoard: () => `Each Adj: ${wBadge(0.2)} per Inventory Word`,
+    slow_burn: () => `Weapon: ${wBadge(2)} per Round`,
+
+    // === RETRIGGERS (additional) ===
+    critical_mass: () => `${rereadBadge()} each T3 Word`,
+    rarity_cascade: () => `${rereadBadge()} each Rarity Word`,
+    crescendo: () => `${rereadBadge('REREAD ALL')} per 10 REREAD`,
+
+    // === GOLD TALENTS (additional) ===
+    appraisers_eye: () => `${goldBadge(5)} per Rarity Word (incl. REREAD)`,
+
+    // === EFFECTS (text descriptions) ===
+    irony: () => `1 Enemy Resistance → Weakness; <span class="mod-badge scale">×${1 + scale}</span> when hit`,
+    crown_jewel: () => `Gem: <span class="mod-badge scale">×${2 + (scale * 2)} W</span> (instead of ×2)`,
+    hyperbole: () => 'Overkill +1× carries to next Round (max 25% HP)',
+    signature_style: () => "Proficient Weapon counts as both Hero's Strong Elements"
+  };
+
+  // Return dynamic description if available, otherwise fall back to formatTalentDesc
+  if (dynamicDescs[t.id]) {
+    return dynamicDescs[t.id]();
+  }
+  // Fall back to formatTalentDesc which handles basic scaling of descriptions
+  return formatTalentDesc(t, t.id, previewLevel);
+}
+
+// Generate dynamic talent upgrade preview with current→next values
+function getDynamicTalentDescUpgradePreview(talent) {
+  const t = talent;
+  const level = getTalentLevel(t.id);
+  const nextLevel = level + 1;
+  const scale = level; // Linear scaling
+  const nextScale = nextLevel;
+
+  // Helper for upgrade preview format
+  const upgradeArrow = '<span class="upgrade-arrow">→</span>';
+
+  // Helper to format W upgrade preview
+  const wUpgrade = (base) => {
+    const v = base * scale;
+    const nv = base * nextScale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    const nvStr = Number.isInteger(nv) ? nv : nv.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge word"><span class="upgrade-old">+${vStr}</span>${upgradeArrow}<span class="upgrade-new">+${nvStr}</span> W</span>`;
+  };
+
+  // Helper to format multiplier upgrade preview
+  const multUpgrade = (base) => {
+    const v = 1.0 + (base - 1.0) * scale;
+    const nv = 1.0 + (base - 1.0) * nextScale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    const nvStr = Number.isInteger(nv) ? nv : nv.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge scale"><span class="upgrade-old">×${vStr}</span>${upgradeArrow}<span class="upgrade-new">×${nvStr}</span></span>`;
+  };
+
+  // Helper for gold upgrade preview
+  const goldUpgrade = (base) => {
+    const v = base * scale;
+    const nv = base * nextScale;
+    const vStr = Number.isInteger(v) ? v : v.toFixed(1).replace(/\.0$/, '');
+    const nvStr = Number.isInteger(nv) ? nv : nv.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge gold"><span class="upgrade-old">+${vStr}</span>${upgradeArrow}<span class="upgrade-new">+${nvStr}</span> Gold</span>`;
+  };
+
+  // Helper for REREAD upgrade preview (level = reread count)
+  const rereadUpgrade = (text = 'REREAD') => {
+    if (text === 'REREAD ALL') {
+      return `<span class="mod-badge reread">${text}</span>`;
+    }
+    if (level === 1) {
+      return `<span class="mod-badge reread">${text} ${upgradeArrow}<span class="upgrade-new">×${nextLevel}</span></span>`;
+    }
+    return `<span class="mod-badge reread">${text} <span class="upgrade-old">×${level}</span>${upgradeArrow}<span class="upgrade-new">×${nextLevel}</span></span>`;
+  };
+
+  // Helper for additive multiplier upgrade preview (+X× format)
+  const addMultUpgrade = (base) => {
+    const v = base * scale;
+    const nv = base * nextScale;
+    const vStr = v.toFixed(2).replace(/\.?0+$/, '');
+    const nvStr = nv.toFixed(2).replace(/\.?0+$/, '');
+    return `<span class="mod-badge scale"><span class="upgrade-old">+${vStr}×</span>${upgradeArrow}<span class="upgrade-new">+${nvStr}×</span></span>`;
+  };
+
+  // Simple REREAD badge (no upgrade for REREAD ALL)
+  const rereadBadge = (text = 'REREAD') => `<span class="mod-badge reread">${text}</span>`;
+
+  // Helper for AP upgrade preview
+  const apUpgrade = (base) => {
+    const v = base * scale;
+    const nv = base * nextScale;
+    const vStr = v.toFixed(1).replace(/\.0$/, '');
+    const nvStr = nv.toFixed(1).replace(/\.0$/, '');
+    return `<span class="mod-badge add"><span class="upgrade-old">+${vStr}</span>${upgradeArrow}<span class="upgrade-new">+${nvStr}</span> AP</span>`;
+  };
+
+  // Upgrade previews by talent ID (only for talents with scaling values)
+  const upgradeDescs = {
+    // === GENERATORS (+W) ===
+    world_sky_focus: () => `Each World & Sky Word: ${wUpgrade(5)}`,
+    body_soul_focus: () => `Each Body & Soul Word: ${wUpgrade(5)}`,
+    proficiency_focus: () => `Proficient Weapon: ${wUpgrade(8)}`,
+    weakness_exploit: () => `Each Word hitting Weakness: ${wUpgrade(6)}`,
+    hendiadys: () => `2+ Adjective slots filled: ${wUpgrade(6)} per Adjective`,
+    alliteration: () => `Each Word with 2+ consecutive same first letters: ${wUpgrade(8)}`,
+    steady_hand: () => `Weapon: ${wUpgrade(3)}`,
+    first_blood: () => `Weapon (Ch.1 only): ${wUpgrade(10)}`,
+    comfort_zone: () => `Each Elemental Word: ${wUpgrade(6)} if 1 Element type`,
+    linguist: () => `Each Word: ${wUpgrade(5)} if Rarity + Weapon + Elemental`,
+    condensed: () => `Each Word: ${wUpgrade(8)} if ≤3 Words`,
+    spectrum: () => `Each Elemental Word: ${wUpgrade(2)} per unique Element`,
+    bibliophile: () => `Each Word: ${wUpgrade(1)}`,
+
+    // === MULTIPLIERS (×Mult) ===
+    isocolon: () => `${multUpgrade(2)} if all Words same Tier`,
+    stony_brook: () => `${multUpgrade(2)} if Water + Earth`,
+    magma_core: () => `${multUpgrade(2)} if Fire + Earth`,
+    tempest: () => `${multUpgrade(2)} if Lightning + Water`,
+    eclipse: () => `${multUpgrade(2)} if Light + Dark`,
+    necrotoxin: () => `${multUpgrade(2)} if Dark + Poison`,
+    blessed_steel: () => `${multUpgrade(2)} if Light + Physical`,
+    static_earth: () => `${multUpgrade(2)} if Lightning + Earth`,
+    synecdoche: () => `${multUpgrade(4)} when 3+ Words same Element`,
+    minimalist: () => `${multUpgrade(3)} if 2 Words`,
+    maximalist: () => `${multUpgrade(2.5)} if 6 slots filled`,
+    dual_spec: () => `${multUpgrade(2)} if both Hero Strong Elements`,
+    weak_point: () => `${multUpgrade(1.5)} if hitting Weakness`,
+    monolith: () => `${multUpgrade(4)} if all Words T3`,
+    trinity: () => `${multUpgrade(2.5)} if 3 Words`,
+    glass_cannon: () => `${multUpgrade(5)} if 1 Word`,
+    focused_fire: () => `${multUpgrade(2.5)} if 1 Hero Strong Element`,
+    opening_strike: () => `${multUpgrade(1.5)} if Weapon first`,
+    inferno: () => `${multUpgrade(2)} if Fire + Water`,
+    verdant: () => `${multUpgrade(2)} if Earth + Light`,
+    venom_strike: () => `${multUpgrade(2)} if Poison + Lightning`,
+    twilight: () => `${multUpgrade(2)} if Dark + Physical`,
+    chain_reaction: () => `${multUpgrade(3)} if 4+ REREAD`,
+    fortuna: () => `${multUpgrade(2)} if 100+ Gold`,
+    capital_punishment: () => `${multUpgrade(2.5)} if Boss or Miniboss`,
+    perfectionist: () => `${multUpgrade(3)} if 6 slots, no Resisted`,
+    berserker: () => `${multUpgrade(1.5)} per Chapter (compounds)`,
+    lexicon_growth: () => `${multUpgrade(1.25)} per Boss (compounds)`,
+    prismatic_resonance: () => `${multUpgrade(1.25)} per unique Element type`,
+
+    // === RETRIGGERS (REREAD count scales) ===
+    anaphora: () => `${rereadUpgrade()} First Word`,
+    epistrophe: () => `${rereadUpgrade()} Last Word`,
+    gemination: () => `${rereadUpgrade()} each Word if 2+ same Tier`,
+    resonance: () => `${rereadUpgrade()} each Hero Strong Element Word`,
+    amplify: () => `${rereadUpgrade()} Weapon`,
+    gem_resonance: () => `${rereadUpgrade()} Gem`,
+    polysyndeton: () => `${rereadUpgrade()} highest AP Word if 3+ Element types`,
+    anadiplosis: () => `${rereadUpgrade()} Words with adjacent same Element`,
+    chiasmus: () => `${rereadUpgrade()} First & Last if same Element`,
+    critical_mass: () => `${rereadUpgrade()} each T3 Word`,
+    rarity_cascade: () => `${rereadUpgrade()} each Rarity Word`,
+    // REREAD ALL doesn't scale the same way
+    diacope: () => `${rereadBadge('REREAD ALL')} if all 4 World/Sky or Body/Soul`,
+    execute: () => `${rereadBadge('REREAD ALL')} if enemy ≤15% HP`,
+    fortunes_favor: () => `${rereadBadge('REREAD ALL')} if 200+ Gold`,
+    crescendo: () => `${rereadBadge('REREAD ALL')} per 10 REREAD`,
+
+    // === CONVERTERS (scaling bonuses) ===
+    echo_chamber: () => `${wUpgrade(5)} per REREAD`,
+    residual: () => `${apUpgrade(0.2)} per +W bonus`,
+    golden_tongue: () => `Each Adj: ${wUpgrade(1)} per 20 Gold`,
+    echo_profits: () => `${goldUpgrade(2)} per REREAD`,
+    elemental_bounty: () => `${goldUpgrade(3)} per unique Element`,
+    treasure_hunter: () => `${goldUpgrade(5)} per T3 Word (incl. REREAD)`,
+    tithe: () => `Gem: ${wUpgrade(2)} per 20 Gold spent`,
+    midas_touch: () => `${goldUpgrade(5)} per Elemental Word (in combat)`,
+    golden_reread: () => `${goldUpgrade(10)} per REREAD (in combat)`,
+    appraisers_eye: () => `${goldUpgrade(5)} per Rarity Word (incl. REREAD)`,
+    momentum: () => `Each Word: ${wUpgrade(0.2)} per Round (max R10)`,
+    word_historian: () => `Gem: ${wUpgrade(0.25)} per Word used this run`,
+    reverberation: () => `Each Adj: ${wUpgrade(2)} per REREAD this run`,
+    verbose_surplus: () => `${wUpgrade(10)} per Adjective slot filled`,
+    linguistic_density: () => `Each Word: ${wUpgrade(5)} if 4+ Words`,
+    elemental_mastery: () => `${wUpgrade(1)} per Elemental Word this run (stacks)`,
+    weakness_exploit_amp: () => `${wUpgrade(1)} to words hitting Weakness (stacks permanently)`,
+    word_hoard: () => `Each Adj: ${wUpgrade(0.2)} per Inventory Word`,
+    slow_burn: () => `Weapon: ${wUpgrade(2)} per Round`,
+
+    // === ADDITIVE MULTIPLIERS ===
+    cascade: () => `${addMultUpgrade(0.5)} per unique Element`,
+    overflow: () => {
+      const currMult = 1 + 0.25 * scale;
+      const nextMult = 1 + 0.25 * nextScale;
+      return `<span class="mod-badge scale"><span class="upgrade-old">×${currMult.toFixed(2)}</span>${upgradeArrow}<span class="upgrade-new">×${nextMult.toFixed(2)}</span></span> if 50+ W`;
+    },
+    reread_amplifier: () => `${addMultUpgrade(0.5)} per REREAD (stacks)`,
+    compound_interest: () => `${addMultUpgrade(0.15)} per 50 Gold`,
+
+    // === EFFECTS (some scale, some don't) ===
+    crown_jewel: () => {
+      const v = 2 + (scale * 2);
+      const nv = 2 + (nextScale * 2);
+      return `Gem: <span class="mod-badge scale"><span class="upgrade-old">×${v}</span>${upgradeArrow}<span class="upgrade-new">×${nv}</span> W</span> (instead of ×2)`;
+    },
+    irony: () => {
+      const currMult = 1 + scale;
+      const nextMult = 1 + nextScale;
+      return `1 Enemy Resistance → Weakness; <span class="mod-badge scale"><span class="upgrade-old">×${currMult}</span>${upgradeArrow}<span class="upgrade-new">×${nextMult}</span></span> when hit`;
+    }
+  };
+
+  // Return upgrade preview if available, otherwise fall back
+  if (upgradeDescs[t.id]) {
+    return upgradeDescs[t.id]();
+  }
+  // Fall back to formatTalentDescUpgradePreview for unknown talents
+  return formatTalentDescUpgradePreview(t, t.id);
 }
 
 async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = false){
   // Talent selection after boss victories
   // After talent selection, player picks upgrades: Miniboss = 1, Chapter Boss = 2
+
+  // Set flame to talent mode (violet - transitional between boss purple and shop blue)
+  setFlameColor('talent');
 
   // Ensure S.talents is initialized
   if (!S.talents) S.talents = [];
@@ -17931,6 +18137,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 
     // Create card elements
     const cardElements = [];
+    // Preview level = chapter-based starting level (talents acquired in Ch.X start at Lv.X)
+    const previewLevel = getCurrentChapter();
+    // Helper to scale talent bonus by preview level (instead of current level)
+    const scalePreview = (baseValue) => baseValue * previewLevel;
     choices.forEach((talent, index) => {
       const rarityLabel = rarityLabelMap[talent.rarity] || 'T1';
 
@@ -18040,67 +18250,67 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
         } else if(talent.id === 'masterwork'){
           // Masterwork: +0.2 AP per Word per T3 Word played - scales with level
           const t3Played = S.tierWordsPlayed?.[3] || 0;
-          const basePerT3 = scaleTalentBonus('masterwork', 0.2);
+          const basePerT3 = scalePreview(0.2);
           const totalAP = t3Played * basePerT3;
           const totalVal = totalAP % 1 === 0 ? totalAP : parseFloat(totalAP.toFixed(1));
           const badge = fmtMod(totalVal, 'ap', ' AP');
-          const levelText = getTalentLevel('masterwork') > 1 ? ` (Lv.${getTalentLevel('masterwork')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${t3Played} T3 words: ${badge}/Word${levelText}</div>`;
         } else if(talent.id === 'adaptive_arsenal'){
           // Adaptive Arsenal: +0.5 W per Word per unique weapon used - scales with level
           const usedWeapons = S.usedWeapons || new Set();
           const weaponCount = usedWeapons.size;
-          const basePerWeapon = scaleTalentBonus('adaptive_arsenal', 0.5);
+          const basePerWeapon = scalePreview(0.5);
           const totalW = Math.min(weaponCount, 12) * basePerWeapon;
           const totalVal = totalW % 1 === 0 ? totalW : parseFloat(totalW.toFixed(1));
           const badge = fmtMod(totalVal, 'word', ' W');
-          const levelText = getTalentLevel('adaptive_arsenal') > 1 ? ` (Lv.${getTalentLevel('adaptive_arsenal')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${weaponCount} weapons: ${badge}/Word${levelText}</div>`;
         } else if(talent.id === 'word_hoard'){
           // Word Hoard: +0.2 W per Word in inventory - scales with level
           const invCount = (S.inv || []).filter(w => !w.hiddenInBank).length;
-          const basePerWord = scaleTalentBonus('word_hoard', 0.2);
+          const basePerWord = scalePreview(0.2);
           const bonus = Math.floor(invCount * basePerWord * 10) / 10;
           const badge = fmtMod(bonus, 'word', ' W');
-          const levelText = getTalentLevel('word_hoard') > 1 ? ` (Lv.${getTalentLevel('word_hoard')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${invCount} words × ${basePerWord} = ${badge}${levelText}</div>`;
         } else if(talent.id === 'momentum'){
           // Momentum: +0.2 W per Word per round played (max 10) - scales with level
           const roundsPlayed = Math.min((S.roundIndex || 1) - 1, 10);
-          const basePerRound = scaleTalentBonus('momentum', 0.2);
+          const basePerRound = scalePreview(0.2);
           const bonusPerWord = roundsPlayed * basePerRound;
-          const levelText = getTalentLevel('momentum') > 1 ? ` (Lv.${getTalentLevel('momentum')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           // Override description to show current total W per word
           overrideDesc = `Each Word: <span class="mod-badge word">+${bonusPerWord.toFixed(1)} W</span>`;
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${basePerRound} W × ${roundsPlayed} rounds${levelText}</div>`;
         } else if(talent.id === 'word_historian'){
           // Word Historian: +0.25 W per Word used this run - scales with level
           const wordsUsed = S.wordsUsedThisRun || 0;
-          const basePerWord = scaleTalentBonus('word_historian', 0.25);
+          const basePerWord = scalePreview(0.25);
           const bonus = Math.floor(wordsUsed * basePerWord);
           const badge = bonus > 0 ? fmtMod(bonus, 'word', ' W') : '<span class="mod-badge word">+0 W</span>';
-          const levelText = getTalentLevel('word_historian') > 1 ? ` (Lv.${getTalentLevel('word_historian')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${wordsUsed} words used: ${badge}${levelText}</div>`;
         } else if(talent.id === 'reverberation'){
           // Reverberation: +2 W per REREAD triggered this run - scales with level
           const rereadsTriggered = S.rereadTriggersThisRun || 0;
-          const basePerReread = scaleTalentBonus('reverberation', 2);
+          const basePerReread = scalePreview(2);
           const bonus = rereadsTriggered * basePerReread;
           const badge = bonus > 0 ? fmtMod(bonus, 'word', ' W') : '<span class="mod-badge word">+0 W</span>';
-          const levelText = getTalentLevel('reverberation') > 1 ? ` (Lv.${getTalentLevel('reverberation')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${rereadsTriggered} rereads: ${badge}${levelText}</div>`;
         } else if(talent.id === 'verbose_surplus'){
           // Verbose Surplus: +10 W per adjective slot filled (linear)
           const adjCount = [S.sel?.adj1, S.sel?.adj2, S.sel?.adj3, S.sel?.adj4].filter(Boolean).length;
-          const basePerAdj = scaleTalentBonus('verbose_surplus', 10);
+          const basePerAdj = scalePreview(10);
           const totalBonus = adjCount * basePerAdj;
           const badge = fmtMod(totalBonus, 'word', ' W');
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${adjCount}/4 adj slots = ${badge}</div>`;
         } else if(talent.id === 'linguistic_density'){
           // Linguistic Density: +5 W per word per word (4+ words)
-          const basePerWord = scaleTalentBonus('linguistic_density', 5);
+          const basePerWord = scalePreview(5);
           const badge = fmtMod(basePerWord, 'word', ' W');
-          const levelText = getTalentLevel('linguistic_density') > 1 ? ` (Lv.${getTalentLevel('linguistic_density')})` : '';
+          const levelText = previewLevel > 1 ? ` (Lv.${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">4+ Words: ${badge} per Word in play${levelText}</div>`;
         } else if(talent.id === 'elemental_mastery'){
           // Elemental Mastery: Track accumulated elemental W
@@ -18113,10 +18323,9 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
         } else if(talent.id === 'weakness_exploit_amp'){
           // Weakness Exploit Amp: +1 W per weakness hit × level (tracked separately from Elemental Mastery)
           const hits = S.weaknessExploitBonus || 0;
-          const talentLevel = getTalentLevel('weakness_exploit_amp');
-          const totalW = hits * talentLevel;
+          const totalW = hits * previewLevel;
           const badge = fmtMod(totalW, 'word', ' W');
-          const levelText = talentLevel > 1 ? ` (×${talentLevel})` : '';
+          const levelText = previewLevel > 1 ? ` (×${previewLevel})` : '';
           accumulatedTotal = `<div style="font-size:10px;margin-top:6px">${hits} hits${levelText}: ${badge}</div>`;
         // Overflow: no tooltip (W calculated at forge time, not in shop)
         } else if(talent.category === 'threshold' && talent.apply){
@@ -18142,8 +18351,9 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             <div class="talent-card-header">
               <div class="talent-card-name">${talent.name}</div>
               <span class="talent-card-rarity-badge">${rarityLabel}</span>
+              ${previewLevel > 1 ? `<span class="talent-card-level-badge">Lv.${previewLevel}</span>` : ''}
             </div>
-            <div class="talent-card-desc">${overrideDesc || formatTalentDesc(talent)}</div>
+            <div class="talent-card-desc">${overrideDesc || getDynamicTalentDesc(talent, previewLevel)}</div>
             ${accumulatedTotal}
             ${talent.flavor ? `<div class="talent-card-flavor"><em>${talent.flavor}</em></div>` : ''}
           </div>
@@ -18218,8 +18428,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             await showUpgradeSelection(upgradeCount, renderContainer);
           } else {
             // No upgrades (or first talent) - go directly to shop
+            setFlameColor('shop'); // Start flame transition early for smooth blend
             await playSceneTransition(async () => {
               $("#talent-overlay").classList.remove("show");
+              await dly(RHYTHM.QUARTER); // Brief pause before shop appears
               await showShop(true);
             });
           }
@@ -18459,8 +18671,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             await showUpgradeSelection(upgradeCount, container);
           } else {
             // No upgrades (or first talent) - go to shop
+            setFlameColor('shop'); // Start flame transition early for smooth blend
             await playSceneTransition(async () => {
               $("#talent-overlay").classList.remove("show");
+              await dly(RHYTHM.QUARTER); // Brief pause before shop appears
               await showShop(true);
             });
           }
@@ -18548,8 +18762,10 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) {
   // If player has no talents, skip upgrade and go to shop
   if (!S.talents || S.talents.length === 0) {
+    setFlameColor('shop'); // Start flame transition early for smooth blend
     await playSceneTransition(async () => {
       $("#talent-overlay").classList.remove("show");
+      await dly(RHYTHM.QUARTER); // Brief pause before shop appears
       await showShop(true);
     });
     return;
@@ -18561,6 +18777,7 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
 
   if (!container) {
     // Fallback: go to shop if container not found
+    setFlameColor('shop'); // Ensure flame is blue
     await showShop(true);
     return;
   }
@@ -18620,7 +18837,7 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
             <div class="talent-level-display talent-level-preview" style="font-size:11px;color:#4ade80;font-weight:600;margin-bottom:4px">
               Lv.${level} → Lv.${level + 1}
             </div>
-            <div class="talent-card-desc">${formatTalentDescUpgradePreview(talent, tid)}</div>
+            <div class="talent-card-desc">${getDynamicTalentDescUpgradePreview(talent)}</div>
             ${talent.flavor ? `<div class="talent-card-flavor"><em>${talent.flavor}</em></div>` : ''}
           </div>
         </div>
@@ -18678,7 +18895,7 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
         // Update description
         const descEl = card.querySelector('.talent-card-desc');
         if (descEl) {
-          descEl.innerHTML = formatTalentDesc(talent, tid);
+          descEl.innerHTML = getDynamicTalentDesc(talent);
           descEl.classList.add('desc-upgraded');
         }
 
@@ -18708,9 +18925,10 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
         } else {
           // All upgrades complete - proceed to shop
           await saveRun();
-          await dly(RHYTHM.QUARTER);
+          setFlameColor('shop'); // Start flame transition early for smooth blend
           await playSceneTransition(async () => {
             overlay.classList.remove("show");
+            await dly(RHYTHM.QUARTER); // Brief pause before shop appears
             await showShop(true);
           });
         }
@@ -19133,9 +19351,13 @@ async function showCombat(r,words,rewards){
                   const elRect = el.getBoundingClientRect();
                   const x1 = elRect.left + elRect.width / 2;
                   const y1 = elRect.top + elRect.height / 2;
-                  if (typeof LightningBolt !== 'undefined' && fxAnimations) {
+                  if (typeof LightningBolt !== 'undefined' && fxAnimations && canSpawnLightning()) {
                     addFxAnimation(new LightningBolt(x1, y1, sparkX, sparkY, '#ffffff'));
-                    setTimeout(() => addFxAnimation(new LightningBolt(x1, y1, sparkX, sparkY, '#ffff4d')), 50);
+                    if (canSpawnLightning()) {
+                      setTimeout(() => {
+                        if (canSpawnLightning()) addFxAnimation(new LightningBolt(x1, y1, sparkX, sparkY, '#ffff4d'));
+                      }, 50);
+                    }
                   }
                 },
                 [E.FIRE]: () => {
@@ -19490,12 +19712,6 @@ async function showCombat(r,words,rewards){
       if(resultDetail){
         resultDetail.innerHTML = '';
 
-        // Enemy defeated line
-        const defeatLine = document.createElement('div');
-        defeatLine.className = 'result-detail-line';
-        defeatLine.textContent = 'Enemy defeated!';
-        resultDetail.appendChild(defeatLine);
-
         // Boss victory dialogue - show hero's unique line for this boss
         if(S.enemy && S.enemy.boss && S.hero){
           const bossId = S.chapterBoss?.id || S.enemy.id;
@@ -19609,7 +19825,7 @@ async function showCombat(r,words,rewards){
         resultTitle.textContent="DEFEAT";
         // Color handled by CSS
       }
-      if(resultDetail) resultDetail.innerHTML='<div class="result-detail-line">The enemy won...</div>';
+      if(resultDetail) resultDetail.innerHTML='';
       sfxLose();
       // Only trigger lose music effect if this is the final death (no extra lives)
       if (musicEngine && musicEngine.initialized && S.lives <= 1) {
@@ -20005,7 +20221,11 @@ function renderNextEnemyPreview(){
   }
 
   if(!S.nextEnemyData){
-    const roll = ENEMIES[Math.floor(Math.random() * ENEMIES.length)] || ENEMIES[0];
+    // Prevent back-to-back same enemy type
+    const availableEnemies = ENEMIES.length > 1
+      ? ENEMIES.filter(e => e.id !== S.lastEnemyId)
+      : ENEMIES;
+    const roll = availableEnemies[Math.floor(Math.random() * availableEnemies.length)] || ENEMIES[0];
     S.nextEnemyData = {...roll};
     randomizeEnemyElements(S.nextEnemyData);
   }
@@ -20050,23 +20270,18 @@ function renderNextEnemyPreview(){
     previewEnemy.hp = Math.round(previewEnemy.hp * 1.3);
   }
 
-  // Belle Lettres "Studious" passive preview: +2 enemy weaknesses, random hero weaknesses
+  // Belle Lettres "Studious" passive: random hero weaknesses from Body & Soul
+  // (Her 4 World & Sky strengths are already strong - random weaknesses add variety)
   if(S.hero && S.hero.name === "Belle Lettres"){
-    const allElements = [E.PHYS, E.POISON, E.FIRE, E.WATER, E.LIGHT, E.DARK, E.EARTH, E.LIGHTNING];
+    // Body & Soul elements (opposite of her World & Sky strengths)
+    const bodySoulElements = [E.PHYS, E.POISON, E.LIGHT, E.DARK];
 
-    // Pre-randomize Belle's weaknesses for this round (if not already done)
+    // Pre-randomize Belle's weaknesses from Body & Soul only (if not already done)
     if(!S.belleRandomWeaknesses){
-      const availableForHero = allElements.filter(el => !S.hero.str.includes(el));
-      S.belleRandomWeaknesses = [...availableForHero].sort(() => Math.random() - 0.5).slice(0, 2);
+      S.belleRandomWeaknesses = [...bodySoulElements].sort(() => Math.random() - 0.5).slice(0, 2);
     }
-
-    // Add +2 weaknesses to enemy preview (excluding their resistances and existing weaknesses)
-    // Only randomize if not already set to prevent values changing during shop
-    if(!S.nextEnemyBonusWeaknesses){
-      const availableForEnemy = allElements.filter(el => !previewEnemy.weak.includes(el) && !previewEnemy.res.includes(el));
-      S.nextEnemyBonusWeaknesses = [...availableForEnemy].sort(() => Math.random() - 0.5).slice(0, 2);
-    }
-    previewEnemy.weak = [...previewEnemy.weak, ...S.nextEnemyBonusWeaknesses];
+    // Apply random weaknesses to S.hero.weak so combat calculations use them
+    S.hero.weak = S.belleRandomWeaknesses;
   }
 
   // Update S.enemy with the preview enemy so tooltips show effectiveness vs. NEXT enemy
@@ -20302,9 +20517,9 @@ function renderShopWordBank(animate = true){
     if(word.elem !== undefined){
       elemHtml = `<div class="chip-elem" style="color:${EC[word.elem]}">${EN[word.elem]}</div>`;
     } else if(word.mult && word.mult !== 1){
-      // Non-elemental words (Common->Legendary adjectives) show multiplier bonus (additive)
-      const bonus = word.mult - 1;
-      elemHtml = `<span class="mod-badge scale" style="margin-top:2px;font-size:9px">+${bonus}×</span>`;
+      // Non-elemental words (Common->Legendary adjectives) show W multiplier in pink
+      const multVal = word.mult % 1 === 0 ? word.mult : word.mult.toFixed(1);
+      elemHtml = `<span class="mod-badge scale" style="margin-top:2px;font-size:9px">W ×${multVal}</span>`;
     }
 
     // Generate color tab and tier classes based on word type
@@ -22095,9 +22310,14 @@ function setFlameColor(mode = 'battle') {
   currentFlameMode = mode;
 
   // Remove all flame mode classes first
-  flameBg.classList.remove('shop-mode', 'boss-shop-mode', 'boss-dialogue-mode', 'boss-battle-mode');
+  flameBg.classList.remove('shop-mode', 'boss-shop-mode', 'boss-dialogue-mode', 'boss-battle-mode', 'talent-mode');
 
-  if (mode === 'shop') {
+  if (mode === 'talent') {
+    // Purple/violet flame for talent selection (between boss purple and shop blue)
+    flameBg.classList.add('talent-mode');
+    flameBg.style.setProperty('--flame-opacity', '0.35');
+    flameBg.style.setProperty('--flame-scale', '1.0');
+  } else if (mode === 'shop') {
     // Blue flame for shop
     flameBg.classList.add('shop-mode');
     flameBg.style.setProperty('--flame-opacity', '0.4');
@@ -22441,9 +22661,9 @@ function formatReelItem(word) {
     const elemColor = EC[word.elem] || '#9ca3af';
     detailHtml = `<span style="color:${elemColor}">${EN[word.elem]}</span>`;
   } else if (word.mult && word.mult > 1) {
-    // Non-elemental with multiplier (show additive bonus)
-    const bonus = word.mult - 1;
-    detailHtml = `<span class="reel-mult">+${bonus}×</span>`;
+    // Non-elemental with multiplier - show W multiplier
+    const multVal = word.mult % 1 === 0 ? word.mult : word.mult.toFixed(1);
+    detailHtml = `<span class="reel-mult">W ×${multVal}</span>`;
   }
 
   // Wrap content with classes
@@ -22503,12 +22723,6 @@ async function showCrateReelAnimation(crate) {
       // Higher rarityAdjWeight = rarer (we divide weight by this value)
       if (w.type === 'rarity' && rarityAdjWeights[w.id]) {
         weight = Math.max(1, Math.round(weight / rarityAdjWeights[w.id]));
-      }
-      // Skew drops slightly in favor of hero's proficiency
-      // Note: Element weighting is ONLY affected by talent selections (getTalentWeightBoosts)
-      if(S.hero){
-        // Weapons matching hero's good proficiency get +3 weight
-        if(w.type === 'weapon' && w.category === S.hero.good) weight += 3;
       }
       for (let i = 0; i < Math.round(weight); i++) weighted.push(w);
     });
@@ -22969,12 +23183,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     startBtn.onclick=async ()=>{
       // Prevent rapid clicking during transitions
       if(isTransitioning) return;
-      // Unified transition: hide menu AND show hero select at peak
-      await playSceneTransition(async () => {
+
+      // Explicitly hide battle-view and forge with inline styles
+      // (CSS :has() selectors have a timing gap that causes a flash)
+      const battleView = document.getElementById('battle-view');
+      const forgeEl = document.getElementById('forge');
+      if(battleView) battleView.style.display = 'none';
+      if(forgeEl) forgeEl.style.display = 'none';
+
+      // Initialize run and show hero select FIRST (while main menu still visible)
+      await startNewRun();
+
+      // Now swap: hide main menu (hero select is already showing behind it)
+      await playSceneTransition(() => {
         if(mm)mm.classList.remove('show');
         document.body.classList.remove('menu-active');
-        // Initialize new run state AND show hero select at peak (while screen is black)
-        await startNewRun();
       });
     };
     startBtn.onmouseenter=sfxHover;
