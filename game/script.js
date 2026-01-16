@@ -129,7 +129,7 @@ function showBugReportPrompt(errorInfo) {
   };
 
   document.getElementById('bug-discord-btn').onclick = () => {
-    window.open('https://discord.gg/Nn73SWvgQK', '_blank');
+    window.open('https://discord.gg/EMSJRBKwuu', '_blank');
   };
 
   document.getElementById('bug-x-btn').onclick = () => {
@@ -189,7 +189,20 @@ function openBugReport() {
 const DEMO_ROUND_LIMIT = 18;
 const DEMO_HERO_LIMIT = 2; // Demo-only lock count; ignored for full build
 const STEAM_WISHLIST_URL = 'https://store.steampowered.com/app/4248130';
-const DISCORD_URL = 'https://discord.gg/wordyweapon';
+const DISCORD_URL = 'https://discord.gg/EMSJRBKwuu';
+
+// Discord Rich Presence helper (only works in Electron)
+let discordStartTime = null;
+function updateDiscordPresence(state, data = {}) {
+  if (typeof window !== 'undefined' && window.discordAPI) {
+    window.discordAPI.updatePresence({
+      state,
+      hero: data.hero || S?.hero?.name,
+      round: data.round || S?.roundIndex || 1,
+      startTime: discordStartTime || Date.now()
+    });
+  }
+}
 
 // === CONSTANTS ===
 const E={PHYS:0,POISON:1,FIRE:2,WATER:3,LIGHT:4,DARK:5,EARTH:6,LIGHTNING:7},
@@ -7497,6 +7510,10 @@ function clearRunState() {
 }
 
 function showMainMenu(keepMusic = false){
+  // Reset Discord presence to main menu
+  discordStartTime = null;
+  updateDiscordPresence('main_menu');
+
   const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-celebration-overlay','round-intro-overlay'];
   overlays.forEach(id=>{
     const el=document.getElementById(id);
@@ -7569,6 +7586,9 @@ function showMainMenu(keepMusic = false){
 }
 
 function showVictoryScreen(){
+  // Update Discord presence to victory
+  updateDiscordPresence('victory');
+
   const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','main-menu'];
   overlays.forEach(id=>{
     const el=document.getElementById(id);
@@ -8183,6 +8203,9 @@ async function showChapterCelebration(chapterNum, goldBonus){
 }
 
 function showLossScreen(heroName, roundReached, xpGained, leveledUp, newLevel){
+  // Update Discord presence to defeat
+  updateDiscordPresence('defeat', { hero: heroName, round: roundReached });
+
   // Hide all overlays and battle view
   const overlays=['shop-overlay','pause-menu','combat-overlay','talent-overlay','combat-result'];
   overlays.forEach(id=>{
@@ -11089,6 +11112,7 @@ function init(){
 
       // Mark game phase for save/load restoration
       S.gamePhase = 'forge';
+      updateDiscordPresence('playing'); // Update Discord to show round
       await saveRun();
 
       render();
@@ -11821,6 +11845,9 @@ function showHeroSelect(){
       S.hero = {...h};
       S.heroId = h.id; // Store hero ID separately for easier lookup
       S.heroSelected = true;
+      // Start Discord Rich Presence for this run
+      discordStartTime = Date.now();
+      updateDiscordPresence('playing');
       // Initialize lives (default 1)
       S.lives = 1;
 
@@ -15938,11 +15965,11 @@ function calc(opts={}){
   const getWordCountForReread = (wd) => wd ? ((wd.wCountTotal ?? wd.wCountDelta ?? 0) + (wd.wTalentBonus || 0)) : 0;
 
   // Helper to apply reread for a word N times (based on talent level)
-  // BALANCE: Rereads now only add Word Count and multipliers, NOT base AP
+  // BALANCE: Rereads add AP, Word Count, and multipliers
   const applyReread = (word, wordData, talentId, talentName, rereadCount = 1) => {
     if (!wordData) return;
     for (let i = 0; i < rereadCount; i++) {
-      // retriggerAP += wordData.apContribution; // REMOVED: No AP from rereads (balance nerf)
+      retriggerAP += wordData.apContribution; // AP restored for week one patch
       retriggerWordCount += getWordCountForReread(wordData);
       if (wordData.mult) {
         // Additive: add the bonus portion (mult - 1.0) instead of multiplying
@@ -15953,8 +15980,9 @@ function calc(opts={}){
     }
     if (wantBreakdown) {
       const countLabel = rereadCount > 1 ? ` <span class="mod-badge reread">×${rereadCount}</span>` : '';
+      const apContrib = wordData.apContribution * rereadCount;
       const wContrib = getWordCountForReread(wordData) * rereadCount;
-      breakdown.base.push(`${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
+      breakdown.base.push(`${fmtMod(apContrib, 'ap')} +${fmtMod(wContrib, 'word', ' W')} ${word.name} (${talentName} REREAD${countLabel})`);
       if (wordData.mult) {
         const totalMultBonus = (wordData.mult - 1) * rereadCount;
         breakdown.multipliers.push(`${fmtMod(totalMultBonus, 'add', '×')} ${word.name} (${talentName} REREAD${countLabel})`);
@@ -17452,6 +17480,7 @@ async function afterCombat(){
     const isChapterBoss = (S.roundIndex % 9 === 0);
 
     S.roundIndex++;
+    updateDiscordPresence('playing'); // Update round in Discord
 
     S.belleRandomWeaknesses = null;
     S.nextEnemyBonusWeaknesses = null;
@@ -17524,6 +17553,7 @@ async function afterCombat(){
       // Clear state for fresh encounter
       clrSel();
       S.roundIndex++; // Progress to next round
+      updateDiscordPresence('playing'); // Update round in Discord
 
       // Track highest round reached
       const currentRound = S.roundIndex - 1;
@@ -19902,6 +19932,9 @@ function cleanupBattleView() {
 
 let shopCrates=[],shopConsumables=[];
 async function showShop(skipTransition = false){
+  // Update Discord presence to shopping
+  updateDiscordPresence('shop');
+
   // Hide battle-view immediately to prevent flash during overlay fades
   const battleView = document.getElementById('battle-view');
   if (battleView) {
@@ -24022,3 +24055,1063 @@ document.addEventListener('keydown', (e) => {
     window.fullscreenAPI.toggle();
   }
 });
+
+// ========================================
+// GAMEPAD / CONTROLLER SUPPORT
+// ========================================
+(function() {
+  const GAMEPAD = {
+    // State
+    connected: false,
+    index: null,
+    controllerMode: false, // True when controller is actively being used
+
+    // Button indices (Xbox layout - standard mapping)
+    BUTTONS: {
+      A: 0,           // Confirm / Select
+      B: 1,           // Back / Cancel
+      X: 2,           // Secondary action
+      Y: 3,           // Tertiary action
+      LB: 4,          // Left bumper
+      RB: 5,          // Right bumper
+      LT: 6,          // Left trigger
+      RT: 7,          // Right trigger
+      SELECT: 8,      // View / Select
+      START: 9,       // Menu / Pause
+      L3: 10,         // Left stick press
+      R3: 11,         // Right stick press
+      DPAD_UP: 12,
+      DPAD_DOWN: 13,
+      DPAD_LEFT: 14,
+      DPAD_RIGHT: 15
+    },
+
+    // Axis indices
+    AXES: {
+      LEFT_X: 0,
+      LEFT_Y: 1,
+      RIGHT_X: 2,
+      RIGHT_Y: 3
+    },
+
+    // Input state tracking (for edge detection)
+    prevButtons: new Array(16).fill(false),
+    prevAxes: [0, 0, 0, 0],
+
+    // Dead zone for analog sticks
+    DEADZONE: 0.3,
+
+    // Navigation repeat delay (ms)
+    NAV_REPEAT_DELAY: 200,
+    lastNavTime: 0,
+
+    // Focus management
+    focusedElement: null,
+    focusableSelector: 'button:not([disabled]), .chip:not(.disabled), .word-chip:not(.disabled), .talent-card, .hero-card, .shop-item, .consumable-item, [tabindex="0"]',
+
+    // Forge indicator timeout
+    indicatorTimeout: null,
+
+    // Primary action buttons per screen (A button triggers these)
+    // Use 'self' to click the overlay itself (for dismiss-on-click screens)
+    PRIMARY_ACTIONS: {
+      'splash-screen': '#splash-enter-btn',
+      'main-menu': '#start-game-btn',
+      'hero-select-overlay': '#hero-select-btn',
+      'shop-overlay': '#exit-shop-btn',
+      'combat-overlay': '#combat-continue',
+      'talent-overlay': null, // Navigate to select talent
+      'pause-menu': '#resume-btn',
+      'victory-overlay': '#victory-continue-btn',
+      'loss-overlay': '#loss-continue-btn',
+      'chapter-celebration-overlay': '.chapter-continue-btn',
+      'round-intro-overlay': 'self', // Click overlay to dismiss
+      'toast-overlay': '.toast-btn',
+      'onboarding-overlay': '#onboarding-continue'
+    },
+
+    // Cycleable sections per screen (LB/RB or LT/RT)
+    CYCLE_SECTIONS: {
+      'shop-overlay': ['#shop-crates', '#shop-word-bank', '.shop-column-tools'],
+      'hero-select-overlay': null, // Uses hero-prev/hero-next
+      'skill-tree-overlay': null   // Uses skill-tree arrows
+    },
+
+    // Auto-focus elements per screen (focus when screen opens in controller mode)
+    AUTO_FOCUS: {
+      'splash-screen': '#splash-enter-btn',
+      'main-menu': '#start-game-btn',
+      'hero-select-overlay': '#hero-select-btn',
+      'shop-overlay': '#shop-crates .shop-item, #shop-crates button',
+      'combat-overlay': '#combat-continue',
+      'talent-overlay': '.talent-card',
+      'pause-menu': '#pause-continue',
+      'victory-overlay': '#victory-continue-btn',
+      'loss-overlay': '#loss-continue-btn',
+      'chapter-celebration-overlay': '.chapter-continue-btn',
+      'skill-tree-overlay': '.skill-node',
+      'onboarding-overlay': '#onboarding-continue'
+    },
+
+    // Track last active screen for transition detection
+    lastActiveScreen: null
+  };
+
+  // Controller type detection and button icons
+  GAMEPAD.controllerType = 'xbox'; // 'xbox', 'playstation', 'switch', 'generic'
+
+  // Button icons per controller type (using Unicode/text for now)
+  GAMEPAD.BUTTON_ICONS = {
+    xbox: { A: 'Ⓐ', B: 'Ⓑ', X: 'Ⓧ', Y: 'Ⓨ', LB: 'LB', RB: 'RB', START: '☰', SELECT: '⧉' },
+    playstation: { A: '✕', B: '○', X: '□', Y: '△', LB: 'L1', RB: 'R1', START: 'OPTIONS', SELECT: 'SHARE' },
+    switch: { A: 'Ⓑ', B: 'Ⓐ', X: 'Ⓨ', Y: 'Ⓧ', LB: 'L', RB: 'R', START: '+', SELECT: '-' },
+    generic: { A: '1', B: '2', X: '3', Y: '4', LB: 'L1', RB: 'R1', START: 'START', SELECT: 'SELECT' }
+  };
+
+  // Detect controller type from gamepad ID
+  function detectControllerType(gamepadId) {
+    const id = gamepadId.toLowerCase();
+    if (id.includes('xbox') || id.includes('xinput') || id.includes('microsoft')) {
+      return 'xbox';
+    } else if (id.includes('playstation') || id.includes('dualshock') || id.includes('dualsense') || id.includes('sony')) {
+      return 'playstation';
+    } else if (id.includes('nintendo') || id.includes('switch') || id.includes('pro controller')) {
+      return 'switch';
+    }
+    return 'xbox'; // Default to Xbox layout (most common on PC/Steam)
+  }
+
+  // Get button icon for current controller
+  function getButtonIcon(button) {
+    return GAMEPAD.BUTTON_ICONS[GAMEPAD.controllerType]?.[button] || button;
+  }
+
+  // Create controller hints UI
+  function createControllerHints() {
+    let hints = document.getElementById('controller-hints');
+    if (!hints) {
+      hints = document.createElement('div');
+      hints.id = 'controller-hints';
+      hints.className = 'controller-hints';
+      document.body.appendChild(hints);
+    }
+    return hints;
+  }
+
+  // Update controller hints based on current screen
+  function updateControllerHints() {
+    if (!GAMEPAD.controllerMode) {
+      const hints = document.getElementById('controller-hints');
+      if (hints) hints.style.display = 'none';
+      return;
+    }
+
+    const hints = createControllerHints();
+    hints.style.display = 'flex';
+
+    const screen = getActiveScreen();
+    const inForge = isForgeMode();
+    const icons = GAMEPAD.BUTTON_ICONS[GAMEPAD.controllerType];
+
+    let hintsHtml = '';
+
+    if (inForge) {
+      hintsHtml = `
+        <span class="hint"><span class="hint-icon">${icons.A}</span> Place</span>
+        <span class="hint"><span class="hint-icon">${icons.B}</span> Remove</span>
+        <span class="hint"><span class="hint-icon">${icons.Y}</span> Forge!</span>
+        <span class="hint"><span class="hint-icon">${icons.LB}/${icons.RB}</span> Slots</span>
+      `;
+    } else if (screen) {
+      switch (screen.id) {
+        case 'splash-screen':
+          hintsHtml = `<span class="hint"><span class="hint-icon">${icons.A}</span> Enter</span>`;
+          break;
+        case 'main-menu':
+          hintsHtml = `<span class="hint"><span class="hint-icon">${icons.A}</span> Select</span>`;
+          break;
+        case 'hero-select-overlay':
+          hintsHtml = `
+            <span class="hint"><span class="hint-icon">${icons.A}</span> Select Hero</span>
+            <span class="hint"><span class="hint-icon">${icons.LB}/${icons.RB}</span> Browse</span>
+            <span class="hint"><span class="hint-icon">${icons.B}</span> Back</span>
+          `;
+          break;
+        case 'shop-overlay':
+          hintsHtml = `
+            <span class="hint"><span class="hint-icon">${icons.A}</span> Select</span>
+            <span class="hint"><span class="hint-icon">${icons.LB}/${icons.RB}</span> Sections</span>
+            <span class="hint"><span class="hint-icon">${icons.Y}</span> Exit Shop</span>
+          `;
+          break;
+        case 'talent-overlay':
+          hintsHtml = `<span class="hint"><span class="hint-icon">${icons.A}</span> Choose Talent</span>`;
+          break;
+        case 'pause-menu':
+          hintsHtml = `
+            <span class="hint"><span class="hint-icon">${icons.A}</span> Select</span>
+            <span class="hint"><span class="hint-icon">${icons.B}</span> Resume</span>
+          `;
+          break;
+        default:
+          hintsHtml = `
+            <span class="hint"><span class="hint-icon">${icons.A}</span> Select</span>
+            <span class="hint"><span class="hint-icon">${icons.B}</span> Back</span>
+          `;
+      }
+    }
+
+    hints.innerHTML = hintsHtml;
+  }
+
+  // Detect gamepad connection
+  window.addEventListener('gamepadconnected', (e) => {
+    console.log(`[GAMEPAD] Connected: ${e.gamepad.id}`);
+    GAMEPAD.connected = true;
+    GAMEPAD.index = e.gamepad.index;
+    GAMEPAD.controllerType = detectControllerType(e.gamepad.id);
+    GAMEPAD.controllerMode = true;
+    document.body.classList.add('controller-mode');
+    console.log(`[GAMEPAD] Detected type: ${GAMEPAD.controllerType}`);
+    // Show auto-dismissing notification
+    const toast = showToast('Controller Connected', `${e.gamepad.id.split('(')[0].trim()}`, null);
+    if (toast) setTimeout(() => removeToast(toast), 2500);
+    updateControllerHints();
+  });
+
+  window.addEventListener('gamepaddisconnected', (e) => {
+    console.log(`[GAMEPAD] Disconnected: ${e.gamepad.id}`);
+    if (GAMEPAD.index === e.gamepad.index) {
+      GAMEPAD.connected = false;
+      GAMEPAD.index = null;
+      GAMEPAD.controllerMode = false;
+      document.body.classList.remove('controller-mode');
+    }
+  });
+
+  // Switch to controller mode when any button pressed
+  function enableControllerMode() {
+    if (!GAMEPAD.controllerMode) {
+      GAMEPAD.controllerMode = true;
+      document.body.classList.add('controller-mode');
+      updateControllerHints();
+    }
+  }
+
+  // Switch to mouse mode when mouse moves significantly
+  let lastMouseX = 0, lastMouseY = 0;
+  document.addEventListener('mousemove', (e) => {
+    // Only switch to mouse mode if mouse moved more than 10 pixels
+    const dx = Math.abs(e.clientX - lastMouseX);
+    const dy = Math.abs(e.clientY - lastMouseY);
+    if (dx > 10 || dy > 10) {
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      if (GAMEPAD.controllerMode) {
+        GAMEPAD.controllerMode = false;
+        document.body.classList.remove('controller-mode');
+        if (GAMEPAD.focusedElement) {
+          GAMEPAD.focusedElement.classList.remove('gamepad-focus');
+          GAMEPAD.focusedElement = null;
+        }
+        updateControllerHints(); // Hide hints when switching to mouse
+      }
+    }
+  });
+
+  // Check if button was just pressed (edge detection)
+  function justPressed(buttonIndex, buttons) {
+    const pressed = buttons[buttonIndex]?.pressed || false;
+    const wasPressed = GAMEPAD.prevButtons[buttonIndex];
+    return pressed && !wasPressed;
+  }
+
+  // Forge mode state - stored on GAMEPAD object to prevent closure issues
+  // Simple flow: D-pad=words, Bumpers=slots, A=place, B=remove
+  GAMEPAD.forgeSlotIndex = 0; // Currently selected slot index in visible slots
+  GAMEPAD.bHoldStartTime = 0; // For hold-B detection
+  GAMEPAD.forgeFocusArea = 'words'; // 'words' or 'forge-button' - for D-pad down to Forge
+
+  // Check if we're in forge mode (no overlay visible, forge is shown)
+  function isForgeMode() {
+    const forge = document.getElementById('forge');
+    if (!forge || forge.style.display === 'none') return false;
+    // Check no overlay is active
+    const overlays = ['main-menu', 'hero-select-overlay', 'shop-overlay', 'combat-overlay', 'talent-overlay',
+                      'pause-menu', 'skill-tree-overlay', 'achievements-overlay', 'round-intro-overlay',
+                      'victory-overlay', 'loss-overlay', 'chapter-celebration-overlay', 'toast-overlay'];
+    for (const id of overlays) {
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('show')) return false;
+    }
+    return true;
+  }
+
+  // Get current active screen
+  function getActiveScreen() {
+    const screens = [
+      'main-menu',
+      'hero-select-overlay',
+      'shop-overlay',
+      'combat-overlay',
+      'talent-overlay',
+      'pause-menu',
+      'skill-tree-overlay',
+      'achievements-overlay',
+      'graphics-settings',
+      'sound-panel',
+      'credits-overlay',
+      'victory-overlay',
+      'round-intro-overlay',
+      'loss-overlay',
+      'chapter-celebration-overlay',
+      'toast-overlay'
+    ];
+
+    for (const id of screens) {
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('show')) {
+        return { id, element: el };
+      }
+    }
+    return null;
+  }
+
+  // Get focusable elements in current screen
+  function getFocusableElements(container) {
+    if (!container) container = document.body;
+    const elements = Array.from(container.querySelectorAll(GAMEPAD.focusableSelector));
+    // Filter to visible elements only
+    return elements.filter(el => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return rect.width > 0 && rect.height > 0 &&
+             style.display !== 'none' &&
+             style.visibility !== 'hidden' &&
+             style.opacity !== '0';
+    });
+  }
+
+  // Set focus to element
+  function setFocus(element) {
+    // Remove focus from previous
+    if (GAMEPAD.focusedElement) {
+      GAMEPAD.focusedElement.classList.remove('gamepad-focus');
+    }
+
+    GAMEPAD.focusedElement = element;
+
+    if (element) {
+      element.classList.add('gamepad-focus');
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Navigate to nearest element in direction
+  function navigate(direction) {
+    const screen = getActiveScreen();
+    const container = screen?.element || document.body;
+    const focusables = getFocusableElements(container);
+
+    if (focusables.length === 0) return;
+
+    // If nothing focused, focus first element
+    if (!GAMEPAD.focusedElement || !focusables.includes(GAMEPAD.focusedElement)) {
+      setFocus(focusables[0]);
+      return;
+    }
+
+    const currentRect = GAMEPAD.focusedElement.getBoundingClientRect();
+    const currentCenterX = currentRect.left + currentRect.width / 2;
+    const currentCenterY = currentRect.top + currentRect.height / 2;
+
+    let bestElement = null;
+    let bestScore = Infinity;
+
+    for (const el of focusables) {
+      if (el === GAMEPAD.focusedElement) continue;
+
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const dx = centerX - currentCenterX;
+      const dy = centerY - currentCenterY;
+
+      // Check if element is in the right direction
+      let isValidDirection = false;
+      let score = 0;
+
+      switch (direction) {
+        case 'up':
+          isValidDirection = dy < -10;
+          score = Math.abs(dy) + Math.abs(dx) * 2; // Prefer vertical alignment
+          break;
+        case 'down':
+          isValidDirection = dy > 10;
+          score = Math.abs(dy) + Math.abs(dx) * 2;
+          break;
+        case 'left':
+          isValidDirection = dx < -10;
+          score = Math.abs(dx) + Math.abs(dy) * 2; // Prefer horizontal alignment
+          break;
+        case 'right':
+          isValidDirection = dx > 10;
+          score = Math.abs(dx) + Math.abs(dy) * 2;
+          break;
+      }
+
+      if (isValidDirection && score < bestScore) {
+        bestScore = score;
+        bestElement = el;
+      }
+    }
+
+    if (bestElement) {
+      setFocus(bestElement);
+      // Play navigation sound
+      try { playSfxHover(); } catch(e) {}
+    }
+  }
+
+  // Trigger primary action for current screen, or click focused element
+  function triggerPrimaryAction() {
+    console.log('[GAMEPAD] triggerPrimaryAction called, focusedElement:', GAMEPAD.focusedElement);
+
+    // FIRST: Click the focused element if we have one (user navigated to it)
+    if (GAMEPAD.focusedElement && document.contains(GAMEPAD.focusedElement)) {
+      console.log('[GAMEPAD] Clicking focused element:', GAMEPAD.focusedElement.tagName, GAMEPAD.focusedElement.id || GAMEPAD.focusedElement.className);
+      GAMEPAD.focusedElement.click();
+      try { playSfxClick(); } catch(e) {}
+      return;
+    }
+
+    // FALLBACK: Use primary action button for this screen (when nothing focused)
+    const screen = getActiveScreen();
+    console.log('[GAMEPAD] No focused element, screen:', screen?.id);
+    if (screen) {
+      const primarySelector = GAMEPAD.PRIMARY_ACTIONS[screen.id];
+      if (primarySelector === 'self') {
+        // Click the overlay itself (for dismiss-on-click screens)
+        console.log('[GAMEPAD] Clicking overlay self');
+        screen.element.click();
+        try { playSfxClick(); } catch(e) {}
+        return;
+      } else if (primarySelector) {
+        const primaryBtn = document.querySelector(primarySelector);
+        console.log('[GAMEPAD] Primary button:', primarySelector, primaryBtn, 'disabled:', primaryBtn?.disabled, 'display:', primaryBtn?.style?.display);
+        if (primaryBtn && !primaryBtn.disabled) {
+          console.log('[GAMEPAD] Clicking primary button');
+          primaryBtn.click();
+          try { playSfxClick(); } catch(e) {}
+          return;
+        }
+      }
+    }
+    console.log('[GAMEPAD] Nothing to click!');
+  }
+
+  // Cycle through sections (for bumpers/triggers)
+  let currentSectionIndex = 0;
+  function cycleSection(direction) {
+    const screen = getActiveScreen();
+    if (!screen) return;
+
+    const sections = GAMEPAD.CYCLE_SECTIONS[screen.id];
+    if (!sections || sections.length === 0) return;
+
+    // Remove active section highlight from all sections
+    sections.forEach(selector => {
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.remove('gamepad-section-active');
+        // Also check parent card-surface for shop sections
+        const parent = el.closest('.card-surface, .shop-column');
+        if (parent) parent.classList.remove('gamepad-section-active');
+      }
+    });
+
+    // Move to next/prev section
+    if (direction === 'next') {
+      currentSectionIndex = (currentSectionIndex + 1) % sections.length;
+    } else {
+      currentSectionIndex = (currentSectionIndex - 1 + sections.length) % sections.length;
+    }
+
+    // Find first focusable element in that section and focus it
+    const sectionEl = document.querySelector(sections[currentSectionIndex]);
+    if (sectionEl) {
+      // Add active section highlight to the section or its parent card
+      const highlightTarget = sectionEl.closest('.card-surface, .shop-column') || sectionEl;
+      highlightTarget.classList.add('gamepad-section-active');
+
+      const focusables = getFocusableElements(sectionEl);
+      if (focusables.length > 0) {
+        setFocus(focusables[0]);
+        try { playSfxHover(); } catch(e) {}
+      }
+    }
+  }
+
+  // Clear section highlights when leaving a screen
+  function clearSectionHighlights() {
+    document.querySelectorAll('.gamepad-section-active').forEach(el => {
+      el.classList.remove('gamepad-section-active');
+    });
+  }
+
+  // ========== FORGE MODE CONTROLS ==========
+
+  // Get all visible forge slots (not hidden)
+  function getVisibleForgeSlots() {
+    const forge = document.getElementById('forge');
+    if (!forge) return [];
+
+    // Get all slot containers that are NOT hidden
+    const containers = forge.querySelectorAll('.slot-container:not(.hidden)');
+    const slots = [];
+    containers.forEach(container => {
+      const slot = container.querySelector('.slot');
+      if (slot) slots.push(slot);
+    });
+    return slots;
+  }
+
+  // Update blue highlight on active slot (always visible in forge)
+  function updateForgeSlotHighlight() {
+    const forge = document.getElementById('forge');
+    if (!forge) return;
+
+    // Remove previous slot highlights
+    document.querySelectorAll('.forge-slot-active').forEach(el => {
+      el.classList.remove('forge-slot-active');
+    });
+
+    // Always show slot highlight in controller mode
+    if (!GAMEPAD.controllerMode) return;
+
+    // Add blue highlight to current slot
+    const visibleSlots = getVisibleForgeSlots();
+    if (visibleSlots.length === 0) return;
+
+    // Clamp index to valid range
+    if (GAMEPAD.forgeSlotIndex >= visibleSlots.length) {
+      GAMEPAD.forgeSlotIndex = 0;
+    }
+
+    const slot = visibleSlots[GAMEPAD.forgeSlotIndex];
+    if (slot) {
+      slot.classList.add('forge-slot-active');
+    }
+  }
+
+  // Cycle through slots with bumpers (LB/RB)
+  function cycleForgeSlot(direction) {
+    const visibleSlots = getVisibleForgeSlots();
+    if (visibleSlots.length === 0) return;
+
+    if (direction === 'prev') {
+      GAMEPAD.forgeSlotIndex = (GAMEPAD.forgeSlotIndex - 1 + visibleSlots.length) % visibleSlots.length;
+    } else if (direction === 'next') {
+      GAMEPAD.forgeSlotIndex = (GAMEPAD.forgeSlotIndex + 1) % visibleSlots.length;
+    }
+
+    updateForgeSlotHighlight();
+    try { playSfxHover(); } catch(e) {}
+  }
+
+  // Place highlighted word directly into highlighted slot (A button)
+  function forgePlaceWord() {
+    if (!GAMEPAD.focusedElement || !GAMEPAD.focusedElement.classList.contains('chip')) return;
+
+    // Click the word to set it as pendingWord
+    GAMEPAD.focusedElement.click();
+
+    // Then click the currently highlighted slot to place it there
+    const visibleSlots = getVisibleForgeSlots();
+    if (visibleSlots.length > 0 && GAMEPAD.forgeSlotIndex < visibleSlots.length) {
+      const targetSlot = visibleSlots[GAMEPAD.forgeSlotIndex];
+      if (targetSlot) {
+        targetSlot.click();
+      }
+    }
+
+    try { playSfxClick(); } catch(e) {}
+  }
+
+  // Remove word from highlighted slot (B button)
+  function forgeRemoveWord() {
+    const visibleSlots = getVisibleForgeSlots();
+    if (visibleSlots.length === 0) return;
+
+    // Clear any pending word selection first to prevent accidental placement
+    if (typeof S !== 'undefined' && S.pendingWord) {
+      S.pendingWord = null;
+    }
+
+    const targetSlot = visibleSlots[GAMEPAD.forgeSlotIndex];
+    if (targetSlot) {
+      // Only click if slot actually has a word (chip) in it
+      const hasWord = targetSlot.querySelector('.chip') || targetSlot.textContent.trim() !== targetSlot.dataset.slot;
+      // Check game state for this slot
+      const slotKey = targetSlot.dataset.slot;
+      const hasWordInState = typeof S !== 'undefined' && S.sel && S.sel[slotKey];
+
+      if (hasWordInState) {
+        targetSlot.click();
+        try { playSfxClick(); } catch(e) {}
+      }
+    }
+  }
+
+  // Click the Forge button (Y button or when focused on it)
+  function forgeStartCombat() {
+    const forgeBtn = document.getElementById('forge-btn');
+    if (forgeBtn && !forgeBtn.disabled) {
+      forgeBtn.click();
+      try { playSfxClick(); } catch(e) {}
+    }
+  }
+
+  // Initialize forge controller when entering forge mode
+  function initForgeController() {
+    GAMEPAD.forgeSlotIndex = 0;
+    GAMEPAD.forgeFocusArea = 'words';
+    updateForgeSlotHighlight();
+
+    // Focus first word in word bank (#bank in forge)
+    const wordBank = document.getElementById('bank');
+    if (wordBank) {
+      const words = wordBank.querySelectorAll('.chip:not(.disabled)');
+      if (words.length > 0) {
+        setFocus(words[0]);
+      }
+    }
+
+    // Show combat preview tooltip by default in controller mode
+    const tooltip = document.getElementById('combat-preview-tooltip');
+    if (tooltip && !tooltip.classList.contains('show')) {
+      tooltip.classList.add('show');
+    }
+  }
+
+  // Clean up forge visuals when leaving forge mode
+  function cleanupForgeController() {
+    document.querySelectorAll('.forge-slot-active').forEach(el => {
+      el.classList.remove('forge-slot-active');
+    });
+  }
+
+  // Get ALL word chips in word bank (for D-pad navigation)
+  function getWordBankChips() {
+    // Forge uses #bank, not #word-bank
+    const wordBank = document.getElementById('bank');
+    if (!wordBank) return [];
+
+    return Array.from(wordBank.querySelectorAll('.chip:not(.disabled)')).filter(el => {
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+  }
+
+  // Navigate within word bank only (all words, not filtered by category)
+  function navigateForgeWords(direction) {
+    const words = getWordBankChips();
+    if (words.length === 0) return;
+
+    // Find current index
+    let currentIndex = words.indexOf(GAMEPAD.focusedElement);
+    if (currentIndex === -1) {
+      // Not focused on a word - focus first one
+      setFocus(words[0]);
+      try { playSfxHover(); } catch(e) {}
+      return;
+    }
+
+    // Calculate items per row based on container width
+    const wordBank = document.getElementById('bank');
+    const containerWidth = wordBank?.offsetWidth || 800;
+    const chipWidth = words[0]?.offsetWidth || 100;
+    const itemsPerRow = Math.max(1, Math.floor(containerWidth / (chipWidth + 10)));
+
+    // Calculate new index based on direction
+    let newIndex = currentIndex;
+    if (direction === 'left') newIndex = Math.max(0, currentIndex - 1);
+    else if (direction === 'right') newIndex = Math.min(words.length - 1, currentIndex + 1);
+    else if (direction === 'up') newIndex = Math.max(0, currentIndex - itemsPerRow);
+    else if (direction === 'down') newIndex = Math.min(words.length - 1, currentIndex + itemsPerRow);
+
+    if (newIndex !== currentIndex) {
+      setFocus(words[newIndex]);
+      try { playSfxHover(); } catch(e) {}
+    }
+  }
+
+  // Place focused word into slot (A button)
+  function forgeSelectWord() {
+    if (GAMEPAD.focusedElement && GAMEPAD.focusedElement.classList.contains('chip')) {
+      GAMEPAD.focusedElement.click();
+      try { playSfxClick(); } catch(e) {}
+    }
+  }
+
+  // Remove word from any filled slot (B button in inventory mode)
+  function forgeDeselectSlot() {
+    const forge = document.getElementById('forge');
+    if (!forge) return;
+
+    // Find any filled slot and click to deselect
+    const allSlots = forge.querySelectorAll('.slot-item, .slot-adj1, .slot-adj2, .slot-adj3, .slot-adj4, .slot-noun1');
+    for (const slot of allSlots) {
+      const chip = slot.querySelector('.chip');
+      if (chip) {
+        chip.click(); // Clicking a placed chip should deselect it
+        try { playSfxClick(); } catch(e) {}
+        return;
+      }
+    }
+  }
+
+  // Reset all slots (hold B)
+  function forgeResetAll() {
+    const resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) {
+      resetBtn.click();
+      try { playSfxClick(); } catch(e) {}
+      // Re-initialize forge controller after reset (DOM was re-rendered)
+      setTimeout(() => {
+        initForgeController();
+      }, 50);
+    }
+  }
+
+  // Open combat preview (Select button)
+  function openCombatPreview() {
+    const previewBox = document.getElementById('combat-preview-box');
+    if (previewBox) {
+      // Toggle tooltip visibility
+      const tooltip = document.getElementById('combat-preview-tooltip');
+      if (tooltip) {
+        tooltip.classList.toggle('show');
+      }
+    }
+  }
+
+  // Handle back/cancel action
+  function goBack() {
+    // Simulate Escape key
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(event);
+  }
+
+  // Track forge mode state for enter/exit detection
+  let wasInForge = false;
+
+  // Main polling loop
+  function pollGamepad() {
+    if (!GAMEPAD.connected || GAMEPAD.index === null) {
+      requestAnimationFrame(pollGamepad);
+      return;
+    }
+
+    const gamepad = navigator.getGamepads()[GAMEPAD.index];
+    if (!gamepad) {
+      requestAnimationFrame(pollGamepad);
+      return;
+    }
+
+    const { buttons, axes } = gamepad;
+    const now = performance.now();
+    const inForge = isForgeMode();
+
+    // Detect forge mode transitions
+    if (inForge && !wasInForge && GAMEPAD.controllerMode) {
+      console.log('[GAMEPAD] Entering forge, calling initForgeController');
+      initForgeController();
+    } else if (!inForge && wasInForge) {
+      console.log('[GAMEPAD] Leaving forge, calling cleanupForgeController');
+      cleanupForgeController();
+    }
+    wasInForge = inForge;
+
+    // Detect overlay/screen transitions for auto-focus
+    if (GAMEPAD.controllerMode) {
+      const currentScreen = getActiveScreen();
+      const currentScreenId = currentScreen?.id || (inForge ? 'forge' : null);
+
+      if (currentScreenId !== GAMEPAD.lastActiveScreen) {
+        console.log(`[GAMEPAD] Screen transition: ${GAMEPAD.lastActiveScreen} -> ${currentScreenId}`);
+        GAMEPAD.lastActiveScreen = currentScreenId;
+
+        // Reset section index when entering new screen
+        currentSectionIndex = 0;
+
+        // Clear section highlights from previous screen
+        clearSectionHighlights();
+
+        // Update controller hints for new screen
+        updateControllerHints();
+
+        // Auto-focus appropriate element for this screen
+        if (currentScreen && GAMEPAD.AUTO_FOCUS[currentScreen.id]) {
+          const selector = GAMEPAD.AUTO_FOCUS[currentScreen.id];
+          const focusTarget = document.querySelector(selector);
+          if (focusTarget) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+              setFocus(focusTarget);
+              console.log(`[GAMEPAD] Auto-focused: ${selector}`);
+
+              // Apply initial section highlight for screens with sections
+              const sections = GAMEPAD.CYCLE_SECTIONS[currentScreen.id];
+              if (sections && sections.length > 0) {
+                const firstSection = document.querySelector(sections[0]);
+                if (firstSection) {
+                  const highlightTarget = firstSection.closest('.card-surface, .shop-column') || firstSection;
+                  highlightTarget.classList.add('gamepad-section-active');
+                }
+              }
+            }, 100);
+          }
+        } else if (currentScreen) {
+          // No AUTO_FOCUS for this screen - clear any stale focus from previous screen
+          // This prevents clicking old elements when pressing A on overlays like round-intro
+          setFocus(null);
+          console.log(`[GAMEPAD] Cleared focus for screen: ${currentScreen.id}`);
+        }
+      }
+
+    }
+
+    // ========== FORGE MODE CONTROLS ==========
+    // Simple flow: D-pad=words, Bumpers=slots, A=place, B=remove, Y=forge
+    if (inForge) {
+      // A button - Place highlighted word into highlighted slot
+      if (justPressed(GAMEPAD.BUTTONS.A, buttons)) {
+        enableControllerMode();
+        if (GAMEPAD.forgeFocusArea === 'forge-button') {
+          forgeStartCombat();
+        } else {
+          forgePlaceWord();
+        }
+      }
+
+      // B button - Remove word from highlighted slot (hold to reset all)
+      if (buttons[GAMEPAD.BUTTONS.B]?.pressed) {
+        enableControllerMode();
+        if (GAMEPAD.bHoldStartTime === 0) {
+          GAMEPAD.bHoldStartTime = now;
+        } else if (now - GAMEPAD.bHoldStartTime > 1000) {
+          // Held for 1 second - reset all
+          forgeResetAll();
+          GAMEPAD.bHoldStartTime = 0;
+        }
+      } else {
+        // B released - short press removes word from current slot
+        if (GAMEPAD.bHoldStartTime > 0 && now - GAMEPAD.bHoldStartTime < 1000) {
+          forgeRemoveWord();
+        }
+        GAMEPAD.bHoldStartTime = 0;
+      }
+
+      // Y button - Start combat (Forge!)
+      if (justPressed(GAMEPAD.BUTTONS.Y, buttons)) {
+        enableControllerMode();
+        forgeStartCombat();
+      }
+
+      // LB/RB - Cycle through slots
+      if (justPressed(GAMEPAD.BUTTONS.LB, buttons)) {
+        enableControllerMode();
+        cycleForgeSlot('prev');
+      }
+      if (justPressed(GAMEPAD.BUTTONS.RB, buttons)) {
+        enableControllerMode();
+        cycleForgeSlot('next');
+      }
+
+      // Start button - Pause menu
+      if (justPressed(GAMEPAD.BUTTONS.START, buttons)) {
+        enableControllerMode();
+        goBack();
+      }
+
+      // Select button - Combat preview tooltip
+      if (justPressed(GAMEPAD.BUTTONS.SELECT, buttons)) {
+        enableControllerMode();
+        openCombatPreview();
+      }
+
+      // D-pad - Navigate words in bank (down can go to Forge button)
+      const canNav = now - GAMEPAD.lastNavTime > GAMEPAD.NAV_REPEAT_DELAY;
+      if (canNav) {
+        let dir = null;
+        if (buttons[GAMEPAD.BUTTONS.DPAD_UP]?.pressed || axes[GAMEPAD.AXES.LEFT_Y] < -GAMEPAD.DEADZONE) dir = 'up';
+        else if (buttons[GAMEPAD.BUTTONS.DPAD_DOWN]?.pressed || axes[GAMEPAD.AXES.LEFT_Y] > GAMEPAD.DEADZONE) dir = 'down';
+        else if (buttons[GAMEPAD.BUTTONS.DPAD_LEFT]?.pressed || axes[GAMEPAD.AXES.LEFT_X] < -GAMEPAD.DEADZONE) dir = 'left';
+        else if (buttons[GAMEPAD.BUTTONS.DPAD_RIGHT]?.pressed || axes[GAMEPAD.AXES.LEFT_X] > GAMEPAD.DEADZONE) dir = 'right';
+
+        if (dir) {
+          enableControllerMode();
+
+          // Check if we should focus the Forge button (D-pad down from bottom row)
+          if (dir === 'down' && GAMEPAD.forgeFocusArea === 'words') {
+            const words = getWordBankChips();
+            const currentIndex = words.indexOf(GAMEPAD.focusedElement);
+            // Calculate items per row
+            const wordBank = document.getElementById('bank');
+            const containerWidth = wordBank?.offsetWidth || 800;
+            const chipWidth = words[0]?.offsetWidth || 100;
+            const itemsPerRow = Math.max(1, Math.floor(containerWidth / (chipWidth + 10)));
+
+            // Check if we're on the last row
+            const isLastRow = currentIndex >= words.length - itemsPerRow;
+            if (isLastRow) {
+              // Focus the Forge button
+              GAMEPAD.forgeFocusArea = 'forge-button';
+              const forgeBtn = document.getElementById('forge-btn');
+              if (forgeBtn) setFocus(forgeBtn);
+              GAMEPAD.lastNavTime = now;
+            } else {
+              navigateForgeWords(dir);
+              GAMEPAD.lastNavTime = now;
+            }
+          } else if (dir === 'up' && GAMEPAD.forgeFocusArea === 'forge-button') {
+            // D-pad up from Forge button goes back to words
+            GAMEPAD.forgeFocusArea = 'words';
+            const words = getWordBankChips();
+            if (words.length > 0) {
+              // Focus last row first word
+              const wordBank = document.getElementById('bank');
+              const containerWidth = wordBank?.offsetWidth || 800;
+              const chipWidth = words[0]?.offsetWidth || 100;
+              const itemsPerRow = Math.max(1, Math.floor(containerWidth / (chipWidth + 10)));
+              const lastRowStart = Math.max(0, words.length - itemsPerRow);
+              setFocus(words[lastRowStart]);
+            }
+            GAMEPAD.lastNavTime = now;
+          } else if (dir === 'up' && GAMEPAD.forgeFocusArea === 'words') {
+            // D-pad up on first row toggles combat preview tooltip
+            const words = getWordBankChips();
+            const currentIndex = words.indexOf(GAMEPAD.focusedElement);
+            const wordBank = document.getElementById('bank');
+            const containerWidth = wordBank?.offsetWidth || 800;
+            const chipWidth = words[0]?.offsetWidth || 100;
+            const itemsPerRow = Math.max(1, Math.floor(containerWidth / (chipWidth + 10)));
+            const isFirstRow = currentIndex < itemsPerRow;
+
+            if (isFirstRow) {
+              // Toggle tooltip
+              openCombatPreview();
+              GAMEPAD.lastNavTime = now;
+            } else {
+              // Normal up navigation
+              navigateForgeWords(dir);
+              GAMEPAD.lastNavTime = now;
+            }
+          } else if (GAMEPAD.forgeFocusArea === 'words') {
+            // Normal word navigation (left/right/down within words)
+            navigateForgeWords(dir);
+            GAMEPAD.lastNavTime = now;
+          }
+        }
+      }
+    }
+    // ========== OVERLAY/MENU CONTROLS ==========
+    else {
+      // A button - Primary action (biggest button on screen)
+      if (justPressed(GAMEPAD.BUTTONS.A, buttons)) {
+        enableControllerMode();
+        triggerPrimaryAction();
+      }
+
+      // B button - Back/Cancel
+      if (justPressed(GAMEPAD.BUTTONS.B, buttons)) {
+        enableControllerMode();
+        goBack();
+      }
+
+      // Start button - Pause menu
+      if (justPressed(GAMEPAD.BUTTONS.START, buttons)) {
+        enableControllerMode();
+        goBack();
+      }
+
+      // D-pad navigation (with repeat delay)
+      const canNav = now - GAMEPAD.lastNavTime > GAMEPAD.NAV_REPEAT_DELAY;
+
+      if (canNav) {
+        let navigated = false;
+        if (buttons[GAMEPAD.BUTTONS.DPAD_UP]?.pressed || axes[GAMEPAD.AXES.LEFT_Y] < -GAMEPAD.DEADZONE) {
+          navigate('up');
+          navigated = true;
+        } else if (buttons[GAMEPAD.BUTTONS.DPAD_DOWN]?.pressed || axes[GAMEPAD.AXES.LEFT_Y] > GAMEPAD.DEADZONE) {
+          navigate('down');
+          navigated = true;
+        } else if (buttons[GAMEPAD.BUTTONS.DPAD_LEFT]?.pressed || axes[GAMEPAD.AXES.LEFT_X] < -GAMEPAD.DEADZONE) {
+          navigate('left');
+          navigated = true;
+        } else if (buttons[GAMEPAD.BUTTONS.DPAD_RIGHT]?.pressed || axes[GAMEPAD.AXES.LEFT_X] > GAMEPAD.DEADZONE) {
+          navigate('right');
+          navigated = true;
+        }
+        if (navigated) {
+          enableControllerMode();
+          GAMEPAD.lastNavTime = now;
+        }
+      }
+
+      // LB/RB - Cycle sections or hero/skill navigation
+      if (justPressed(GAMEPAD.BUTTONS.LB, buttons)) {
+        enableControllerMode();
+        const screen = getActiveScreen();
+        if (screen?.id === 'hero-select-overlay') {
+          const prevBtn = document.getElementById('hero-prev');
+          if (prevBtn) prevBtn.click();
+        } else if (screen?.id === 'skill-tree-overlay') {
+          const prevBtn = document.getElementById('skill-tree-back-btn');
+          if (prevBtn) prevBtn.click();
+        } else {
+          cycleSection('prev');
+        }
+      }
+
+      if (justPressed(GAMEPAD.BUTTONS.RB, buttons)) {
+        enableControllerMode();
+        const screen = getActiveScreen();
+        if (screen?.id === 'hero-select-overlay') {
+          const nextBtn = document.getElementById('hero-next');
+          if (nextBtn) nextBtn.click();
+        } else if (screen?.id === 'skill-tree-overlay') {
+          const nextBtn = document.getElementById('skill-tree-next-btn');
+          if (nextBtn) nextBtn.click();
+        } else {
+          cycleSection('next');
+        }
+      }
+
+      // LT/RT - Also cycle sections (alternative to bumpers)
+      if (justPressed(GAMEPAD.BUTTONS.LT, buttons)) {
+        enableControllerMode();
+        cycleSection('prev');
+      }
+      if (justPressed(GAMEPAD.BUTTONS.RT, buttons)) {
+        enableControllerMode();
+        cycleSection('next');
+      }
+    }
+
+    // Update previous button states
+    for (let i = 0; i < buttons.length; i++) {
+      GAMEPAD.prevButtons[i] = buttons[i]?.pressed || false;
+    }
+
+    requestAnimationFrame(pollGamepad);
+  }
+
+  // Start polling
+  requestAnimationFrame(pollGamepad);
+
+  // Expose for debugging
+  window.GAMEPAD = GAMEPAD;
+})();

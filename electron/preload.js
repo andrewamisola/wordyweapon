@@ -76,6 +76,18 @@ window.fullscreenAPI = {
   }
 };
 
+// Discord Rich Presence API
+window.discordAPI = {
+  updatePresence: async (data) => {
+    try {
+      return await ipcRenderer.invoke('discord-presence', data);
+    } catch (e) {
+      // Silently fail - Discord may not be running
+      return false;
+    }
+  }
+};
+
 // Also set on DOMContentLoaded to be safe
 document.addEventListener('DOMContentLoaded', () => {
   window.electronAudio = { isElectron: true };

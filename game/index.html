@@ -209,6 +209,7 @@
             <div class="health-preview damage-preview" id="enemy-damage-preview"></div>
           </div>
           <div class="health-text" id="enemy-health-text">100 / 100</div>
+          <div class="hyperbole-preview" id="hyperbole-overkill-preview" style="display:none;font-size:11px;text-align:center;margin-top:2px"></div>
         </div>
         <div class="portrait-details">
           <!-- Details toggle removed; details now show on hover -->
@@ -390,7 +391,10 @@
               <div class="shop-section-title">Tools</div>
               <div id="shop-consumable-cap" class="dim shop-consumable-cap"></div>
             </div>
-            <div class="shop-subtitle">For sale</div>
+            <div class="shop-subtitle" style="display:flex;justify-content:space-between;align-items:center">
+              <span>For sale</span>
+              <button id="reroll-tools-btn" class="reroll-btn" style="padding:2px 8px;font-size:10px" title="Reroll shop tools">🔄 Reroll</button>
+            </div>
             <div id="shop-consumables" class="consumable-row card-surface"></div>
             <div class="shop-subtitle">Owned</div>
             <div id="shop-owned-consumables" class="consumable-row card-surface"></div>
@@ -632,6 +636,33 @@
         <span>Fullscreen</span>
         <button id="gfx-fullscreen" style="padding:6px 16px;border-radius:6px;background:#1f2937;border:1px solid #374151;font-size:12px">Windowed</button>
       </label>
+    </div>
+    <!-- Audio Settings Section -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #374151">
+      <div style="font-size:14px;font-weight:bold;margin-bottom:12px;color:#9ca3af">Audio</div>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;padding:0 10px">
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:12px">
+          <span>Master</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="settings-vol-master" min="0" max="100" value="80" style="width:100px;accent-color:#f4d03f">
+            <span id="settings-vol-master-value" style="font-size:12px;min-width:36px;text-align:right">80%</span>
+          </div>
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:12px">
+          <span>Music</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="settings-vol-music" min="0" max="100" value="70" style="width:100px;accent-color:#f4d03f">
+            <span id="settings-vol-music-value" style="font-size:12px;min-width:36px;text-align:right">70%</span>
+          </div>
+        </label>
+        <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:12px">
+          <span>SFX</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="settings-vol-sfx" min="0" max="100" value="100" style="width:100px;accent-color:#f4d03f">
+            <span id="settings-vol-sfx-value" style="font-size:12px;min-width:36px;text-align:right">100%</span>
+          </div>
+        </label>
+      </div>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #374151;display:flex;flex-direction:column;gap:8px;align-items:center">
       <button id="gfx-bug-report" style="padding:8px 20px;border-radius:8px;background:#111827;border:1px solid #374151;font-size:12px;width:160px">Report Bug</button>

@@ -20,6 +20,7 @@
     "build-itch": "npx shx rm -rf game && npx shx cp -r ../game . && npx shx cp -r game/* ../../WordyWeapon-Builds/itch/"
   },
   "dependencies": {
+    "discord-rpc": "^4.0.1",
     "steamworks.js": "^0.3.1"
   },
   "devDependencies": {

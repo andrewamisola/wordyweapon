@@ -27,6 +27,17 @@ electron/preload.js # Steam bridge
 | `npm run build-mac` | Mac only |
 | `npm run build-win` | Windows only |
 
+## Build Output Paths
+```
+electron/dist/mac-universal/     # Mac build output
+electron/dist/win-unpacked/      # Windows build output (DO NOT use "win-unpacked" in zip names)
+electron/dist/WordyWeapon-Mac.zip   # Zipped Mac build
+electron/dist/WordyWeapon-Win.zip   # Zipped Windows build
+```
+
+When copying to external drive (T7), use a consistent folder name like:
+- `/Volumes/T7/WordyWeapon-Patch-YYYY-MM-DD/`
+
 ## Domain Contexts
 When working on specific areas, load the relevant context:
 - `cat .claude/domains/calc.md` - Combat/damage calculation
@@ -57,15 +68,71 @@ BPM = 136               // Music tempo (UI animations sync to beats)
 ```
 
 ## Current Status
-- Feature complete for Steam release
-- Demo and full versions working
+**VERSION 1.0 RELEASED** (January 6, 2026)
+- Live on Steam - full game and demo available
 - All 6 heroes, 6 bosses, 8 elements, 3 difficulties
+- Steam achievements and cloud saves working
+
+### Launch Stats (as of Jan 6, 2026)
+- 3 purchases
+- ~125 wishlists
+- Keys distributed to select players
+
+---
+
+## Changelog
+
+### Next Patch (TBD)
+_Tracking changes for next release. See `.claude/TASKS.md` for bug audit._
+
+---
+
+### Day One Patch (2026-01-08)
+**New:**
+- Shop tools now usable directly in shop (auto-apply on single word selection)
+
+**Balance:**
+- Talents use triangular scaling for upgrades (×1 → ×2 → ×4 → ×7 → ×11...)
+- Overflow buffed: ×1.25 → ×1.5 per level
+- Adjective talents split value among adjectives (synergizes with REREAD)
+- Residual reworked: +10 AP per ×1 Multiplier
+- Tool prices reset each shop visit
+- Tool reroll increases prices (capped at 999g)
+
+**QoL:**
+- Large numbers in combat breakdown show commas
+- Improved REREAD badge display
+- Reduced floating badge clutter during tally
+
+---
+
+### Post-Launch Strategy
+1. **Stabilization phase** - Let players find bugs/issues
+2. **Week 1 patch** - Batch fixes based on player feedback
+3. **Roadmap** - New features once foundation is stable
+
+### Potential Future Features
+- _To be determined based on player feedback_
+- _Add roadmap items here as they're planned_
 
 ## Session Management
 
 **Before clearing/compacting**, update the handoff file:
 - Edit `.claude/HANDOFF.md` with current task state
 - Update `SESSION_STATE.md` with what was implemented
+- **Update the Changelog above** with timestamped entries of what was done
+
+### Handoff Checklist
+1. Add timestamped entries to **Changelog** section above (include date: YYYY-MM-DD)
+2. Update `.claude/HANDOFF.md` with:
+   - What was being worked on
+   - Current state (completed/in-progress)
+   - Key decisions made
+   - Files modified with timestamps
+3. List any pending tasks or known issues
+
+### Timestamp Format
+Always use: `YYYY-MM-DD HH:MM` (24hr) for logging, e.g., `2026-01-08 21:15`
 
 Helper scripts (optional):
 ```bash
@@ -101,6 +168,32 @@ Example:
 > **Found:** The multiplier was being applied before the base damage instead of after
 > **Did:** Moved the multiplier calculation to line 14950, after base damage is summed
 > **Diff:** Damage now correctly shows 150 instead of 75 for the same word combo
+
+## Bug Tracking Protocol
+
+When a bug is identified, add it to `.claude/TASKS.md` under **Bug Audit** with this format:
+
+```markdown
+### BUG-XXX: [Short Description]
+- **Identified:** YYYY-MM-DD HH:MM
+- **Reporter:** [who found it]
+- **Current Behavior:** [what happens now]
+- **Expected Behavior:** [what should happen]
+- **Status:** open | investigating | fixed
+- **Resolution:** [blank until fixed]
+- **Fixed:** [timestamp when fixed]
+- **Changes:** [explicit "changed X from Y to Z" notes]
+```
+
+**Status definitions:**
+- `open` - Bug confirmed, not yet investigated
+- `investigating` - Actively looking into root cause
+- `fixed` - Code changed and verified working
+
+When fixing a bug, ALWAYS document:
+1. The exact values/behavior before the change
+2. The exact values/behavior after the change
+3. Which file(s) and line(s) were modified
 
 ## Git Safety
 - **NEVER push or pull unless explicitly instructed**

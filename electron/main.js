@@ -23,6 +23,82 @@ let userZoom = 1.0; // User's zoom preference from slider (0.25 - 2.0)
 let moveDebounceTimer = null;
 let serverConnections = new Set(); // Track HTTP connections for clean shutdown
 
+// === DISCORD RICH PRESENCE ===
+const DISCORD_CLIENT_ID = '1459601898649686049';
+let discordRpc = null;
+let discordReady = false;
+
+function initDiscordRPC() {
+  try {
+    const DiscordRPC = require('discord-rpc');
+    DiscordRPC.register(DISCORD_CLIENT_ID);
+    discordRpc = new DiscordRPC.Client({ transport: 'ipc' });
+
+    discordRpc.on('ready', () => {
+      console.log('Discord RPC connected');
+      discordReady = true;
+      // Set initial presence
+      updateDiscordPresence({ state: 'main_menu' });
+    });
+
+    discordRpc.on('disconnected', () => {
+      console.log('Discord RPC disconnected');
+      discordReady = false;
+    });
+
+    discordRpc.login({ clientId: DISCORD_CLIENT_ID }).catch(err => {
+      console.log('Discord RPC login failed (Discord may not be running):', err.message);
+    });
+  } catch (err) {
+    console.log('Discord RPC not available:', err.message);
+  }
+}
+
+function updateDiscordPresence(data) {
+  if (!discordRpc || !discordReady) return;
+
+  try {
+    const presence = {
+      largeImageKey: 'ut7atopv_400x400',
+      largeImageText: 'Wordy Weapon',
+      instance: false,
+    };
+
+    if (data.state === 'main_menu') {
+      presence.details = 'In Main Menu';
+      presence.state = 'Choosing a hero';
+    } else if (data.state === 'playing') {
+      const chapter = Math.floor((data.round - 1) / 9) + 1;
+      presence.details = `Playing as ${data.hero || 'Unknown'}`;
+      presence.state = `Chapter ${chapter} | Round ${data.round || 1}`;
+    } else if (data.state === 'shop') {
+      const chapter = Math.floor((data.round - 1) / 9) + 1;
+      presence.details = `Playing as ${data.hero || 'Unknown'}`;
+      presence.state = `Shopping | Round ${data.round || 1}`;
+    } else if (data.state === 'combat') {
+      const chapter = Math.floor((data.round - 1) / 9) + 1;
+      presence.details = `Playing as ${data.hero || 'Unknown'}`;
+      presence.state = `Chapter ${chapter} | Round ${data.round || 1}`;
+    } else if (data.state === 'victory') {
+      const chapter = Math.floor((data.round - 1) / 9) + 1;
+      presence.details = `Victory as ${data.hero || 'Unknown'}`;
+      presence.state = `Completed Chapter ${chapter}`;
+    } else if (data.state === 'defeat') {
+      const chapter = Math.floor((data.round - 1) / 9) + 1;
+      presence.details = `Defeated as ${data.hero || 'Unknown'}`;
+      presence.state = `Fell on Round ${data.round || 1}`;
+    }
+
+    presence.startTimestamp = data.startTime || Date.now();
+
+    discordRpc.setActivity(presence).catch(err => {
+      console.log('Discord presence update failed:', err.message);
+    });
+  } catch (err) {
+    console.log('Discord presence error:', err.message);
+  }
+}
+
 // Window state persistence
 const windowStatePath = path.join(app.getPath('userData'), 'window-state.json');
 
@@ -233,6 +309,12 @@ ipcMain.handle('set-user-zoom', (event, zoomPercent) => {
   return true;
 });
 
+// Discord Rich Presence update
+ipcMain.handle('discord-presence', (event, data) => {
+  updateDiscordPresence(data);
+  return true;
+});
+
 // Update content scaling using Electron's setZoomFactor
 function updateContentScale() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -427,6 +509,9 @@ app.whenReady().then(() => {
 
   // Initialize Steam
   initSteam();
+
+  // Initialize Discord Rich Presence
+  initDiscordRPC();
 
   // Start server and wait for it to be ready before creating window
   startLocalServer(() => {

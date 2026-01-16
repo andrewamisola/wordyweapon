@@ -1,74 +1,77 @@
-# Steamworks Release Checklist - Wordy Weapon
+# Steamworks - Wordy Weapon
 
 **App ID**: 4248130
 **Release Date**: December 22, 2025
+**Dashboard**: https://partner.steamgames.com/apps/landing/4248130
 
 ---
 
-## Phase 1: Build All Platforms
+## Quick Reference
 
-### Windows (Done)
-- [x] Build completed: `electron/dist/win-unpacked/`
-- [x] Minified with Terser
-- [x] Path fix for packaged app applied
-- [ ] Test exe runs correctly
+| Platform | Depot ID | Build Location |
+|----------|----------|----------------|
+| Windows | 4248131 | `electron/dist/win-unpacked/` |
+| macOS | 4248132 | `electron/dist/mac-universal/` |
+| Linux | 4248133 | `electron/dist/linux-unpacked/` |
 
-### Linux
-- [ ] Run: `cd electron && npm run build-linux`
-- [ ] Output: `electron/dist/linux-unpacked/`
-- [ ] Test on Linux (if available)
-
-### macOS (Requires Mac)
-- [ ] Run on Mac: `cd electron && npm run build-mac`
-- [ ] Output: `electron/dist/mac-universal/Wordy Weapon.app`
-- [ ] Notarization (optional but recommended)
+**Cloud Save Files**: `wordyweapon-stats.json`, `wordyweapon-save.json` (1 MB quota)
 
 ---
 
-## Phase 2: Prepare Build Folders for Steam
+## Store Page Content
 
-Steam expects this folder structure:
+### Short Description (< 300 characters)
 ```
-WordyWeapon-Builds/
-├── steam/
-│   ├── windows/
-│   │   └── [contents of win-unpacked]
-│   ├── linux/
-│   │   └── [contents of linux-unpacked]
-│   └── mac/
-│       └── Wordy Weapon.app
+Fill in the blanks to forge weapons in this madlibs roguelite RPG! Play as the Wordsmith—a mythical blacksmith who crafts mighty weapons from words. Combine adjectives and nouns, target elemental weaknesses, and trigger chain reactions to create the ultimate Wordy Weapon!
 ```
 
-### Commands to organize:
-```bash
-# From electron folder:
-mkdir -p ../../WordyWeapon-Builds/steam/windows
-mkdir -p ../../WordyWeapon-Builds/steam/linux
-mkdir -p ../../WordyWeapon-Builds/steam/mac
+### About This Game (BBCode)
+```
+[b]Madlibs[/b] meet [b]roguelite![/b] Use [b]Words[/b] to fill in the blanks & forge a [b]Wordy Weapon[/b] to defeat the enemies!
 
-# Copy builds
-cp -r dist/win-unpacked/* ../../WordyWeapon-Builds/steam/windows/
-cp -r dist/linux-unpacked/* ../../WordyWeapon-Builds/steam/linux/
-cp -r dist/mac-universal/*.app ../../WordyWeapon-Builds/steam/mac/
+[h2][b]GAMEPLAY |[/b] [i]SENTENCED TO DEATH[/i][/h2]
+
+Unique [b]Heroes[/b] will call on you — [b]the Wordsmith[/b] — to forge a weapon of their liking.
+
+[img]{STEAM_APP_IMAGE}/extras/ezgif.com-crop[/img]
+
+[list]
+[*] Modify the [b]Weapon[/b] using [b]Adjectives[/b] & [b]Nouns[/b], that come in different [b]Rarities[/b] and [b]Elements[/b]!
+[*] String together a powerful sentence by targeting [b]Strengths[/b] & [b]Weaknesses[/b]!
+[*] Buy & sell [b]Words[/b], manage your [b]Supplies[/b], and use [b]Tools[/b] to perfect your Wordcraft.
+[*] Choose [b]Talents[/b] and [b]Skill Upgrades[/b] to increase your damage and create different builds
+[*] Art & Music will dynamically change based on your creations
+[*] Trigger chain reactions and [b]REREAD[/b] effects to multiply damage—stack enough combos and achieve the legendary [b]ULTIMATE WEAPON VICTORY![/b]
+[/list]
+
+[h2][b]ENDLESS ACTION |[/b] RUN-ON SENTENCES[/h2]
+
+[img]{STEAM_APP_IMAGE}/extras/screenshot_2025-12-11_at_4.55.04 pm_cropped[/img]
+
+[list]
+[*] [b]6 Heroes, 5 Bosses, 15 Enemies[/b] and [b]1 Secret Boss[/b] with unique dialogue
+[*] [b]8 Elements, 4 Weapon Types, 6 Rarities[/b] = [b]42 Words[/b] and 6 blanks to fill = [b]MILLIONS of combinations![/b]
+[*] [b]130+ Talents[/b] and [b]Tools[/b] to scale your power and mix up different strategies and playstyles
+[*] Skill trees to level up your favorite Hero and achievements to earn
+[*] [b]Endless Mode[/b] with Leaderboard and Statistics
+[*] 3 Difficulty Modes: Apprentice, Adept, and Master
+[*] Steam Achievements & Cloud Saves
+[/list]
+
+[h2][b]EXTRA FEATURES[/b][/h2]
+
+[img]{STEAM_APP_IMAGE}/extras/2025-12-07_23-00-13.00_00_26_53.still003[/img]
+
+[list]
+[*] Transparent and robust damage breakdown so you know which Words are empowering your Weapons
+[*] Dynamic original music with Elements tied to instruments
+[/list]
 ```
 
 ---
 
-## Phase 3: Steamworks Partner Dashboard
+## Achievements (22 Total)
 
-### 3.1 Store Page (Already Done?)
-- [ ] Capsule images (header, small capsule, large capsule)
-- [ ] Screenshots (at least 5)
-- [ ] Trailer video
-- [ ] Short description
-- [ ] Long description (About This Game)
-- [ ] System requirements
-- [ ] Tags/genres selected
-
-### 3.2 Achievements (22 Total)
-Verify these are configured in Steamworks:
-
-**Existing (19):**
 | API Name | Display Name | Description |
 |----------|--------------|-------------|
 | ACH_FIRST_VICTORY | First Victory | Win your first battle |
@@ -90,157 +93,55 @@ Verify these are configured in Steamworks:
 | ACH_HERO_ALEXANDRIA | Alexandria's Victory | Win with Alexandria Constanza |
 | ACH_HERO_CAESURA | Caesura's Victory | Win with Caesura |
 | ACH_HERO_REED | Reed's Victory | Win with Reed |
-
-**New (3) - Must Add:**
-| API Name | Display Name | Description |
-|----------|--------------|-------------|
 | ACH_HOARDER | Hoarder | Fill your word bank to maximum capacity (24 words) |
 | ACH_TREASURE_HUNTER | Treasure Hunter | Accumulate 1000+ gold in a single run |
 | ACH_MINIMALIST | Minimalist | Defeat a boss using 3 or fewer words |
 
-### 3.3 Cloud Saves
-- [ ] Enable Steam Cloud
-- [ ] Cloud quota: 1 MB should be plenty
-- [ ] Files to sync:
-  - `wordyweapon-stats.json` (persistent stats)
-  - `wordyweapon-save.json` (current run)
+---
 
-### 3.4 Depots Configuration
-Create depots for each platform:
+## System Requirements
 
-| Depot ID | Platform | Content |
-|----------|----------|---------|
-| 4248131 | Windows | windows/* |
-| 4248132 | macOS | mac/* |
-| 4248133 | Linux | linux/* |
+### Windows
+- **Minimum**: Windows 10, Intel Core i3, 4 GB RAM, Integrated graphics, 500 MB storage
+- **Recommended**: Windows 10/11, Intel Core i5, 8 GB RAM, Dedicated GPU 1GB VRAM
+
+### macOS
+- **Minimum**: macOS 10.15 (Catalina), Apple M1 or Intel Core i3, 4 GB RAM, 1 GB storage
+- **Recommended**: macOS 12 (Monterey), Apple M1 or Intel Core i5, 8 GB RAM
+
+### Linux
+- **Minimum**: Ubuntu 20.04, Intel Core i3, 4 GB RAM, 500 MB storage
+- **Recommended**: Ubuntu 22.04, Intel Core i5, 8 GB RAM, Dedicated GPU 1GB VRAM
 
 ---
 
-## Phase 4: SteamPipe Upload
+## Build & Upload
 
-### 4.1 Install Steamworks SDK
-Download from: https://partner.steamgames.com/downloads/steamworks_sdk.zip
-
-### 4.2 Create app_build.vdf
-```vdf
-"appbuild"
-{
-    "appid" "4248130"
-    "desc" "Wordy Weapon 1.0 Release"
-    "buildoutput" "../output/"
-    "contentroot" "../content/"
-    "setlive" "default"
-    "preview" "0"
-    "local" ""
-
-    "depots"
-    {
-        "4248131" "depot_build_windows.vdf"
-        "4248132" "depot_build_mac.vdf"
-        "4248133" "depot_build_linux.vdf"
-    }
-}
-```
-
-### 4.3 Create depot VDFs
-
-**depot_build_windows.vdf:**
-```vdf
-"DepotBuildConfig"
-{
-    "DepotID" "4248131"
-    "contentroot" "windows/"
-    "FileMapping"
-    {
-        "LocalPath" "*"
-        "DepotPath" "."
-        "recursive" "1"
-    }
-}
-```
-
-**depot_build_mac.vdf:**
-```vdf
-"DepotBuildConfig"
-{
-    "DepotID" "4248132"
-    "contentroot" "mac/"
-    "FileMapping"
-    {
-        "LocalPath" "*"
-        "DepotPath" "."
-        "recursive" "1"
-    }
-}
-```
-
-**depot_build_linux.vdf:**
-```vdf
-"DepotBuildConfig"
-{
-    "DepotID" "4248133"
-    "contentroot" "linux/"
-    "FileMapping"
-    {
-        "LocalPath" "*"
-        "DepotPath" "."
-        "recursive" "1"
-    }
-}
-```
-
-### 4.4 Upload Command
+### Build Commands
 ```bash
-# From steamworks sdk tools folder:
+cd electron && npm run build-mac   # macOS
+cd electron && npm run build-win   # Windows
+cd electron && npm run build-linux # Linux (if needed)
+```
+
+### SteamPipe Upload
+```bash
 ./steamcmd.sh +login YOUR_USERNAME +run_app_build ../scripts/app_build.vdf +quit
 ```
 
----
-
-## Phase 5: Launch Configuration
-
-### 5.1 Set Launch Options in Steamworks
-
-| OS | Executable | Arguments |
-|----|------------|-----------|
-| Windows | Wordy Weapon.exe | (none) |
-| macOS | Wordy Weapon.app | (none) |
-| Linux | wordy-weapon | (none) |
-
-### 5.2 Steam Input (Optional)
-- [ ] Controller support configured (if applicable)
+### Launch Options
+| OS | Executable |
+|----|------------|
+| Windows | Wordy Weapon.exe |
+| macOS | Wordy Weapon.app |
+| Linux | wordy-weapon |
 
 ---
 
-## Phase 6: Final Verification
+## Social Links
+- Website: https://andrewamisola.com/interactive/games/wordy-weapon
+- X: https://x.com/wordyweapon
+- TikTok: https://tiktok.com/@wordyweapon
+- YouTube: https://www.youtube.com/@wordyweapon
 
-- [ ] Download and test Windows build from Steam
-- [ ] Download and test Mac build from Steam
-- [ ] Download and test Linux build from Steam
-- [ ] Verify Steam overlay works (Shift+Tab)
-- [ ] Unlock one achievement, verify it appears
-- [ ] Test cloud save: play, close, reopen
-- [ ] Check store page renders correctly
-
----
-
-## Phase 7: Release
-
-- [ ] Set release date in Steamworks
-- [ ] Prepare launch announcement
-- [ ] Click "Release App" when ready
-
----
-
-## Quick Reference
-
-**Steam App ID**: 4248130
-**Steamworks Dashboard**: https://partner.steamgames.com/apps/landing/4248130
-
-**Local Build Locations:**
-- Windows: `electron/dist/win-unpacked/`
-- Linux: `electron/dist/linux-unpacked/`
-- Mac: `electron/dist/mac-universal/`
-
-**Game identifies itself via:**
-- `electron/steam_appid.txt` contains `4248130`
+**Legal**: © 2025 Andrew Amisola. All rights reserved.

@@ -557,6 +557,324 @@ body:has(#shop-overlay.show) #header{display:none}
   }
 }
 
+/* ============================================
+   ACCORDION SLIDE - Ghost Words Expand In Place
+   Ghost words start hidden and slide into the chain
+   ============================================ */
+
+/* Ghost word - collapsed/hidden state */
+.combat-word.ghost-word.ghost-hidden {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  border: none;
+}
+
+/* Ghost word - expanding state (transitioning) */
+.combat-word.ghost-word.ghost-expanding {
+  transition: width 0.25s ease-out,
+              min-width 0.25s ease-out,
+              padding 0.15s ease-out 0.1s,
+              margin 0.15s ease-out 0.1s,
+              opacity 0.2s ease-out 0.15s;
+}
+
+/* Ghost word - revealed state (fully visible) */
+.combat-word.ghost-word.ghost-revealed {
+  opacity: 0.85;
+  background: rgba(138, 43, 226, 0.3);
+  border: 1px solid rgba(138, 43, 226, 0.6);
+  box-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
+}
+
+/* Ghost word - dimmed after contributing damage */
+.combat-word.ghost-word.ghost-contributed {
+  opacity: 0.5;
+  transition: opacity 0.3s ease-out;
+}
+
+/* Generation scaling - each gen slightly smaller */
+.combat-word.ghost-word[data-generation="1"] { transform: scale(0.95); }
+.combat-word.ghost-word[data-generation="2"] { transform: scale(0.90); }
+.combat-word.ghost-word[data-generation="3"] { transform: scale(0.85); }
+.combat-word.ghost-word[data-generation="4"] { transform: scale(0.80); }
+.combat-word.ghost-word[data-generation="5"] { transform: scale(0.75); }
+
+/* Arrow connector between parent and ghost */
+.combat-word.ghost-word.ghost-revealed::before {
+  content: '→';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: rgba(138, 43, 226, 0.8);
+  opacity: 1;
+  transition: opacity 0.2s ease-out 0.2s;
+}
+
+.combat-word.ghost-word.ghost-hidden::before {
+  opacity: 0;
+}
+
+/* Generation badge styling */
+.ghost-gen-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 9px;
+  color: #fff;
+  background: rgba(138, 43, 226, 0.9);
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  font-weight: 700;
+  z-index: 1;
+}
+
+/* Parent word pulse when spawning a ghost */
+@keyframes parentSpawnPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(138, 43, 226, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(138, 43, 226, 0.5);
+  }
+}
+
+.combat-word.spawning {
+  animation: parentSpawnPulse 0.3s ease-out;
+}
+
+/* Legacy: Keep old branching class working */
+.combat-word.branching {
+  animation: parentSpawnPulse 0.3s ease-out;
+}
+
+/* Duplicate word styling (non-ghost duplicates) */
+.combat-word.duplicate-word:not(.ghost-word) {
+  opacity: 0.85;
+  border-left: 2px solid rgba(138, 43, 226, 0.6);
+  padding-left: 4px;
+  margin-left: 2px;
+}
+
+/* ===========================================
+   REREAD OVERLAY GHOSTS - Vertical Stack Above Parent
+   Used by pass-based REREAD talents (Critical Mass, Gemination, etc.)
+   Ghosts stack upward: gen1 closest to parent, gen2 above gen1, etc.
+   =========================================== */
+
+/* Container positions ghost stack above the parent word */
+.reread-branch-container {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse; /* New ghosts appear on top */
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Individual ghost word (red/transparent echo) */
+.reread-ghost {
+  background: rgba(180, 60, 60, 0.2);
+  border: 1px solid rgba(200, 80, 80, 0.5);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--font-serif);
+  color: #e8c8c8;
+  white-space: nowrap;
+  position: relative;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  box-shadow: 0 0 6px rgba(180, 60, 60, 0.3);
+}
+
+/* Ghost appears when active */
+.reread-ghost.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Ghost fading out */
+.reread-ghost.fading {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+/* Generation-based styling (higher generations slightly smaller/dimmer) */
+.reread-ghost.gen-1.active { opacity: 0.9; }
+.reread-ghost.gen-2.active { opacity: 0.75; transform: scale(0.95); }
+.reread-ghost.gen-3.active { opacity: 0.6; transform: scale(0.9); }
+
+/* Generation label (Roman numerals) */
+.reread-ghost .gen-label {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 8px;
+  font-weight: 700;
+  background: rgba(180, 60, 60, 0.85);
+  color: #fff;
+  padding: 0 3px;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+/* Arrow connector pointing down to parent/previous ghost */
+.reread-ghost .reread-branch-line {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid rgba(180, 60, 60, 0.5);
+}
+
+/* Ghost collapsing animation (accordion fold) */
+.reread-ghost.collapsing {
+  opacity: 0;
+  transform: scale(0.5) translateY(10px);
+  margin: 0;
+  padding: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Collapsed badge (shows ×N after accordion fold) */
+.reread-collapsed-badge {
+  background: rgba(180, 60, 60, 0.35);
+  border: 1px solid rgba(200, 80, 80, 0.6);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: #f0d0d0;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  cursor: help;
+}
+
+.reread-collapsed-badge.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Container in collapsed state */
+.reread-branch-container.collapsed {
+  margin-bottom: 2px;
+}
+
+.combat-word.duplicate-word[data-generation="2"] {
+  opacity: 0.75;
+  border-left-color: rgba(138, 43, 226, 0.5);
+}
+
+.combat-word.duplicate-word[data-generation="3"] {
+  opacity: 0.65;
+  border-left-color: rgba(138, 43, 226, 0.4);
+}
+
+/* Position badge for duplicates */
+.combat-word-position {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 10px;
+}
+
+.combat-word-position .mod-badge {
+  padding: 1px 4px;
+  font-size: 9px;
+}
+
+/* Generation appear animation */
+.combat-word.generation-appear {
+  animation: genAppear 0.4s ease-out;
+}
+
+@keyframes genAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.8);
+  }
+  50% {
+    transform: translateX(5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Floating combat text - Gill Sans with blur effect */
+@keyframes combatTextFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1.3);
+    filter: blur(3px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1);
+    filter: blur(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-40px);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px);
+    filter: blur(2px);
+  }
+}
+
+.floating-combat-text {
+  position: fixed;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 10001;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  animation: combatTextFloat 1.2s ease-out forwards;
+}
+
+.floating-combat-text.ap {
+  color: #4ade80; /* Green for AP */
+}
+
+.floating-combat-text.w-count {
+  color: #60a5fa; /* Blue for W */
+}
+
+.floating-combat-text.mult {
+  color: #f472b6; /* Pink for multipliers */
+}
+
+.floating-combat-text.crit {
+  color: #fbbf24; /* Gold for crits/weakness */
+}
+
 /* Toast exit animation - quick fade out */
 .toast.hiding {
   opacity: 0;
@@ -1765,6 +2083,36 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
 .combat-word-retrigger{font-size:var(--text-sm);color:#ff6633;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
 .combat-word-value{font-size:var(--text-lg);font-weight:bold;margin-top:4px}
 
+/* GENERATIONAL REREAD - Phantom Word Styling */
+.combat-word.has-phantoms{
+  background:linear-gradient(135deg,#8b5cf620,#6366f120);
+  border:1px solid #8b5cf666;
+}
+.combat-word.has-phantoms.show{
+  box-shadow:0 0 12px #8b5cf644;
+  animation:wordSlam 0.35s cubic-bezier(0.34,1.56,0.64,1), phantomPulse 2s ease-in-out 0.35s infinite;
+}
+.combat-word.has-phantoms.retrigger{
+  animation:phantomRetrigger 0.3s ease-out;
+}
+.combat-word-phantoms{
+  font-size:var(--text-sm);
+  color:#8b5cf6;
+  margin-top:2px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+@keyframes phantomPulse{
+  0%,100%{box-shadow:0 0 8px #8b5cf644}
+  50%{box-shadow:0 0 16px #8b5cf688,0 0 24px #6366f144}
+}
+@keyframes phantomRetrigger{
+  0%{transform:scale(1);box-shadow:0 0 8px #8b5cf644}
+  50%{transform:scale(1.15);box-shadow:0 0 24px #8b5cf6aa,0 0 36px #6366f166}
+  100%{transform:scale(1);box-shadow:0 0 12px #8b5cf666}
+}
+
 /* Combat Intro Dialogue */
 #combat-intro-dialogue{
   position:absolute;
@@ -1868,6 +2216,8 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
 .result-detail-line{margin:4px 0}
 .result-detail-line.gold-reward{font-size:var(--text-md);font-weight:bold}
 .result-detail-line.gold-reward .gold{color:#fbbf24;text-shadow:0 1px 4px rgba(251,191,36,0.4)}
+.result-detail-line.interest-reward{font-size:var(--text-sm);margin-top:2px}
+.result-detail-line.interest-reward .interest{color:#a78bfa}
 .result-detail-line.boss-loot-label{color:#ffffff;font-weight:500;margin-top:8px}
 .result-detail-line.dim{color:#6b7280;font-size:var(--text-sm)}
 .result-loot-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0 6px;padding-top:8px}
@@ -1942,6 +2292,21 @@ body:has(#victory-overlay.show) #flame-bg::before{background:radial-gradient(ell
 .shop-word-bank .chip:hover{z-index:100004!important}
 .consumable-item:hover .tooltip{opacity:1;transform:translateX(-50%) scale(1)}
 .consumable-item:hover{z-index:var(--z-tooltip)}
+/* Shop tool active state (using tool on word) */
+.consumable-item.tool-active{border-color:#4ade80;box-shadow:0 0 12px rgba(74,222,128,0.5);animation:tool-pulse 1.5s ease-in-out infinite}
+@keyframes tool-pulse{0%,100%{box-shadow:0 0 8px rgba(74,222,128,0.4)}50%{box-shadow:0 0 16px rgba(74,222,128,0.7)}}
+/* Tool action buttons (Buy/Use/Sell) - overlay on chip on hover */
+.tool-actions{display:none;position:absolute;top:0;left:0;right:0;bottom:0;flex-direction:row;justify-content:center;align-items:center;gap:6px;z-index:10;background:rgba(20,24,32,0.75);border-radius:6px;backdrop-filter:blur(2px)}
+.consumable-item:hover .tool-actions{display:flex}
+.tool-action{padding:4px 10px;font-size:11px;font-weight:600;border:none;border-radius:4px;cursor:pointer;transition:all 0.15s ease;text-transform:uppercase;letter-spacing:0.02em}
+.tool-action.tool-buy{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 2px 6px rgba(34,197,94,0.4)}
+.tool-action.tool-buy:hover{background:linear-gradient(135deg,#4ade80,#22c55e);transform:translateY(-1px);box-shadow:0 4px 10px rgba(34,197,94,0.5)}
+.tool-action.tool-use{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 2px 6px rgba(59,130,246,0.4)}
+.tool-action.tool-use:hover{background:linear-gradient(135deg,#60a5fa,#3b82f6);transform:translateY(-1px);box-shadow:0 4px 10px rgba(59,130,246,0.5)}
+.tool-action.tool-sell{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;box-shadow:0 2px 6px rgba(251,191,36,0.4)}
+.tool-action.tool-sell:hover{background:linear-gradient(135deg,#fcd34d,#fbbf24);transform:translateY(-1px);box-shadow:0 4px 10px rgba(251,191,36,0.5)}
+.tool-action.disabled{background:#4b5563;color:#9ca3af;cursor:not-allowed;box-shadow:none}
+.tool-action.disabled:hover{transform:none;box-shadow:none}
 .shop-subtitle{font-size:var(--text-xs);color:#6b7280;text-align:left;margin:10px 0 4px;text-transform:uppercase;letter-spacing:0.05em}
 .shop-column-tools .consumable-row .chip{font-size:var(--text-xs);padding:4px 3px;min-width:0;width:100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shop-btn{padding:5px 14px;font-size:var(--text-sm)}
@@ -4056,4 +4421,191 @@ body.low-fx .crate-reel.spinning .crate-reel-strip {
 }
 #reset-btn:active {
   transform: scale(0.96);
+}
+
+/* ========================================
+   GAMEPAD / CONTROLLER FOCUS STYLES
+   ======================================== */
+.gamepad-focus {
+  outline: 3px solid #fbbf24 !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5),
+              0 0 24px rgba(251, 191, 36, 0.3) !important;
+  animation: gamepad-pulse 1s ease-in-out infinite;
+}
+
+@keyframes gamepad-pulse {
+  0%, 100% { 
+    outline-color: #fbbf24;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5),
+                0 0 24px rgba(251, 191, 36, 0.3);
+  }
+  50% { 
+    outline-color: #f59e0b;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.7),
+                0 0 32px rgba(251, 191, 36, 0.4);
+  }
+}
+
+/* Ensure focus is visible on dark backgrounds */
+.gamepad-focus.word-chip,
+.gamepad-focus.chip,
+.gamepad-focus.talent-card,
+.gamepad-focus.shop-item,
+.gamepad-focus.consumable-item {
+  z-index: var(--z-chip-active);
+  transform: scale(1.02);
+}
+
+/* Button focus state */
+button.gamepad-focus {
+  transform: scale(1.05);
+}
+
+/* ========================================
+   FORGE CONTROLLER SLOT INDICATORS
+   ======================================== */
+
+/* Blue highlight - Active word slot (where word will be placed) */
+.forge-slot-active {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.6),
+              inset 0 0 10px rgba(59, 130, 246, 0.2) !important;
+  animation: slot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes slot-pulse {
+  0%, 100% {
+    outline-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6),
+                inset 0 0 10px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    outline-color: #60a5fa;
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8),
+                inset 0 0 15px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Orange selector - Current slot category being browsed */
+.forge-category-indicator {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.forge-category-indicator.show {
+  opacity: 1;
+}
+
+/* Controller mode body class - hide mouse cursor in forge */
+body.controller-mode #forge {
+  cursor: none;
+}
+
+/* Controller button hints bar */
+.controller-hints {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 24px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 10px 24px;
+  z-index: var(--z-tooltip);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: #e5e7eb;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.controller-hints .hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.controller-hints .hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, #374151, #1f2937);
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 12px;
+  color: #fbbf24;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide hints when not in controller mode */
+body:not(.controller-mode) .controller-hints {
+  display: none !important;
+}
+
+/* Active section highlight (LB/RB cycling in shop) */
+.gamepad-section-active {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 4px;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4),
+              inset 0 0 15px rgba(59, 130, 246, 0.1) !important;
+  border-radius: 12px;
+}
+
+/* In controller mode, change .selected to orange (distinct from yellow gamepad-focus) */
+body.controller-mode .chip.selected {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 1px #f97316, 0 0 15px rgba(249, 115, 22, 0.5) !important;
+}
+
+/* Hide native hover effects in controller mode */
+body.controller-mode .chip:hover:not(.gamepad-focus) {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Selected word (locked in, ready to place) - orange/amber highlight */
+.forge-word-selected {
+  outline: 3px solid #f97316 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.7),
+              0 0 30px rgba(249, 115, 22, 0.4) !important;
+  animation: word-selected-pulse 0.8s ease-in-out infinite;
+  z-index: 100;
+}
+
+@keyframes word-selected-pulse {
+  0%, 100% {
+    outline-color: #f97316;
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.7),
+                0 0 30px rgba(249, 115, 22, 0.4);
+  }
+  50% {
+    outline-color: #fb923c;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.9),
+                0 0 40px rgba(249, 115, 22, 0.5);
+  }
 }
