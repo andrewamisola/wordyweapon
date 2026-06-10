@@ -296,10 +296,6 @@ function getElementSparkColors(word) {
   return elemSparkColors[word.elem] || ['#ff9933', '#ffcc00', '#ffaa44'];
 }
 
-// Format large numbers with commas (e.g., 57000 → "57,000")
-function fmtBig(n) {
-  return Math.floor(n).toLocaleString();
-}
 
 // === FX ENGINE (CANVAS) ===
 const fxCanvas = document.getElementById('fx-canvas');
@@ -7384,6 +7380,7 @@ async function saveRun(){
   try{
     // Convert Sets to Arrays for serialization
     const saveData = {
+      v: 2,
       ...S,
       usedWeaponTypes: Array.from(S.usedWeaponTypes || []),
       usedWeapons: Array.from(S.usedWeapons || []),
@@ -7399,6 +7396,14 @@ function loadRun(){
     const raw=localStorage.getItem(SAVE_KEY);
     if(raw){
       const data=JSON.parse(raw);
+      // Deck-mode era: refuse pre-deck (v1) saves cleanly.
+      if (data.v !== 2) {
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+        if (typeof showQuickToast === 'function') {
+          showQuickToast('A new era of forging has begun — your previous run has been retired.', null, 'info');
+        }
+        return false;
+      }
       if(!data || !data.hero || !data.roundIndex){
         updateContinueButtons();
         return false;
@@ -7418,6 +7423,17 @@ async function loadRunAsync(){
       Promise.resolve(localStorage.getItem(SAVE_KEY))
     ]);
     const localData = localRaw ? JSON.parse(localRaw) : null;
+    // Deck-mode era: refuse pre-deck (v1) saves cleanly.
+    const localIsV1 = localData && localData.v !== 2;
+    const cloudIsV1 = cloudData && cloudData.v !== 2;
+    if (localIsV1 || cloudIsV1) {
+      try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+      if (typeof showQuickToast === 'function') {
+        showQuickToast('A new era of forging has begun — your previous run has been retired.', null, 'info');
+      }
+      updateContinueButtons();
+      return false;
+    }
     const validCloud = cloudData && cloudData.hero && cloudData.roundIndex;
     const validLocal = localData && localData.hero && localData.roundIndex;
 

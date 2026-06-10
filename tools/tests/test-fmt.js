@@ -1,0 +1,15 @@
+'use strict';
+const assert = require('assert');
+const { fmtBig } = require('../../game/fmt.js');
+assert.strictEqual(fmtBig(950), '950');
+assert.strictEqual(fmtBig(61440), '61,440');
+assert.strictEqual(fmtBig(999999), '999,999');
+assert.strictEqual(fmtBig(1000000), '1M');
+assert.strictEqual(fmtBig(1200000), '1.2M');
+assert.strictEqual(fmtBig(3450000000), '3.5B');
+assert.strictEqual(fmtBig(1.1e12), '1.1T');
+assert.strictEqual(fmtBig(1e15), '1Q');
+assert.strictEqual(fmtBig(2.34e15), '2.3Q');
+assert.strictEqual(fmtBig(123456789012345678), '123Q');
+assert.strictEqual(fmtBig(0), '0');
+console.log('test-fmt: ALL PASS');
