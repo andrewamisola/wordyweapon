@@ -2,6 +2,12 @@
 const assert = require('assert');
 const { DeckSys, DECK_HAND_SIZE, DECK_DISCARDS_PER_COMBAT } = require('../../game/deck.js');
 
+// --- handSize: base and bonus-aware ---
+assert.strictEqual(DeckSys.handSize({}), DECK_HAND_SIZE, 'handSize({}) = base hand size (8)');
+assert.strictEqual(DeckSys.handSize({ heroHandBonus: 0 }), DECK_HAND_SIZE, 'handSize({heroHandBonus:0}) = 8');
+assert.strictEqual(DeckSys.handSize({ heroHandBonus: 1 }), DECK_HAND_SIZE + 1, 'handSize({heroHandBonus:1}) = 9 (Quivera)');
+assert.strictEqual(DeckSys.handSize({ heroHandBonus: 2 }), DECK_HAND_SIZE + 2, 'handSize({heroHandBonus:2}) = 10 (hypothetical)');
+
 // Fake pool mirroring the REAL pool's shapes (type/category/rarity/elem fields)
 const POOL = [
   { id: 'sword',  name: 'Sword',  type: 'weapon', category: 'slash', rarity: 1 },
@@ -36,7 +42,7 @@ const uids = new Set(deck.map(c => c.uid));
 assert.strictEqual(uids.size, deck.length, 'every card has a unique uid');
 assert.ok(deck.every(c => POOL.every(p => p !== c)), 'cards are clones, not pool references');
 
-// --- combat zones ---
+// --- combat zones (no bonus: draws base 8) ---
 const S = { deckCards: deck };
 DeckSys.initCombat(S);
 assert.strictEqual(S.deck.hand.length, DECK_HAND_SIZE, 'draws 8');
@@ -54,6 +60,20 @@ assert.strictEqual(S.deck.spent.length, 3);
 DeckSys.refill(S);
 assert.strictEqual(S.deck.hand.length, 8, 'refilled to 8');
 assert.strictEqual(S.deck.hand.length + S.deck.lexicon.length + S.deck.spent.length, 14, 'no cards lost');
+
+// --- Quivera bonus: heroHandBonus=1 => initCombat draws 9, refill returns to 9 ---
+const SQ = { deckCards: DeckSys.buildStartingDeck(POOL, HERO), heroHandBonus: 1 };
+DeckSys.initCombat(SQ);
+assert.strictEqual(SQ.deck.hand.length, DECK_HAND_SIZE + 1, 'Quivera initCombat draws 9');
+assert.strictEqual(SQ.deck.lexicon.length, 14 - (DECK_HAND_SIZE + 1), 'Quivera: rest in lexicon');
+// Play 3 cards, then refill — should return to 9
+const qPlayed = SQ.deck.hand.slice(0, 3).map(c => c.uid);
+DeckSys.playCards(SQ, qPlayed);
+assert.strictEqual(SQ.deck.hand.length, DECK_HAND_SIZE + 1 - 3, 'after playCards, Quivera hand is 6');
+DeckSys.refill(SQ);
+assert.strictEqual(SQ.deck.hand.length, DECK_HAND_SIZE + 1, 'Quivera refill returns to 9');
+assert.strictEqual(
+  SQ.deck.hand.length + SQ.deck.lexicon.length + SQ.deck.spent.length, 14, 'Quivera: no cards lost');
 
 // --- discard spends a discard and redraws same count ---
 const before = S.deck.hand.length;

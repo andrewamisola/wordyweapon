@@ -232,11 +232,11 @@ function calculateInterest() {
 // Each 3-round block has: Small Blind (1.0×), Big Blind (1.5×), Boss (2.0×)
 // Block base HP grows exponentially between blocks
 //
-// Adjusted for accessible start (40 HP R3 Boss) -> Steeper curve requiring skill tree upgrades
-// Block 0 (Rounds 1-3): Base 20 × 2.0 multiplier = 40 HP Boss - comfortable for starting deck
-// Block 5 (Rounds 16-18): Base 20 × 4.0^5 × 2.0 multiplier ≈ 40,960 HP Boss - Chapter 2 finale
+// Tuned for multi-strike heat-band combat (T14 balance sim: BASE=50, see deck-mode-notes.md).
+// Block 0 (Rounds 1-3): Base 50 × 2.0 multiplier = 100 HP Boss - comfortable for starting deck
+// Block 5 (Rounds 16-18): Base 50 × 4.0^5 × 2.0 multiplier ≈ 102,400 HP Boss - Chapter 2 finale
 
-const BASE_HP_BLOCK0 = 20;   // Low starting point for comfortable early game
+const BASE_HP_BLOCK0 = 50;   // Tuned for multi-strike + heat multipliers (T14 balance sim)
 const BLOCK_GROWTH = 4.0;    // Balanced growth - closer to Balatro's scaling
 const ROUND_MULTS = [1.0, 1.5, 2.0]; // Small blind, Big blind, Boss
 
@@ -262,16 +262,16 @@ function enemyHp(round) {
   const diffMult = DIFF_HP_MULT[S.difficulty || 0];
   return Math.floor(baseForBlock * ROUND_MULTS[posInBlock] * diffMult);
 }
-// HP progression (with 4.0× growth):
-// Block 0 (R1-3): 20, 30, 40
-// Block 1 (R4-6): 80, 120, 160
-// Block 2 (R7-9): 320, 480, 640       <- Chapter 1 boss
-// Block 3 (R10-12): 1,280, 1,920, 2,560
-// Block 4 (R13-15): 5,120, 7,680, 10,240
-// Block 5 (R16-18): 20,480, 30,720, 40,960 <- Chapter 2 boss
-// Block 6 (R19-21): 81,920, 122,880, 163,840
-// Block 7 (R22-24): 327,680, 491,520, 655,360
-// Block 8 (R25-27): 1.31M, 1.97M, 2.62M  <- Chapter 3 boss (victory!)
+// HP progression (with 4.0× growth, BASE=50):
+// Block 0 (R1-3): 50, 75, 100
+// Block 1 (R4-6): 200, 300, 400
+// Block 2 (R7-9): 800, 1,200, 1,600       <- Chapter 1 boss
+// Block 3 (R10-12): 3,200, 4,800, 6,400
+// Block 4 (R13-15): 12,800, 19,200, 25,600
+// Block 5 (R16-18): 51,200, 76,800, 102,400 <- Chapter 2 boss
+// Block 6 (R19-21): 204,800, 307,200, 409,600
+// Block 7 (R22-24): 819,200, 1,228,800, 1,638,400
+// Block 8 (R25-27): 3.28M, 4.92M, 6.55M  <- Chapter 3 boss (victory!)
 
 // Get spark colors based on word's element (for anvil spark effects)
 function getElementSparkColors(word) {
@@ -1976,19 +1976,11 @@ const HEROES=[
     ],
     passive:{
       name:"Resourceful",
-      desc:"Draw +1 T2 Word every round",
-      phase:"SHOP_ENTRY",
+      desc:"Draw 1 extra card each combat (hand size 9)",
+      phase:"HERO_INIT",
       apply:(ctx)=>{
-        const visibleCount = ctx.state.inv.filter(w => !w.hiddenInBank).length;
-        if(visibleCount < INV_LIMIT){
-          const t2Words = WORDS.filter(w => w.rarity === T.T1 && !w.hiddenInBank);
-          if(t2Words.length > 0){
-            const randomT2 = t2Words[Math.floor(Math.random() * t2Words.length)];
-            ctx.state.inv.push({...randomT2});
-            return {message:"Resourceful: Drew T2 Word"};
-          }
-        }
-        return null;
+        ctx.state.heroHandBonus = 1;
+        return {message:"Resourceful: +1 hand size (9 cards)"};
       }
     }
   },

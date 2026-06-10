@@ -3,6 +3,8 @@
 'use strict';
 
 const DECK_HAND_SIZE = 8;
+// Base hand size used for all heroes without a hand-bonus passive.
+// Heroes that set S.heroHandBonus (e.g. Quivera) draw extra cards each combat.
 const DECK_DISCARDS_PER_COMBAT = 3;
 const DECK_STARTING_SIZE = 14;
 
@@ -23,6 +25,11 @@ function deckShuffle(arr) {
 }
 
 const DeckSys = {
+  // Returns the target hand size for this run (base + any hero bonus).
+  handSize(S) {
+    return DECK_HAND_SIZE + (S.heroHandBonus || 0);
+  },
+
   // pool: the WORDS array; hero: a HEROES entry (hero.good = weapon category,
   // hero.str = strong element indices). 14 cards: 3 weapons of the hero's
   // proficient category (one per tier), 10 T1 elementals (6 biased to strong
@@ -74,7 +81,7 @@ const DeckSys = {
       spent: [],
     };
     S.discardsLeft = DECK_DISCARDS_PER_COMBAT;
-    this.draw(S, DECK_HAND_SIZE);
+    this.draw(S, this.handSize(S));
   },
 
   draw(S, n) {
@@ -88,7 +95,7 @@ const DeckSys = {
   },
 
   refill(S) {
-    this.draw(S, DECK_HAND_SIZE - S.deck.hand.length);
+    this.draw(S, this.handSize(S) - S.deck.hand.length);
   },
 
   playCards(S, uids) {
@@ -132,5 +139,5 @@ const DeckSys = {
 };
 
 if (typeof module !== 'undefined') {
-  module.exports = { DeckSys, DECK_HAND_SIZE, DECK_DISCARDS_PER_COMBAT, DECK_STARTING_SIZE, deckCloneWord, deckShuffle };
+  module.exports = { DeckSys, DECK_HAND_SIZE, DECK_DISCARDS_PER_COMBAT, DECK_STARTING_SIZE, deckCloneWord, deckShuffle, _deckUidCounter };
 }
