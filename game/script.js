@@ -11630,6 +11630,7 @@ async function startNewRun(){
   S.chapterBoss = null;
   S.blockedSlot = null;
   S.deckCards = []; // deck mode: explicit reset; rebuilt by initRunDeck at hero select
+  S.heroHandBonus = 0; // deck mode: hand-size bonus is per-hero (Quivera); never carry across runs
   S.vendorRemovals = 0; // deck mode: vendor retire cost escalator resets each run
   // Reset chapter tracking
   S.chapterAPBonus = 0; // Cumulative AP bonus from completing chapters
