@@ -4223,7 +4223,7 @@ body:not(.deck-combat) #deck-discards-left { display:none; }
 #deck-discards-left b{color:#2dd4bf;font-style:normal;}
 
 /* === Task 8: Enemy intent bubble === */
-#intent-bubble{position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+#intent-bubble{position:absolute;top:-20px;left:50%;transform:translateX(-50%);
   font-style:italic;font-size:var(--text-sm,11px);white-space:nowrap;
   background:rgba(20,15,9,.92);border:1px solid rgba(232,217,181,.3);border-radius:4px;
   padding:6px 14px;color:#e8d9b5;box-shadow:0 4px 14px rgba(0,0,0,.5);z-index:30;

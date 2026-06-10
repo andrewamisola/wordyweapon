@@ -2300,7 +2300,7 @@ const ENEMIES = [
     dialogue: ["#@$%*!!!", "I'll @#$%ing end you, you piece of @#$%!"],
     weak: [E.EARTH, E.DARK],     // Street punk vs nature and shadows
     res: [E.LIGHTNING, E.PHYS],  // Quick, tough street fighter
-    intents: ['strikeback', 'strikeback', 'scramble']
+    intents: ['strikeback', 'scramble']
   },
   {
     id: "double_negative",
@@ -12100,6 +12100,9 @@ function newEnc(){
     }
     S.enemy.boss = true;
     S.enemy.isBoss = true;
+
+    // Apply boss intents from selectedBoss
+    if(selectedBoss.intents) S.enemy.intents = [...selectedBoss.intents];
 
     // Red Aktins: Block a random word slot (excluding weapon)
     if(selectedBoss.id === 'red_aktins'){
