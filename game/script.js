@@ -7323,6 +7323,15 @@ function applyRunState(data){
   S.sel = {item:null, adj1:null, adj2:null, adj3:null, adj4:null, noun1:null};
   S.pendingWord = null;
 
+  // Deck mode: rebuild transient zones; persist only the card list.
+  S.deckCards = S.deckCards || [];
+  DeckSys.syncUidCounter(S);
+  S.discardsLeft = S.discardsLeft ?? DECK_DISCARDS_PER_COMBAT;
+  S.strikeNum = S.strikeNum ?? 1;
+  S.heatShift = S.heatShift ?? 0;
+  S.enemyIntent = null;
+  S.deck = null; // zones rebuild at next newEnc/initCombat
+
   return true;
 }
 
@@ -7386,6 +7395,10 @@ async function saveRun(){
       usedWeapons: Array.from(S.usedWeapons || []),
       uniqueWordsUsed: Array.from(S.uniqueWordsUsed || [])
     };
+    // Deck mode: zones are transient (rebuild from deckCards on load); exclude to
+    // keep saves small and prevent stale object-identity bugs after JSON round-trip.
+    delete saveData.deck;
+    delete saveData.enemyIntent;
     localStorage.setItem(SAVE_KEY,JSON.stringify(saveData));
     // Await Steam Cloud save to ensure it completes before game can close
     await steamCloudSaveRun();
@@ -11880,6 +11893,9 @@ function showHeroSelect(){
         }
       }
 
+      // Deck mode: the run deck replaces the word inventory.
+      DeckSys.initRunDeck(S, WORDS, S.hero);
+
       newEnc();
 
       // Start round intro at the transition peak (while screen is dark)
@@ -12095,6 +12111,14 @@ function newEnc(){
   if(S.shadowBonusHP > 0){
     S.enemy.hp = Math.max(1, S.enemy.hp - S.shadowBonusHP);
     S.shadowBonusHP = 0; // Reset after applying
+  }
+
+  // Deck mode: fresh zones, full heat, first telegraphed intent.
+  if (S.deckCards && S.deckCards.length) {
+    DeckSys.initCombat(S);
+    HeatSys.initCombat(S);
+    S.enemy.intents = S.enemy.intents || ['block', 'strikeback', 'bolster'];
+    HeatSys.rollIntent(S, S.roundIndex);
   }
 
   render();

@@ -99,4 +99,11 @@ DeckSys.removeCard(S, addedCard.uid);
 assert.strictEqual(S.deckCards.length, n0);
 assert.ok(!S.deckCards.some(c => c.uid === addedCard.uid));
 
+// --- syncUidCounter prevents uid collisions after load ---
+const S6 = { deckCards: [{ id: 'x', uid: 'c500' }, { id: 'y', uid: 'c42' }] };
+DeckSys.syncUidCounter(S6);
+const fresh = DeckSys.addCard(S6, { id: 'z', type: 'elemental', rarity: 1 });
+assert.ok(!S6.deckCards.slice(0, 2).some(c => c.uid === fresh.uid), 'no uid collision after sync');
+assert.strictEqual(fresh.uid, 'c501', 'counter resumed past max loaded uid');
+
 console.log('test-deck: ALL PASS');

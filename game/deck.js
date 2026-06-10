@@ -110,6 +110,17 @@ const DeckSys = {
     return true;
   },
 
+  // After loading a save: bump the uid counter past every loaded card uid so
+  // newly added cards can't collide.
+  syncUidCounter(S) {
+    let max = 0;
+    (S.deckCards || []).forEach(c => {
+      const n = parseInt(String(c.uid || '').replace(/^c/, ''), 10);
+      if (!isNaN(n) && n > max) max = n;
+    });
+    if (max >= _deckUidCounter) _deckUidCounter = max + 1;
+  },
+
   // Intent "scramble": a random hand card returns to the lexicon.
   scrambleOne(S) {
     if (!S.deck.hand.length) return null;
