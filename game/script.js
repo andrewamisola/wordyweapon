@@ -7551,7 +7551,7 @@ function clearRunState() {
 }
 
 function showMainMenu(keepMusic = false){
-  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-celebration-overlay','round-intro-overlay'];
+  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-celebration-overlay','round-intro-overlay','vendor-overlay','cardpick-overlay'];
   overlays.forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('show');
@@ -23630,7 +23630,7 @@ async function showCrateReelAnimation(crate) {
 function closeRunOverlays(){
   // Close pause menu first to reset its state, then hide other run overlays
   closePauseMenu();
-  ['shop-overlay','combat-overlay'].forEach(id=>{
+  ['shop-overlay','combat-overlay','vendor-overlay','cardpick-overlay'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){
       el.classList.remove('show');
