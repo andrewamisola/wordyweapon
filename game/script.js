@@ -7330,6 +7330,7 @@ function applyRunState(data){
   S.strikeNum = S.strikeNum ?? 1;
   S.heatShift = S.heatShift ?? 0;
   S.enemyIntent = null;
+  S._intentBlock = false; // never carry block intent across a save/restore boundary
   S.deck = null; // zones rebuild at next newEnc/initCombat
 
   return true;
@@ -12121,6 +12122,7 @@ function newEnc(){
     S.enemy.deckMaxHp = S.enemy.hp;
     DeckSys.initCombat(S);
     HeatSys.initCombat(S);
+    S._intentBlock = false; // never carry block intent across combat boundaries
     S.enemy.intents = S.enemy.intents || ['block', 'strikeback', 'bolster'];
     HeatSys.rollIntent(S, S.roundIndex);
   } else {
@@ -12463,9 +12465,20 @@ function updateHealthBars(){
     const remainingHP = Math.max(e.hp - heroDmg, 0);
     document.getElementById('enemy-health-text').textContent = `${fmtBig(remainingHP)} / ${fmtBig(eMaxHp)}`;
     // Show enemy damage preview (red bar showing how much HP will be lost)
-    const enemyDmgPercent = eMaxHp > 0 ? Math.min(100, (heroDmg / eMaxHp) * 100) : 0;
     const edp = document.getElementById('enemy-damage-preview');
-    edp.style.width = `${enemyDmgPercent}%`;
+    if (S.enemy.deckMaxHp) {
+      // Deck mode: bar is proportional to deckMaxHp, so preview must be
+      // anchored to the live-HP fill's right edge, not the bar's right edge.
+      const previewW = eMaxHp > 0 ? Math.min(e.hp, heroDmg) / eMaxHp * 100 : 0;
+      const previewRight = eMaxHp > 0 ? (eMaxHp - e.hp) / eMaxHp * 100 : 0;
+      edp.style.width = `${previewW}%`;
+      edp.style.right = `${previewRight}%`;
+    } else {
+      // Legacy (one-shot): bar is always full-width; right:0 from CSS is correct.
+      const enemyDmgPercent = eMaxHp > 0 ? Math.min(100, (heroDmg / eMaxHp) * 100) : 0;
+      edp.style.width = `${enemyDmgPercent}%`;
+      edp.style.right = ''; // reset to CSS default (right:0)
+    }
     edp.style.display = "block";
     // Trigger blink animation on the damage preview bar (double-rAF avoids forced reflow)
     edp.classList.remove('blink');
@@ -17304,7 +17317,7 @@ async function afterCombat(){
     render(); // re-renders hand (cuiRenderHand), gold pill, enemy HP, blocked slots
     if(typeof cuiRenderIntent === 'function') cuiRenderIntent(S);   // Task 8
     if(typeof cuiRenderHeat === 'function') cuiRenderHeat(S);       // Task 10
-    showQuickToast(`The iron cools… ${HeatSys.band(S).name} (×${HeatSys.mult(S)})`, null, 'warning');
+    // Band info is already displayed in the STRIKE! result box; no toast needed here.
     return;
   }
   if(lastResult.win){
