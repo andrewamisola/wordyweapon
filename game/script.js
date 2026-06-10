@@ -15565,6 +15565,10 @@ function calc(opts={}){
     // AP and word count, causing a 1.5× stalemate to feel like ~2.25×.
     let apContribution = tierValue * elemMult;
 
+    // DECK MODE (Task 11): Engraved cards (Perfect Forge reward) add a flat
+    // AP bonus on top of the word's base contribution (not element-scaled).
+    if (word.engraveAp) apContribution += word.engraveAp;
+
     // Silent Knight: Immune if fewer than 6 words in forge (checked once, applies to all)
     let silentKnightImmune = false;
     if (S.enemy && S.enemy.id === 'silent_knight') {
@@ -16987,6 +16991,87 @@ function deckResolveStrike(r) {
   return 'continue';
 }
 
+// === DECK MODE (Task 11): post-combat 1-of-3 card pick ===
+
+// Rarity weights by round: T1 fades out, T3 ramps in.
+function deckRewardWeights(round, isBossReward) {
+  if (isBossReward) return { 1: 10, 2: 45, 3: 45 };
+  if (round <= 6)   return { 1: 60, 2: 35, 3: 5 };
+  if (round <= 15)  return { 1: 35, 2: 45, 3: 20 };
+  return { 1: 15, 2: 50, 3: 35 };
+}
+
+function deckRollRewardCards(round, isBossReward, n = 3) {
+  const weights = deckRewardWeights(round, isBossReward);
+  const out = [];
+  let guard = 0;
+  while (out.length < n && guard++ < 100) {
+    const total = weights[1] + weights[2] + weights[3];
+    let r = Math.random() * total, tier = 3;
+    if ((r -= weights[1]) < 0) tier = 1;
+    else if ((r -= weights[2]) < 0) tier = 2;
+    const pool = WORDS.filter(w => w.rarity === tier && !out.includes(w));
+    if (!pool.length) continue;
+    out.push(pool[(Math.random() * pool.length) | 0]);
+  }
+  return out;
+}
+
+// Shows the post-combat reward overlay: pick 1 of 3 rolled words (added to the
+// run deck) or skip for +5 gold. If the kill was a Perfect Forge (strike 1),
+// one random offer is Engraved (+1 AP permanently). Always resolvable: the 3
+// cards are each clickable and the skip button is always present.
+function showCardPick(isBossReward) {
+  return new Promise(resolve => {
+    const ov = document.getElementById('cardpick-overlay');
+    const wrap = document.getElementById('cardpick-cards');
+    if (!ov || !wrap || !S.deckCards) { resolve(null); return; }
+    wrap.innerHTML = '';
+    const cards = deckRollRewardCards(S.roundIndex, isBossReward);
+    if (!cards.length) { resolve(null); return; }
+    const engraveIdx = S.perfectForge ? ((Math.random() * cards.length) | 0) : -1;
+    let picked = false; // guard against double-click adding twice
+    const close = () => {
+      ov.classList.remove('show');
+      S.perfectForge = false;
+    };
+    cards.forEach((word, idx) => {
+      const display = Object.assign({}, word);
+      if (idx === engraveIdx) display.engraved = true;
+      const el = cuiCardEl(display, {});
+      if (idx === engraveIdx) el.classList.add('engraved-offer');
+      el.onclick = () => {
+        if (picked) return;
+        picked = true;
+        const added = DeckSys.addCard(S, word);
+        if (idx === engraveIdx) { added.engraved = true; added.engraveAp = 1; }
+        sfxClick();
+        showQuickToast(idx === engraveIdx
+          ? `${word.name} engraved into your Lexicon (+1 AP)`
+          : `${word.name} added to your Lexicon`, null, 'success');
+        close();
+        resolve(word);
+      };
+      el.onmouseenter = sfxHover;
+      wrap.appendChild(el);
+    });
+    const skip = document.getElementById('cardpick-skip');
+    if (skip) {
+      skip.onclick = () => {
+        if (picked) return;
+        picked = true;
+        S.gold += 5;
+        sfxClick();
+        showQuickToast('+5 gold', null, 'success');
+        close();
+        resolve(null);
+      };
+      skip.onmouseenter = sfxHover;
+    }
+    ov.classList.add('show');
+  });
+}
+
 let isForging = false; // Guard against double-clicking forge button
 
 async function forge(){
@@ -17710,6 +17795,25 @@ async function afterCombat(){
         S.gold += overflowGold;
         S.lastOverflowGold = overflowGold; // Track for display
         S.lastOverflowCount = overflowItems.length;
+      }
+    }
+
+    // DECK MODE (Task 11): post-combat 1-of-3 card pick on run-CONTINUING
+    // victories only. Excluded by construction: the deck mid-combat resume
+    // branch and the defeat path never reach here, and the Ultimate Weapon
+    // victory returns early above. Excluded explicitly: the R27 run-ending
+    // win (the celebration forks to endless/main menu) and the demo-end round.
+    // Runs BEFORE S.roundIndex++ so the rarity weights and the vendor rounds
+    // [6,15,24] see the round that was just won, and BEFORE saveRun() so the
+    // picked card (and skip gold) is persisted.
+    {
+      const isFinalVictory = (S.roundIndex === 27) || (IS_DEMO && S.roundIndex >= DEMO_ROUND_LIMIT);
+      if (S.deckCards && S.deckCards.length && !isFinalVictory) {
+        await showCardPick(isBoss); // isBoss = miniboss OR chapter boss reward weighting
+        // Forge Vendor placeholder (implemented in Task 12)
+        if ([6, 15, 24].includes(S.roundIndex) && typeof showVendor === 'function') {
+          await showVendor();
+        }
       }
     }
 

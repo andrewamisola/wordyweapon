@@ -22,6 +22,8 @@ function cuiCardEl(card, opts) {
     + '<div class="ctype">' + cuiTypeLabel(card) + '</div>'
     + '<div class="cstat">' + stat + '</div>'
     + '</div>';
+  // DECK MODE (Task 11): engraved cards carry a gold hammer badge everywhere
+  if (card.engraved) el.querySelector('.wcard-face').insertAdjacentHTML('beforeend', '<div class="engraved-badge" title="Engraved: +1 AP">&#9874;</div>');
   el.oncontextmenu = (e) => e.preventDefault();
   return el;
 }
