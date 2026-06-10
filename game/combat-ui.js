@@ -81,6 +81,19 @@ function cuiRenderPiles(S) {
   if (d) d.innerHTML = 'Discards left: <b>' + (S.discardsLeft != null ? S.discardsLeft : 0) + '</b>';
 }
 
+// Renders the enemy intent bubble above the enemy portrait container.
+// Shows when deck mode is active and the enemy is alive; hides otherwise.
+function cuiRenderIntent(S) {
+  const el = document.getElementById('intent-bubble');
+  if (!el) return;
+  const show = S.deck && S.enemyIntent && S.enemy && S.enemy.hp > 0;
+  el.classList.toggle('hidden', !show);
+  if (!show) return;
+  const it = S.enemyIntent;
+  el.textContent = it.label + (it.type === 'strikeback' && it.value ? ` (${it.value}g)` : '');
+  el.title = it.desc;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { cuiCardEl, cuiTypeLabel, cuiRenderHand, cuiRenderPiles };
+  module.exports = { cuiCardEl, cuiTypeLabel, cuiRenderHand, cuiRenderPiles, cuiRenderIntent };
 }

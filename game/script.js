@@ -2209,7 +2209,8 @@ const ENEMIES = [
     desc: "Hoards vowels, leaving words voiceless.",
     dialogue: ["Ay, eee... I owe you? Why?", "Gv m yr vwls!"],
     weak: [E.FIRE, E.DARK],       // Goblins fear fire and darkness
-    res: [E.EARTH, E.POISON]     // Cave dwellers, toxic resilience
+    res: [E.EARTH, E.POISON],    // Cave dwellers, toxic resilience
+    intents: ['scramble', 'strikeback']
   },
   {
     id: "ghost",
@@ -2218,7 +2219,8 @@ const ENEMIES = [
     desc: "A phantom word that refused to be erased.",
     dialogue: ["Dord... dord... the dictionary deleted me, but I'm still here...", "I was real once... wasn't I? Someone used me... someone must have..."],
     weak: [E.LIGHT, E.LIGHTNING], // Light dispels, lightning disrupts
-    res: [E.PHYS, E.DARK]        // Intangible, shadow creature
+    res: [E.PHYS, E.DARK],       // Intangible, shadow creature
+    intents: ['douse', 'strikeback']
   },
   {
     id: "synonym_roll",
@@ -2227,7 +2229,8 @@ const ENEMIES = [
     desc: "Says everything twice. Differently. Redundantly.",
     dialogue: ["I'm on a roll! A bun! A bread thing!", "Prepare to die! Perish! Expire! Cease!"],
     weak: [E.FIRE, E.POISON],    // Burns easily, molds quickly
-    res: [E.WATER, E.LIGHT]      // Keeps fresh with water, warm bread
+    res: [E.WATER, E.LIGHT],     // Keeps fresh with water, warm bread
+    intents: ['bolster', 'strikeback']
   },
   {
     id: "comma_chameleon",
@@ -2236,7 +2239,8 @@ const ENEMIES = [
     desc: "Causes hesitation, and pauses, everywhere.",
     dialogue: ["Pause, for, effect...", "Let's, take, a, break, shall, we?"],
     weak: [E.PHYS, E.EARTH],     // Direct hits, grounded
-    res: [E.LIGHT, E.POISON]     // Camouflage in light, toxic skin
+    res: [E.LIGHT, E.POISON],    // Camouflage in light, toxic skin
+    intents: ['block', 'strikeback']
   },
   {
     id: "webster_spiderling",
@@ -2245,7 +2249,8 @@ const ENEMIES = [
     desc: "Spins webs of tangled definitions.",
     dialogue: ["Per the dictionary, you're doomed!", "Let me define your defeat!"],
     weak: [E.FIRE, E.WATER],     // Burns webs, drowns easily
-    res: [E.POISON, E.DARK]      // Venomous, lurks in shadows
+    res: [E.POISON, E.DARK],     // Venomous, lurks in shadows
+    intents: ['block', 'scramble']
   },
   {
     id: "hyphen_hyena",
@@ -2254,7 +2259,8 @@ const ENEMIES = [
     desc: "A two-faced, double-dealing, compound beast.",
     dialogue: ["Heh-heh-heh-heh!", "I'm well-armed and battle-ready!"],
     weak: [E.POISON, E.WATER],   // Vulnerable to toxins and water
-    res: [E.PHYS, E.FIRE]        // Tough hide, hot savanna creature
+    res: [E.PHYS, E.FIRE],       // Tough hide, hot savanna creature
+    intents: ['strikeback', 'bolster']
   },
   {
     id: "pun_goblin",
@@ -2263,7 +2269,8 @@ const ENEMIES = [
     desc: "Thinks it's punny. Desperately.",
     dialogue: ["I'm dead seri-puns!", "Prepare to pun-ish you! Get it? GET IT?!"],
     weak: [E.PHYS, E.LIGHT],     // Direct attacks and illumination
-    res: [E.LIGHTNING, E.EARTH] // Quick reflexes, earthy nature
+    res: [E.LIGHTNING, E.EARTH], // Quick reflexes, earthy nature
+    intents: ['scramble', 'strikeback']
   },
   {
     id: "apostro_fiend",
@@ -2272,7 +2279,8 @@ const ENEMIES = [
     desc: "Take's what's your's. Possessive demon.",
     dialogue: ["Your'e making a mistake!", "Its' time to die! Your's truly!"],
     weak: [E.LIGHT, E.WATER],    // Holy water purifies demons
-    res: [E.DARK, E.FIRE]        // Demonic, hellfire resistant
+    res: [E.DARK, E.FIRE],       // Demonic, hellfire resistant
+    intents: ['block', 'douse']
   },
   {
     id: "idiomatic_undead",
@@ -2281,7 +2289,8 @@ const ENEMIES = [
     desc: "Shambling corpse animated by dead metaphors.",
     dialogue: ["You've opened a can of worms, and I've got a bone to pick!", "When it rains, it pours... YOUR BLOOD!"],
     weak: [E.FIRE, E.LIGHTNING], // Burns and disrupts undeath
-    res: [E.POISON, E.PHYS]      // Already rotting, can't hurt bones
+    res: [E.POISON, E.PHYS],     // Already rotting, can't hurt bones
+    intents: ['bolster', 'douse']
   },
   {
     id: "vulgar_vandal",
@@ -2290,7 +2299,8 @@ const ENEMIES = [
     desc: "Creature of censored rage. Unfit for print.",
     dialogue: ["#@$%*!!!", "I'll @#$%ing end you, you piece of @#$%!"],
     weak: [E.EARTH, E.DARK],     // Street punk vs nature and shadows
-    res: [E.LIGHTNING, E.PHYS]   // Quick, tough street fighter
+    res: [E.LIGHTNING, E.PHYS],  // Quick, tough street fighter
+    intents: ['strikeback', 'strikeback', 'scramble']
   },
   {
     id: "double_negative",
@@ -2299,7 +2309,8 @@ const ENEMIES = [
     desc: "A paradox that can't not exist.",
     dialogue: ["I ain't not gonna not destroy you!", "You can't never win nothing!"],
     weak: [E.POISON, E.LIGHTNING], // Logic poison, electrical disruption
-    res: [E.WATER, E.EARTH]      // Flows around, grounded in confusion
+    res: [E.WATER, E.EARTH],     // Flows around, grounded in confusion
+    intents: ['douse', 'block']
   },
   {
     id: "run_on_sentence",
@@ -2308,7 +2319,8 @@ const ENEMIES = [
     desc: "Never stops never pauses keeps going and going and—",
     dialogue: ["And then I'll hit you and then I'll hit you again and also—", "Wait I'm not done because there's more to say and—"],
     weak: [E.PHYS, E.DARK],      // Cut it short, silence it
-    res: [E.FIRE, E.LIGHT]       // Energetic, bright personality
+    res: [E.FIRE, E.LIGHT],      // Energetic, bright personality
+    intents: ['bolster', 'scramble', 'strikeback']
   },
   {
     id: "split_infinitive",
@@ -2317,7 +2329,8 @@ const ENEMIES = [
     desc: "To boldly split what should never be split.",
     dialogue: ["I'm going to completely destroy you!", "Prepare to fully and utterly experience defeat!"],
     weak: [E.EARTH, E.WATER],    // Ground the split, wash away
-    res: [E.DARK, E.POISON]      // Shadowy grammar, toxic constructs
+    res: [E.DARK, E.POISON],     // Shadowy grammar, toxic constructs
+    intents: ['block', 'strikeback']
   },
   {
     id: "mixed_metaphor",
@@ -2326,7 +2339,8 @@ const ENEMIES = [
     desc: "A chaotic mashup of incompatible imagery.",
     dialogue: ["We'll burn that bridge when we cross it!", "You've let the cat out of the frying pan now!"],
     weak: [E.PHYS, E.POISON],    // Direct hits cut through, toxic logic
-    res: [E.WATER, E.LIGHT]      // Fluid meaning, bright confusion
+    res: [E.WATER, E.LIGHT],     // Fluid meaning, bright confusion
+    intents: ['scramble', 'douse', 'bolster']
   },
   {
     id: "passive_voice",
@@ -2335,7 +2349,8 @@ const ENEMIES = [
     desc: "Mistakes were made. By whom? It is unclear.",
     dialogue: ["Your defeat has been predetermined. By forces. Unnamed forces.", "Responsibility will not be taken. Blame will be deflected. You will be defeated."],
     weak: [E.LIGHTNING, E.DARK], // Active energy, shadow obscures
-    res: [E.PHYS, E.EARTH]       // Intangible agency, grounded inaction
+    res: [E.PHYS, E.EARTH],      // Intangible agency, grounded inaction
+    intents: ['bolster', 'douse']
   }
 ];
 
@@ -2375,6 +2390,7 @@ const CHAPTER_BOSSES = [
       "Cinna: The Wordsmith! / Antony: The so-called Wordsmith.",
       "Cinna: We'll destroy you! / Antony: Or maybe we won't."
     ],
+    intents: ['strikeback', 'bolster']
   },
   {
     id: 'red_aktins',
@@ -2388,6 +2404,7 @@ const CHAPTER_BOSSES = [
       "This conversation has been flagged for [REDACTED]. Your [REDACTED] will be [REDACTED].",
       "Some words are better left... unwritten. Yours, for example. All of them."
     ],
+    intents: ['strikeback', 'bolster']
   },
   {
     id: 'plague_doctor',
@@ -2401,6 +2418,7 @@ const CHAPTER_BOSSES = [
       "Your style... I'll take it.",
       "Imitation is the sincerest form of... theft."
     ],
+    intents: ['strikeback', 'bolster']
   },
   {
     id: 'oxy',
@@ -2414,6 +2432,7 @@ const CHAPTER_BOSSES = [
       "Awfully good to meet you, Wordsmith...",
       "Your living death awaits. Bittersweet, isn't it?"
     ],
+    intents: ['strikeback', 'bolster']
   },
   {
     id: 'dotdotdot',
@@ -2428,6 +2447,7 @@ const CHAPTER_BOSSES = [
       "Ah, the famous Wordsmith! I've heard so much about... wait, I had something for this...",
       "This is the part where I... where I... hmm, it was right on the tip of my..."
     ],
+    intents: ['strikeback', 'bolster']
   }
 ];
 
@@ -12369,6 +12389,7 @@ function render(){
   if (S.deck && typeof cuiRenderHand === 'function') {
     cuiRenderHand(S, { onCardClick: deckHandCardClicked });
   }
+  if (typeof cuiRenderIntent === 'function') cuiRenderIntent(S);
 
   const _consStart = performance.now();
   renderConsumables();

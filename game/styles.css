@@ -885,7 +885,7 @@ body:has(#shop-overlay.show) #header{display:none}
   position:relative;
   z-index:5
 }
-.portrait-container{flex:0 1 clamp(200px, 25vw, 320px)}
+.portrait-container{flex:0 1 clamp(200px, 25vw, 320px);position:relative}
 .portrait{background:#0d1117;border-radius:12px;padding:16px;border:2px solid #2a2f38;position:relative;overflow:hidden;cursor:pointer;transition:border-color var(--half-beat) ease,box-shadow var(--half-beat) ease}
 .hero-portrait{border-color:#4ade8044}.enemy-portrait{border-color:#f8717144}
 .hero-portrait:hover{border-color:#4ade8088;box-shadow:0 0 12px rgba(74,222,128,0.15)}
@@ -4221,3 +4221,15 @@ body:not(.deck-combat) #deck-discards-left { display:none; }
   color:rgba(232,217,181,.55);text-align:right;
 }
 #deck-discards-left b{color:#2dd4bf;font-style:normal;}
+
+/* === Task 8: Enemy intent bubble === */
+#intent-bubble{position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  font-style:italic;font-size:var(--text-sm,11px);white-space:nowrap;
+  background:rgba(20,15,9,.92);border:1px solid rgba(232,217,181,.3);border-radius:4px;
+  padding:6px 14px;color:#e8d9b5;box-shadow:0 4px 14px rgba(0,0,0,.5);z-index:30;
+  animation:intentPulse 2.4s ease-in-out infinite;}
+#intent-bubble.hidden{display:none;}
+#intent-bubble::after{content:"";position:absolute;bottom:-6px;left:50%;transform:translateX(-50%) rotate(45deg);
+  width:10px;height:10px;background:rgba(20,15,9,.92);
+  border-right:1px solid rgba(232,217,181,.3);border-bottom:1px solid rgba(232,217,181,.3);}
+@keyframes intentPulse{0%,100%{opacity:.85;}50%{opacity:1;}}
