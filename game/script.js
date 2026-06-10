@@ -7543,7 +7543,7 @@ function clearRunState() {
 }
 
 function showMainMenu(keepMusic = false){
-  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-celebration-overlay','round-intro-overlay','vendor-overlay','cardpick-overlay'];
+  const overlays=['shop-overlay','pause-menu','hero-select-overlay','combat-overlay','talent-overlay','achievements-overlay','victory-overlay','chapter-overlay','round-intro-overlay','vendor-overlay','cardpick-overlay'];
   overlays.forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.remove('show');
@@ -11631,6 +11631,7 @@ async function startNewRun(){
   S.blockedSlot = null;
   S.deckCards = []; // deck mode: explicit reset; rebuilt by initRunDeck at hero select
   S.heroHandBonus = 0; // deck mode: hand-size bonus is per-hero (Quivera); never carry across runs
+  S.perfectForge = false; // deck mode: never let an abandoned card pick leak an engraved offer
   S.vendorRemovals = 0; // deck mode: vendor retire cost escalator resets each run
   // Reset chapter tracking
   S.chapterAPBonus = 0; // Cumulative AP bonus from completing chapters
@@ -23623,7 +23624,8 @@ async function showCrateReelAnimation(crate) {
 function closeRunOverlays(){
   // Close pause menu first to reset its state, then hide other run overlays
   closePauseMenu();
-  ['shop-overlay','combat-overlay','vendor-overlay','cardpick-overlay'].forEach(id=>{
+  cancelDialogueSession(); // stop any pending round-intro auto-dismiss continuation
+  ['shop-overlay','combat-overlay','vendor-overlay','cardpick-overlay','talent-overlay','chapter-overlay','round-intro-overlay'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){
       el.classList.remove('show');
