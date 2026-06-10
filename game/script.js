@@ -11606,6 +11606,7 @@ async function startNewRun(){
   S.foughtChapterBosses = [];
   S.chapterBoss = null;
   S.blockedSlot = null;
+  S.deckCards = []; // deck mode: explicit reset; rebuilt by initRunDeck at hero select
   // Reset chapter tracking
   S.chapterAPBonus = 0; // Cumulative AP bonus from completing chapters
   S.currentChapter = 0;
@@ -12119,6 +12120,9 @@ function newEnc(){
     HeatSys.initCombat(S);
     S.enemy.intents = S.enemy.intents || ['block', 'strikeback', 'bolster'];
     HeatSys.rollIntent(S, S.roundIndex);
+  } else {
+    // Should never happen in deck mode — surface regressions loudly.
+    console.warn('[deck] newEnc: deckCards empty — deck init skipped. Was initRunDeck called?');
   }
 
   render();
