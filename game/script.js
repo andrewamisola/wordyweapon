@@ -4006,6 +4006,13 @@ const CONSUMABLES=[
      }
      S.tempEffects.disableBossAbility=true;
      return {success:true,message:`${S.chapterBoss.name} bound! ${S.chapterBoss.ability?.name || 'Ability'} disabled!`};
+   }},
+  {id:"quench_flask",name:"Quench Flask",cost:20,desc:"Splash the ingot: restore one band of forge heat this combat.",
+   use:(S)=>{
+     if(!S.deck || !S.strikeNum) return {success:false,message:"Only useful at a hot forge!"};
+     if(typeof HeatSys==='undefined' || !HeatSys.quench(S)) return {success:false,message:"The iron is already white-hot!"};
+     if(typeof cuiRenderHeat==='function') cuiRenderHeat(S);
+     return {success:true,message:`The iron glows brighter! ${HeatSys.band(S).name}`};
    }}
 ];
 
@@ -14568,8 +14575,10 @@ function isWordDisabled(w,hasItem,hasNoun){
 }
 
 // Deck mode: hand-card click mirrors the legacy chip click contract.
+// Identity check first so the uid-less STICK toggles cleanly and can never
+// pair with another uid-less object by accident.
 function deckHandCardClicked(card) {
-  if (S.pendingWord && S.pendingWord.uid === card.uid) { S.pendingWord = null; }
+  if (S.pendingWord === card || (S.pendingWord && card.uid && S.pendingWord.uid === card.uid)) { S.pendingWord = null; }
   else { S.pendingWord = card; }
   if (typeof playSample === 'function') playSample('highlight word.ogg', 0.5);
   render();

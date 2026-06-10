@@ -60,15 +60,30 @@ function cuiRenderHand(S, opts) {
   const slotted = new Set(Object.values(S.sel || {}).filter(Boolean).map(w => w.uid).filter(Boolean));
   const visible = S.deck.hand.filter(c => !slotted.has(c.uid));
   const n = visible.length, mid = (n - 1) / 2;
+  // Precise pending check: STICK (and any uid-less card) must not match a
+  // uid-less pendingWord by accident (undefined === undefined).
+  const isPending = (card) => S.pendingWord === card
+    || (S.pendingWord && card.uid && S.pendingWord.uid === card.uid);
   visible.forEach((card, i) => {
     const el = cuiCardEl(card);
     el.style.setProperty('--tilt', ((i - mid) * 3.2) + 'deg');
     el.style.setProperty('--lift', (Math.abs(i - mid) * 7) + 'px');
-    if (S.pendingWord && S.pendingWord.uid === card.uid) el.classList.add('pending');
+    if (isPending(card)) el.classList.add('pending');
     el.onclick = () => opts.onCardClick && opts.onCardClick(card, el);
     el.oncontextmenu = (e) => { e.preventDefault(); opts.onCardRightClick && opts.onCardRightClick(card, el); };
     wrap.appendChild(el);
   });
+  // Stick fallback: pinned to the left edge, outside the fan math. It has no
+  // uid by design so it can never enter the deck/spent zones; it guarantees a
+  // weapon is always reachable even when every deck weapon is Spent.
+  if (typeof STICK !== 'undefined' && !(S.sel && S.sel.item && S.sel.item.isStick)) {
+    const st = cuiCardEl(STICK, { mini: true });
+    st.classList.add('stick-card');
+    st.style.setProperty('--tilt', '-12deg');
+    if (isPending(STICK)) st.classList.add('pending');
+    st.onclick = () => opts.onCardClick && opts.onCardClick(STICK, st);
+    wrap.appendChild(st);
+  }
   cuiRenderPiles(S);
 }
 
