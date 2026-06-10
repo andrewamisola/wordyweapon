@@ -12116,6 +12116,9 @@ function newEnc(){
 
   // Deck mode: fresh zones, full heat, first telegraphed intent.
   if (S.deckCards && S.deckCards.length) {
+    // Enemies have no max-HP field; record spawn HP so partial damage and
+    // 'bolster' healing have a stable ceiling across strikes.
+    S.enemy.deckMaxHp = S.enemy.hp;
     DeckSys.initCombat(S);
     HeatSys.initCombat(S);
     S.enemy.intents = S.enemy.intents || ['block', 'strikeback', 'bolster'];
@@ -12404,14 +12407,16 @@ function updateHealthBars(){
   if(heroBar) heroBar.style.width = '0%';
   if(heroText) heroText.textContent = '';
 
-  // Enemy health always starts full for preview
-  $("#enemy-health-fill").style.width="100%";
+  // Deck mode: enemy HP persists between strikes, so show current/spawn HP.
+  // Legacy (one-shot) keeps the old behavior: bar always full, max = current.
+  const eMaxHp = (S.deck && e.deckMaxHp) ? e.deckMaxHp : e.hp;
+  $("#enemy-health-fill").style.width = eMaxHp > 0 ? `${Math.min(100, (e.hp / eMaxHp) * 100)}%` : "100%";
   // Show carried overkill from Hyperbole if present
   const enemyHpText = getEl('enemy-health-text');
   if(S.carriedOverkill > 0){
-    enemyHpText.innerHTML = `${fmtBig(e.hp)} / ${fmtBig(e.hp)} <span style="color:#f472b6;font-size:10px">(-${fmtBig(S.carriedOverkill)} Hyperbole)</span>`;
+    enemyHpText.innerHTML = `${fmtBig(e.hp)} / ${fmtBig(eMaxHp)} <span style="color:#f472b6;font-size:10px">(-${fmtBig(S.carriedOverkill)} Hyperbole)</span>`;
   } else {
-    enemyHpText.textContent = `${fmtBig(e.hp)} / ${fmtBig(e.hp)}`;
+    enemyHpText.textContent = `${fmtBig(e.hp)} / ${fmtBig(eMaxHp)}`;
   }
 
   // Calculate and show damage preview
@@ -12456,9 +12461,9 @@ function updateHealthBars(){
 
     // Update enemy HP text to show remaining HP after preview damage
     const remainingHP = Math.max(e.hp - heroDmg, 0);
-    document.getElementById('enemy-health-text').textContent = `${fmtBig(remainingHP)} / ${fmtBig(e.hp)}`;
+    document.getElementById('enemy-health-text').textContent = `${fmtBig(remainingHP)} / ${fmtBig(eMaxHp)}`;
     // Show enemy damage preview (red bar showing how much HP will be lost)
-    const enemyDmgPercent = (heroDmg / e.hp) * 100;
+    const enemyDmgPercent = eMaxHp > 0 ? Math.min(100, (heroDmg / eMaxHp) * 100) : 0;
     const edp = document.getElementById('enemy-damage-preview');
     edp.style.width = `${enemyDmgPercent}%`;
     edp.style.display = "block";
@@ -16619,6 +16624,16 @@ function calc(opts={}){
   // Add global W bonus to word count
   wordCount += globalWBonus;
 
+  // DECK MODE: heat band multiplier joins the sequential chain.
+  // Strike 1 = WHITE HOT ×2, then ×1.5, ×1.25, ×1 as the forge cools.
+  if (typeof HeatSys !== 'undefined' && S.strikeNum) {
+    const heatMult = HeatSys.mult(S);
+    if (heatMult !== 1.0) {
+      sequentialMult *= heatMult;
+      if (wantBreakdown) breakdown.multipliers.push(`${fmtMod(heatMult, 'scale')} Heat: ${HeatSys.band(S).name}`);
+    }
+  }
+
   // ========================================
   // PHASE 5: CALCULATE DAMAGE
   // ========================================
@@ -16809,6 +16824,70 @@ function buildWeaponName(sel){
 }
 
 // === COMBAT ===
+// === DECK MODE: multi-strike combat helpers ===
+
+// API handed to HeatSys.resolveIntent() — each callback applies one enemy intent.
+function deckIntentApi() {
+  return {
+    blockRandomSlot: () => {
+      // Don't clobber a boss's own persistent block (Red Aktins)
+      if (S.blockedSlot && !S._intentBlock) return;
+      const keys = ['adj1', 'adj2', 'adj3', 'adj4', 'noun1'];
+      S.blockedSlot = keys[(Math.random() * keys.length) | 0];
+      S._intentBlock = true; // cleared right after the next strike's calc()
+    },
+    stealGold: (n) => {
+      const stolen = Math.min(S.gold || 0, n);
+      S.gold = (S.gold || 0) - stolen;
+      if (stolen > 0) showQuickToast(`${S.enemy?.name || 'The enemy'} pilfers ${stolen} gold!`, null, 'warning');
+      // Gold pill refreshes via render() after the strike resolves
+    },
+    healEnemyPct: (p) => {
+      // deckMaxHp is stored at newEnc-time (enemies have no max-HP field otherwise)
+      const max = S.enemy.deckMaxHp || S.enemy.hp;
+      S.enemy.hp = Math.min(max, Math.ceil(S.enemy.hp * (1 + p / 100)));
+      // Enemy HP bar refreshes via updateHealthBars() inside render()
+    },
+    scrambleHand: () => {
+      const c = DeckSys.scrambleOne(S);
+      if (c) showQuickToast(`"${c.name}" is rewritten back into your Lexicon!`, null, 'warning');
+    },
+    onDouse: () => { showQuickToast('The forge is doused! Heat drops faster…', null, 'warning'); },
+  };
+}
+
+// The forge has gone cold: this strike ends in the EXISTING defeat flow.
+// window.lastCombatResult.win is already false, so the legacy DEFEAT result
+// box shows and afterCombat() runs the standard S.lives-- path untouched.
+function deckCombatCold() {
+  window.deckStrikeContinue = false;
+  showQuickToast('The forge runs cold…', null, 'error');
+}
+
+// Resolve a non-killing strike: partial damage persists, played cards go to
+// the Spent pile, the enemy acts on its telegraphed intent, heat drops.
+// Returns 'cold' (defeat) or 'continue' (next strike).
+function deckResolveStrike(r) {
+  // 1. Apply partial damage — enemy HP persists between strikes.
+  S.enemy.hp = Math.max(0, S.enemy.hp - (r.heroDmg || 0));
+  // 2. Played cards -> Spent; clear the forge slots.
+  const slottedUids = Object.values(S.sel).filter(Boolean).map(w => w.uid).filter(Boolean);
+  DeckSys.playCards(S, slottedUids);
+  clrSel();
+  // 3. Enemy acts on its telegraphed intent.
+  HeatSys.resolveIntent(S, deckIntentApi());
+  // 4. Heat drops.
+  if (HeatSys.advance(S) === 'cold') {
+    deckCombatCold();
+    return 'cold';
+  }
+  DeckSys.refill(S);
+  HeatSys.rollIntent(S, S.roundIndex);
+  if (typeof cuiRenderIntent === 'function') cuiRenderIntent(S);   // Task 8
+  if (typeof cuiRenderHeat === 'function') cuiRenderHeat(S);       // Task 10
+  return 'continue';
+}
+
 let isForging = false; // Guard against double-clicking forge button
 
 async function forge(){
@@ -16816,6 +16895,7 @@ async function forge(){
   const onboardingVisible = document.getElementById('onboarding-overlay')?.classList.contains('visible');
   if (isForging || isTransitioning || onboardingVisible) return;
   isForging = true;
+  window.deckStrikeContinue = false; // deck mode: stale strike flags never survive a new forge
 
   // Onboarding: check if player would lose and block if needed
   if (ONBOARD.active) {
@@ -16877,6 +16957,9 @@ async function forge(){
   });
 
   const c=calc({ breakdown: true });
+  // DECK MODE: an intent-block lasts exactly one strike — the calc() above
+  // already respected it, so release the slot for the next strike.
+  if (S._intentBlock) { S.blockedSlot = null; S._intentBlock = false; }
   // Track cumulative stats for talents (AFTER calc so they count previous forges only)
   S.wordsUsedThisRun = (S.wordsUsedThisRun || 0) + allWords.length;
   if (c.retriggeredWords && c.retriggeredWords.length > 0) {
@@ -17099,6 +17182,17 @@ async function forge(){
   S.pendingBossLoot = null;
 
   if(c.heroDmg >= targetHp){
+    // DECK MODE: enemy slain this strike — flag Perfect Forge (kill on strike 1)
+    // and move the played cards to the Spent pile before the victory flow runs.
+    if (S.deck) {
+      S.perfectForge = (typeof HeatSys !== 'undefined') && HeatSys.isPerfectForge(S);
+      if (S.perfectForge) {
+        S.gold += 10;
+        showQuickToast('Perfect Forge! +10 gold', null, 'success');
+      }
+      const slottedUids = Object.values(S.sel).filter(Boolean).map(w => w.uid).filter(Boolean);
+      DeckSys.playCards(S, slottedUids);
+    }
     // Victory - gold reward based on enemy type
     // Regular: 10g, Mini boss (R3, R6, R12...): 20g, Chapter boss (R9, R18, R27): 50g
     const isChapterBoss = (S.roundIndex % 9 === 0);
@@ -17197,6 +17291,20 @@ async function afterCombat(){
   if(!lastResult){
     $("#combat-overlay").classList.remove("show", "combat-reveal", "combat-result", "combat-exit");
     if(spotlightTint) spotlightTint.classList.remove("show", "full");
+    return;
+  }
+  // DECK MODE: a non-killing strike was resolved (deckResolveStrike) — return
+  // to the forge for the next strike instead of running the defeat path.
+  // isForging was already reset above, which re-arms the forge button.
+  if(!lastResult.win && window.deckStrikeContinue){
+    window.deckStrikeContinue = false;
+    window.lastCombatResult = null;
+    $("#combat-overlay").classList.remove("show", "combat-reveal", "combat-result", "combat-exit");
+    if(spotlightTint) spotlightTint.classList.remove("show", "full");
+    render(); // re-renders hand (cuiRenderHand), gold pill, enemy HP, blocked slots
+    if(typeof cuiRenderIntent === 'function') cuiRenderIntent(S);   // Task 8
+    if(typeof cuiRenderHeat === 'function') cuiRenderHeat(S);       // Task 10
+    showQuickToast(`The iron cools… ${HeatSys.band(S).name} (×${HeatSys.mult(S)})`, null, 'warning');
     return;
   }
   if(lastResult.win){
@@ -19755,6 +19863,14 @@ async function showCombat(r,words,rewards){
       if(resultBox) resultBox.classList.add("show");
     }, 80);
 
+    // DECK MODE: a non-killing strike is resolved here, BEFORE the result box,
+    // so the box can telegraph the new heat band and the enemy's next intent.
+    // 'cold' falls through to the legacy DEFEAT branch (afterCombat -> S.lives--).
+    let deckStrike = null; // 'continue' | 'cold' | null
+    if(!r.win && !r.tie && S.deck && typeof HeatSys !== 'undefined'){
+      deckStrike = deckResolveStrike(r);
+    }
+
     if(r.win){
       if(resultBox) resultBox.classList.add("win");
       if(resultTitle){
@@ -19877,6 +19993,21 @@ async function showCombat(r,words,rewards){
       if (musicEngine && musicEngine.initialized && S.lives <= 1) {
         musicEngine.triggerLoseEffect();
       }
+    }else if(deckStrike === 'continue'){
+      // DECK MODE: partial hit — combat continues at lower heat, NOT a defeat.
+      window.deckStrikeContinue = true;
+      if(resultBox) resultBox.classList.add("win");
+      if(resultTitle) resultTitle.textContent="STRIKE!";
+      if(resultDetail){
+        const band = HeatSys.band(S);
+        let html = `<div class="result-detail-line">${fmtBig(r.heroDmg)} damage — the enemy still stands.</div>`;
+        html += `<div class="result-detail-line">The iron cools… <b>${band.name}</b> (×${band.mult})</div>`;
+        if(S.enemyIntent){
+          html += `<div class="result-detail-line dim">${S.enemy?.name || 'The enemy'}: ${S.enemyIntent.label}</div>`;
+        }
+        resultDetail.innerHTML = html;
+      }
+      // No sfxLose / lose-music here — the fight is still on.
     }else{
       if(resultBox) resultBox.classList.add("lose");
       if(resultTitle){

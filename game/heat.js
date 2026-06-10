@@ -35,7 +35,7 @@ const HeatSys = {
 
   // Call after a non-killing strike. 'cold' => combat lost (caller handles).
   advance(S) {
-    if (this.bandIndex(S) >= HEAT_BANDS.length - 1) return 'cold';
+    if (S.strikeNum >= HEAT_MAX_STRIKES || this.bandIndex(S) >= HEAT_BANDS.length - 1) return 'cold';
     S.strikeNum++;
     return 'ok';
   },
