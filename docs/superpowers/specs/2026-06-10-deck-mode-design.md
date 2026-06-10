@@ -169,3 +169,17 @@ Core talent set ships unchanged. If playtesting shows heat needs build hooks, ad
 - **Run length bloat:** 27 rounds × multi-strike fights. Mitigations: trash mobs tuned to die in 1–2 strikes, heat bonus rewards speed; if runs exceed ~35 min in playtest, reduce rounds per chapter (9 → 7) as a tuning lever.
 - **Talent interactions with redraws** (e.g., per-word run-tracking talents now see more total words): flagged for the sim; individual talents may need per-combat caps.
 - **Monolith seams:** `forge()`/`afterCombat()` have many callers; the implementation plan must enumerate call sites before editing.
+
+---
+
+## Amendments (made during implementation, 2026-06-10)
+
+Discovery against the real codebase forced these deviations from the spec above; the implemented behavior is authoritative:
+
+1. **Strikeback steals gold, not HP.** The game has no hero-HP stat (lives only), so the `strikeback` intent ("Pilfers your purse!") steals `5 + floor(round/3)×3` gold instead of dealing chip damage (§1.4 table superseded).
+2. **Starting deck composition.** No "noun" or "adj" word types exist — words are weapon/rarity/elemental, and elemental words serve all adjective/noun roles. Starting deck = 3 weapons (hero's proficient category, one per tier) + 10 T1 elementals (6 biased to hero's strong elements) + 1 T1 rarity word (§7 superseded).
+3. **No gem items exist.** "Gem slot" is the noun1 forge slot filled by ordinary words; the vendor's Rare Stock is 2 premium cards only (§2.2 adjusted).
+4. **Quivera passive reworked.** "Resourceful" (formerly shop-entry word grant — shop retired) is now: draw 1 extra card each combat (hand size 9).
+5. **Engraves arrive earlier.** Perfect Forge offers one pre-engraved card at the post-combat pick (in addition to vendor engraving).
+6. **Boss loot replaced.** Legacy boss word-loot to inventory is retired; boss-weighted card picks are the boss reward.
+7. **Interest.** Flat interest = min(gold/10, 6) × difficulty interest mult, granted between rounds by the round bridge (`deckNextRound`); slot interest deleted with the inventory.
