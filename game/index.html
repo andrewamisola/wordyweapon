@@ -277,7 +277,16 @@
   </div>
   <!-- Display available consumables during forging -->
   <div id="consumables-bar"></div>
+  <!-- Deck mode: heat gauge (glowing ingot) sits above the buttons row; discard
+       button lives beside forge-btn so both controls read as a pair. Both start
+       hidden and are shown/hidden by cuiRenderHeat / deckUpdateDiscardBtn. -->
+  <div id="heat-gauge" class="hidden" aria-label="Forge heat">
+    <div id="heat-ingot"></div>
+    <div id="heat-band-label">WHITE HOT ×2</div>
+    <div id="strike-pips"><i></i><i></i><i></i><i></i></div>
+  </div>
   <div id="buttons">
+    <button id="discard-btn" class="hidden" aria-label="Discard marked cards">DISCARD (3)</button>
     <button id="forge-btn" disabled aria-label="Forge weapon and attack">FORGE WEAPON</button>
   </div>
   <button id="forfeit-btn" title="End run early and cash out XP" aria-label="Forfeit run and collect XP">FORFEIT</button>

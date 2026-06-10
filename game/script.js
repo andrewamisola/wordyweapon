@@ -11086,6 +11086,12 @@ function init(){
     forgeBtn.onclick = forge;
     forgeBtn.onmouseenter = sfxHover;
   }
+  // Deck mode: discard button (hidden until combat starts, shown by deckUpdateDiscardBtn).
+  const discardBtn = document.getElementById("discard-btn");
+  if(discardBtn){
+    discardBtn.onclick = deckDoDiscard;
+    discardBtn.onmouseenter = sfxHover;
+  }
   const combatContinueBtn = document.getElementById("combat-continue");
   if(combatContinueBtn){
     combatContinueBtn.onclick = () => {
@@ -12155,6 +12161,7 @@ function newEnc(){
     S._intentBlock = false; // never carry block intent across combat boundaries
     S.enemy.intents = S.enemy.intents || ['block', 'strikeback', 'bolster'];
     HeatSys.rollIntent(S, S.roundIndex);
+    deckDiscardMarks.clear(); // fresh combat — stale marks from prior fight are invalid
   } else {
     // Should never happen in deck mode — surface regressions loudly.
     console.warn('[deck] newEnc: deckCards empty — deck init skipped. Was initRunDeck called?');
@@ -12397,9 +12404,11 @@ function render(){
   // Deck mode: hand replaces the bank during combat (CSS gates on body class).
   document.body.classList.toggle('deck-combat', !!S.deck);
   if (S.deck && typeof cuiRenderHand === 'function') {
-    cuiRenderHand(S, { onCardClick: deckHandCardClicked });
+    cuiRenderHand(S, { onCardClick: deckHandCardClicked, onCardRightClick: deckToggleDiscardMark });
   }
   if (typeof cuiRenderIntent === 'function') cuiRenderIntent(S);
+  if (typeof cuiRenderHeat === 'function') cuiRenderHeat(S);
+  deckUpdateDiscardBtn();
 
   const _consStart = performance.now();
   renderConsumables();
@@ -14582,6 +14591,45 @@ function deckHandCardClicked(card) {
   else { S.pendingWord = card; }
   if (typeof playSample === 'function') playSample('highlight word.ogg', 0.5);
   render();
+}
+
+// === DECK MODE: discard flow ===
+let deckDiscardMarks = new Set();
+
+function deckToggleDiscardMark(card, el) {
+  if (!card.uid) return; // the Stick can't be discarded (no uid)
+  if (S.discardsLeft <= 0) {
+    if (typeof playSfxInvalid === 'function') playSfxInvalid();
+    return;
+  }
+  // If this card is the pending word, clear that selection to avoid confusion.
+  if (S.pendingWord === card || (S.pendingWord && card.uid && S.pendingWord.uid === card.uid)) {
+    S.pendingWord = null;
+  }
+  if (deckDiscardMarks.has(card.uid)) deckDiscardMarks.delete(card.uid);
+  else deckDiscardMarks.add(card.uid);
+  // Use render() so cuiRenderHand re-applies marks and all state stays consistent.
+  render();
+}
+
+function deckUpdateDiscardBtn() {
+  const b = document.getElementById('discard-btn');
+  if (!b) return;
+  const show = !!(S.deck && S.strikeNum);
+  b.classList.toggle('hidden', !show);
+  if (!show) return;
+  b.textContent = 'DISCARD (' + (S.discardsLeft ?? 0) + ')' +
+    (deckDiscardMarks.size ? ' — ' + deckDiscardMarks.size + ' marked' : '');
+  b.disabled = (S.discardsLeft ?? 0) <= 0 || deckDiscardMarks.size === 0;
+}
+
+function deckDoDiscard() {
+  if (DeckSys.discard(S, [...deckDiscardMarks])) {
+    deckDiscardMarks.clear();
+    // Use 'click.ogg' — closest to a card-shuffle/draw sound in the sfx set.
+    if (typeof playSample === 'function') playSample('click.ogg', 0.55);
+    render();
+  }
 }
 
 function clickWord(w, clickedChip = null){
@@ -16927,6 +16975,9 @@ function deckResolveStrike(r) {
     deckCombatCold();
     return 'cold';
   }
+  // 5. Clear any discard marks — played cards have moved to Spent; hand was
+  //    refilled; any uid in deckDiscardMarks would be stale or corrupt the count.
+  deckDiscardMarks.clear();
   DeckSys.refill(S);
   HeatSys.rollIntent(S, S.roundIndex);
   if (typeof cuiRenderIntent === 'function') cuiRenderIntent(S);   // Task 8

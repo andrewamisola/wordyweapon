@@ -69,6 +69,11 @@ function cuiRenderHand(S, opts) {
     el.style.setProperty('--tilt', ((i - mid) * 3.2) + 'deg');
     el.style.setProperty('--lift', (Math.abs(i - mid) * 7) + 'px');
     if (isPending(card)) el.classList.add('pending');
+    // Re-apply discard marks (deckDiscardMarks lives in script.js but is
+    // available at render-time; typeof-guard makes this safe at load order).
+    if (typeof deckDiscardMarks !== 'undefined' && card.uid && deckDiscardMarks.has(card.uid)) {
+      el.classList.add('marked-discard');
+    }
     el.onclick = () => opts.onCardClick && opts.onCardClick(card, el);
     el.oncontextmenu = (e) => { e.preventDefault(); opts.onCardRightClick && opts.onCardRightClick(card, el); };
     wrap.appendChild(el);
@@ -82,6 +87,8 @@ function cuiRenderHand(S, opts) {
     st.style.setProperty('--tilt', '-12deg');
     if (isPending(STICK)) st.classList.add('pending');
     st.onclick = () => opts.onCardClick && opts.onCardClick(STICK, st);
+    // Stick has no uid and must never be marked for discard — suppress contextmenu entirely.
+    st.oncontextmenu = (e) => { e.preventDefault(); };
     wrap.appendChild(st);
   }
   cuiRenderPiles(S);
@@ -387,7 +394,13 @@ function cuiTheaterShake(tier) {
     t.classList.remove('theater-shake-1', 'theater-shake-2', 'theater-shake-3');
     void t.offsetWidth;
     t.classList.add('theater-shake-' + tier);
-    t.addEventListener('animationend', function clear() {
+    t.addEventListener('animationend', function clear(e) {
+      // Guard: child animations can bubble up and trigger this listener early.
+      // Only remove shake classes when the event comes from this exact element
+      // (or, as a belt-and-suspenders check, the animation is one of our shake
+      // keyframes — guarded by name prefix since animationName is always set).
+      if (e.target !== t) return;
+      if (!e.animationName.startsWith('theaterShake')) return;
       t.classList.remove('theater-shake-1', 'theater-shake-2', 'theater-shake-3');
       t.removeEventListener('animationend', clear);
     });
@@ -459,10 +472,30 @@ function cuiTheaterCleanup() {
   });
 }
 
+// Renders (or hides) the heat gauge: glowing ingot, band label, strike pips.
+// Called from script.js render(), deckResolveStrike, the resume path, and
+// Quench Flask use. All call sites are typeof-guarded.
+function cuiRenderHeat(S) {
+  const gauge = document.getElementById('heat-gauge');
+  if (!gauge || typeof HeatSys === 'undefined') return;
+  const show = !!(S.deck && S.strikeNum);
+  gauge.classList.toggle('hidden', !show);
+  if (!show) return;
+  const band = HeatSys.band(S);
+  const ingot = document.getElementById('heat-ingot');
+  const label = document.getElementById('heat-band-label');
+  ingot.className = 'heat-' + band.key;
+  label.textContent = band.name + (band.mult !== 1 ? ' \xd7' + band.mult : '');
+  document.querySelectorAll('#strike-pips i').forEach((p, i) => {
+    p.className = i < S.strikeNum - 1 ? 'used' : i === S.strikeNum - 1 ? 'current' : '';
+  });
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     cuiCardEl, cuiTypeLabel, cuiRenderHand, cuiRenderPiles, cuiRenderIntent,
     cuiBuildPhraseBanner, cuiTheaterTickWord, cuiTheaterPassStart,
-    cuiTheaterMult, cuiTheaterImpact, cuiTheaterCleanup, cuiPhraseClass
+    cuiTheaterMult, cuiTheaterImpact, cuiTheaterCleanup, cuiPhraseClass,
+    cuiRenderHeat
   };
 }
