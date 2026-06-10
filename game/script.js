@@ -12359,6 +12359,12 @@ function render(){
   _fastRemoveWordId = null; // Clear after use
   _rt.renderBankMs = performance.now() - _bankStart;
 
+  // Deck mode: hand replaces the bank during combat (CSS gates on body class).
+  document.body.classList.toggle('deck-combat', !!S.deck);
+  if (S.deck && typeof cuiRenderHand === 'function') {
+    cuiRenderHand(S, { onCardClick: deckHandCardClicked });
+  }
+
   const _consStart = performance.now();
   renderConsumables();
   _rt.renderConsMs = performance.now() - _consStart;
@@ -14517,6 +14523,14 @@ function isWordDisabled(w,hasItem,hasNoun){
     return adjFull && nounFull;
   }
   return false;
+}
+
+// Deck mode: hand-card click mirrors the legacy chip click contract.
+function deckHandCardClicked(card) {
+  if (S.pendingWord && S.pendingWord.uid === card.uid) { S.pendingWord = null; }
+  else { S.pendingWord = card; }
+  if (typeof playSample === 'function') playSample('highlight word.ogg', 0.5);
+  render();
 }
 
 function clickWord(w, clickedChip = null){

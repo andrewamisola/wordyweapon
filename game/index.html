@@ -267,6 +267,13 @@
     <div class="shop-pill has-tooltip" id="inv-counter" style="cursor:pointer"><span id="inv-counter-text">0/24</span> <span id="sort-indicator" style="opacity:0.6;font-size:9px;margin-left:4px">Type ↓</span><div class="tooltip inv-tooltip" id="inv-breakdown-tooltip"></div></div>
   </div>
   <div id="bank"></div>
+  <!-- Deck mode: fanned hand of word cards + lexicon/spent piles (combat only) -->
+  <div id="deck-hand" aria-label="Your hand of word cards"></div>
+  <div id="deck-discards-left"></div>
+  <div id="deck-piles">
+    <div class="pile" id="pile-lexicon"><div class="pile-stack"><i></i><i></i><i></i><div class="pile-emblem">📖</div></div><div class="pile-label">LEXICON</div><div class="pile-count">0</div></div>
+    <div class="pile discard" id="pile-spent"><div class="pile-stack"><i></i><i></i><div class="pile-emblem">✕</div></div><div class="pile-label">SPENT</div><div class="pile-count">0</div></div>
+  </div>
   <!-- Display available consumables during forging -->
   <div id="consumables-bar"></div>
   <div id="buttons">
@@ -746,6 +753,7 @@
 <script src="fmt.js"></script>
 <script src="deck.js"></script>
 <script src="heat.js"></script>
+<script src="combat-ui.js"></script>
 <script src="script.js"></script>
 
 </body>
