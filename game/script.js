@@ -14808,6 +14808,8 @@ function setupEvents(){
           // Place the selected word into the chosen slot
           S.sel[k] = selected;
         }
+        // Deck mode: a slotted card can no longer be marked for discard
+        if (typeof deckDiscardMarks !== 'undefined' && selected.uid) deckDiscardMarks.delete(selected.uid);
         // Clear the selection and re-render UI
         S.pendingWord = null;
 
