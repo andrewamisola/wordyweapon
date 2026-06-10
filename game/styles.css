@@ -4268,3 +4268,169 @@ body:not(.deck-combat) #deck-discards-left { display:none; }
   width:10px;height:10px;background:rgba(20,15,9,.92);
   border-right:1px solid rgba(232,217,181,.3);border-bottom:1px solid rgba(232,217,181,.3);}
 @keyframes intentPulse{0%,100%{opacity:.85;}50%{opacity:1;}}
+
+/* === Task 9: scoring theater + phrase banner (deck mode only) === */
+/* Phrase banner — the forged phrase as the hero object above the weapon */
+#theater-banner{position:relative;z-index:2;text-align:center;margin:2px auto 10px;max-width:100%;}
+#theater-phrase-label{font-size:10px;letter-spacing:.42em;color:rgba(232,217,181,.40);margin-bottom:3px;font-family:var(--font-sans);}
+#theater-phrase{
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(20px,3.2vw,34px);line-height:1.1;letter-spacing:.015em;
+  text-shadow:0 2px 0 rgba(0,0,0,.85), 0 6px 22px rgba(0,0,0,.6);
+  display:flex;align-items:baseline;gap:10px;justify-content:center;flex-wrap:wrap;
+  filter:drop-shadow(0 0 20px rgba(251,191,36,.12));
+}
+#theater-phrase .pw{position:relative;transition:transform .18s ease, filter .18s ease;}
+#theater-phrase .pw.counting{transform:translateY(-6px) scale(1.14);filter:brightness(1.25);}
+/* per-word ink treatments */
+.pw-legend{
+  background:linear-gradient(105deg,#f5d77c 0%, #fff4cf 18%, #e0a93c 38%, #fbe7a8 52%, #b8862e 70%, #ffe9a8 88%);
+  background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:theaterFoilSweep 4.5s linear infinite;
+}
+@keyframes theaterFoilSweep{0%{background-position:0% 0;}100%{background-position:220% 0;}}
+.pw-rare{color:#fbbf24;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 14px rgba(251,191,36,.4);}
+.pw-fire{
+  background:linear-gradient(0deg,#ff5a00 8%, #ff9d2e 45%, #ffd166 78%, #fff3c4 100%);
+  background-size:100% 190%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:theaterFireLick 1.15s ease-in-out infinite alternate;
+  filter:drop-shadow(0 0 12px rgba(255,110,20,.55));
+}
+@keyframes theaterFireLick{0%{background-position:0 22%;}100%{background-position:0 62%;}}
+.pw-dark{
+  color:#c084fc;
+  text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 18px rgba(168,85,247,.55);
+  animation:theaterDarkPulse 2.6s ease-in-out infinite;
+}
+@keyframes theaterDarkPulse{0%,100%{filter:brightness(.92);}50%{filter:brightness(1.18);}}
+.pw-light{color:#ffffa0;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 16px rgba(255,255,160,.55);}
+.pw-water{color:#4d99ff;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 14px rgba(77,153,255,.5);}
+.pw-poison{color:#7ee04d;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 14px rgba(126,224,77,.5);}
+.pw-lightning{color:#ffff4d;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 16px rgba(255,255,77,.55);}
+.pw-earth{color:#c9965c;text-shadow:0 2px 0 rgba(0,0,0,.85), 0 0 12px rgba(153,102,51,.5);}
+.pw-phys{color:#dfe6ee;text-shadow:0 2px 0 rgba(0,0,0,.85);}
+.pw-plain{color:#e8d9b5;text-shadow:0 2px 0 rgba(0,0,0,.85);}
+.pw-of{font-family:var(--font-display);font-style:italic;font-size:.6em;color:rgba(232,217,181,.6);}
+
+/* Scoreboard chips: AP x W x MULT = DMG */
+#theater-scoreboard{
+  position:relative;z-index:2;
+  display:flex;align-items:stretch;justify-content:center;gap:8px;
+  margin:4px auto 8px;flex-wrap:wrap;
+}
+.theater-chip{
+  min-width:84px;text-align:center;padding:6px 12px 8px;
+  border-radius:4px;position:relative;
+  background:linear-gradient(180deg, rgba(38,30,20,.92), rgba(18,14,9,.92));
+  border:1px solid rgba(232,217,181,.16);
+  box-shadow:0 4px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(232,217,181,.07);
+}
+.theater-chip .lbl{font-family:var(--font-sans);font-size:9px;letter-spacing:.3em;color:rgba(232,217,181,.45);}
+.theater-chip .val{font-family:var(--font-display);font-weight:700;font-size:22px;line-height:1.1;}
+.theater-chip.tick .val{animation:theaterValTick .22s ease;}
+@keyframes theaterValTick{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
+#theater-chip-ap .val{color:#8fc3ff;text-shadow:0 0 12px rgba(59,130,246,.5);}
+#theater-chip-w .val{color:#9ef0a8;text-shadow:0 0 12px rgba(74,222,128,.45);}
+#theater-chip-mult .val{color:#ff8a4c;text-shadow:0 0 14px rgba(249,115,22,.6);}
+#theater-chip-mult.burning{
+  border-color:rgba(249,115,22,.55);
+  box-shadow:0 0 22px rgba(249,115,22,.35), inset 0 0 12px rgba(249,115,22,.18);
+  animation:theaterBurnShake .14s linear infinite;
+}
+@keyframes theaterBurnShake{
+  0%{transform:translate(0,0);}25%{transform:translate(.7px,-.7px);}
+  50%{transform:translate(-.7px,.5px);}75%{transform:translate(.5px,.7px);}100%{transform:translate(0,0);}
+}
+.theater-op{font-family:var(--font-display);font-size:20px;color:rgba(232,217,181,.4);align-self:center;}
+#theater-chip-dmg{
+  min-width:130px;
+  border-color:rgba(251,191,36,.35);
+  background:linear-gradient(180deg, rgba(58,40,16,.95), rgba(26,17,7,.95));
+}
+#theater-chip-dmg .val{font-size:28px;color:#fbbf24;text-shadow:0 0 18px rgba(251,191,36,.55), 0 2px 0 rgba(0,0,0,.8);}
+#theater-chip-dmg.blazing{box-shadow:0 0 36px rgba(251,191,36,.45), inset 0 0 18px rgba(251,191,36,.2);}
+#theater-chip-dmg.blazing .val{animation:theaterDmgBlaze .5s ease infinite alternate;}
+@keyframes theaterDmgBlaze{
+  0%{text-shadow:0 0 14px rgba(251,191,36,.55), 0 2px 0 rgba(0,0,0,.8);}
+  100%{text-shadow:0 0 28px rgba(255,220,120,.95), 0 0 56px rgba(255,140,30,.5), 0 2px 0 rgba(0,0,0,.8);}
+}
+
+/* Flying number popups (skipped in Low FX mode) */
+.theater-fly{
+  position:fixed;z-index:10001;pointer-events:none;
+  font-family:var(--font-display);font-weight:700;font-size:20px;
+  text-shadow:0 2px 0 #000, 0 0 12px currentColor;
+  animation:theaterFlyUp 1s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes theaterFlyUp{
+  0%{opacity:0;transform:translateY(8px) scale(.7);}
+  18%{opacity:1;transform:translateY(-10px) scale(1.15);}
+  100%{opacity:0;transform:translateY(-58px) scale(.95);}
+}
+
+/* REREAD ribbon */
+#theater-ribbon{
+  position:absolute;left:50%;top:34%;transform:translateX(-50%) rotate(-2deg) scale(0);
+  z-index:50;pointer-events:none;opacity:0;
+  font-family:var(--font-display);font-weight:700;font-size:30px;letter-spacing:.12em;
+  color:#0b0a08;background:linear-gradient(180deg,#ffe9a8,#e8b83c);
+  padding:3px 26px;border-radius:3px;
+  box-shadow:0 8px 26px rgba(251,191,36,.45), 0 3px 0 rgba(122,80,10,.9);
+}
+#theater-ribbon.show{animation:theaterRibbonSlam .9s cubic-bezier(.16,1.4,.3,1) forwards;}
+@keyframes theaterRibbonSlam{
+  0%{transform:translateX(-50%) rotate(-12deg) scale(0);opacity:0;}
+  30%{transform:translateX(-50%) rotate(-2deg) scale(1.15);opacity:1;}
+  45%{transform:translateX(-50%) rotate(-2deg) scale(1);}
+  80%{opacity:1;}
+  100%{transform:translateX(-50%) rotate(-2deg) scale(1.04);opacity:0;}
+}
+
+/* Screen shake tiers (applied to #game-container AND the combat modal) */
+.theater-shake-1{animation:theaterShake1 .3s linear;}
+.theater-shake-2{animation:theaterShake2 .45s linear;}
+.theater-shake-3{animation:theaterShake3 .6s linear;}
+@keyframes theaterShake1{
+  0%,100%{transform:translate(0,0);}25%{transform:translate(3px,-2px);}
+  50%{transform:translate(-3px,2px);}75%{transform:translate(2px,2px);}
+}
+@keyframes theaterShake2{
+  0%,100%{transform:translate(0,0);}15%{transform:translate(7px,-5px) rotate(.3deg);}
+  30%{transform:translate(-6px,4px) rotate(-.3deg);}45%{transform:translate(5px,3px);}
+  60%{transform:translate(-4px,-3px);}80%{transform:translate(3px,2px);}
+}
+@keyframes theaterShake3{
+  0%,100%{transform:translate(0,0);}10%{transform:translate(12px,-8px) rotate(.6deg);}
+  22%{transform:translate(-10px,7px) rotate(-.5deg);}36%{transform:translate(9px,5px) rotate(.4deg);}
+  50%{transform:translate(-8px,-6px);}64%{transform:translate(6px,5px);}
+  78%{transform:translate(-5px,-3px);}90%{transform:translate(3px,2px);}
+}
+
+/* White-hot flash on final impact (skipped in Low FX mode) */
+#theater-flash{
+  position:fixed;inset:0;z-index:10002;pointer-events:none;
+  background:radial-gradient(60% 50% at 60% 35%, rgba(255,236,190,.95), rgba(255,170,60,.4) 50%, transparent 75%);
+  opacity:0;
+}
+#theater-flash.go{animation:theaterFlashGo .55s ease-out;}
+@keyframes theaterFlashGo{0%{opacity:0;}12%{opacity:1;}100%{opacity:0;}}
+
+/* Final damage popup near the enemy HP bar */
+#theater-popup{
+  position:fixed;z-index:10003;pointer-events:none;
+  transform:translateX(-50%) translateY(0) scale(.6) rotate(-4deg);
+  font-family:var(--font-display);font-weight:700;
+  color:#ffd166;
+  text-shadow:0 0 18px rgba(255,122,26,.9), 0 4px 0 rgba(0,0,0,.8);
+  opacity:0;
+}
+#theater-popup.show{animation:theaterDmgPop 1.6s cubic-bezier(.16,1,.3,1) forwards;}
+@keyframes theaterDmgPop{
+  0%{opacity:0;transform:translateX(-50%) translateY(20px) scale(.5) rotate(-4deg);}
+  12%{opacity:1;transform:translateX(-50%) translateY(-12px) scale(1.18) rotate(2deg);}
+  24%{transform:translateX(-50%) translateY(-6px) scale(1) rotate(-1deg);}
+  78%{opacity:1;transform:translateX(-50%) translateY(-46px) scale(1.02) rotate(0);}
+  100%{opacity:0;transform:translateX(-50%) translateY(-78px) scale(1.05);}
+}

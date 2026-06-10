@@ -17331,6 +17331,10 @@ function rollBossLootDrops(){
 async function afterCombat(){
   isForging = false;
 
+  // DECK MODE (Task 9): tear down theater DOM (banner/chips/ribbon/flash/popup/flyers)
+  // before any of the overlay-close branches below run. No-op when nothing mounted.
+  if(typeof cuiTheaterCleanup === 'function') cuiTheaterCleanup();
+
   const lastResult=window.lastCombatResult;
   const spotlightTint = $("#spotlight-tint");
 
@@ -19384,6 +19388,9 @@ async function showCombat(r,words,rewards){
 
     const wordEls=[...cw.querySelectorAll(".combat-word")];
 
+    // DECK MODE (Task 9): mount phrase banner + scoring chips over the legacy tally
+    if(S.deck && typeof cuiBuildPhraseBanner === 'function') cuiBuildPhraseBanner(words, safeResult);
+
     // === Progressive HP Bar Animation (Preview-then-Shatter) ===
     // During tally: keep HP bar FULL, grow a red preview bar to show damage
     // After tally: shatter effect, then reveal actual remaining HP
@@ -19429,6 +19436,9 @@ async function showCombat(r,words,rewards){
 
     for(let passIdx = 0; passIdx < passes.length; passIdx++){
       const wordsInPass = passes[passIdx];
+
+      // DECK MODE (Task 9): slam the REREAD! ribbon at the start of every re-read pass
+      if(S.deck && passIdx > 0 && typeof cuiTheaterPassStart === 'function') cuiTheaterPassStart(passIdx);
 
       for(let wordIdx of wordsInPass){
         const w = words[wordIdx];
@@ -19479,6 +19489,9 @@ async function showCombat(r,words,rewards){
             showFloatingMidasGold(el, goldenRereadGold);
           }
         }
+
+        // DECK MODE (Task 9): tick scoring chips + highlight the phrase-banner word
+        if(S.deck && typeof cuiTheaterTickWord === 'function') cuiTheaterTickWord(wordIdx, isFirstAppearance);
 
         // Play rising Shepard tone - continues ascending across all passes
         // Uses globalToneIndex which increments each trigger for infinite rising effect
@@ -19814,6 +19827,9 @@ async function showCombat(r,words,rewards){
 
     flames.style.opacity="0.5";
 
+    // DECK MODE (Task 9): burn MULT ×1 → final multiplier, then roll up the DAMAGE chip
+    if(S.deck && typeof cuiTheaterMult === 'function') await cuiTheaterMult();
+
     total.textContent=`${fmtBig(r.heroDmg)} DAMAGE!`;
     total.classList.add("show");
 
@@ -19834,6 +19850,9 @@ async function showCombat(r,words,rewards){
 
     // Shatter effect on enemy health bar - the dramatic moment!
     shatterHealthBar(barOuter, r.heroDmg, r.enemyMax);
+
+    // DECK MODE (Task 9): white-out flash, tiered screen shake, damage popup
+    if(S.deck && typeof cuiTheaterImpact === 'function') cuiTheaterImpact(r.heroDmg);
 
     // Quick fade out the entire HP bar area during shatter (sells the destruction)
     if (barOuter) {
