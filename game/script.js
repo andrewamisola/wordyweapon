@@ -213,24 +213,19 @@ const INV_LIMIT=24;
 const CONSUMABLE_LIMIT=2;
 
 // === INTEREST SYSTEM ===
-// Interest is granted when leaving the shop (not on victory)
-// Total cap: 30 gold
-// Gold interest: +1 per 10 gold held (max +6 from 60g)
-// Slot interest: +1 per empty inventory slot (max +24 from empty bank)
-const INTEREST_CAP = 30;
+// DECK MODE (Task 12): interest is granted between rounds (deckNextRound).
+// Gold interest only: +1 per 10 gold held (max +6 from 60g). The legacy
+// empty-slot component died with the word inventory.
 const GOLD_INTEREST_CAP = 6;
 const GOLD_PER_INTEREST = 10;
 
 function calculateInterest() {
-  const visibleInvCount = S.inv ? S.inv.filter(w => !w.hiddenInBank).length : 0;
-  const emptySlots = Math.max(0, INV_LIMIT - visibleInvCount);
   const goldInterest = Math.min(GOLD_INTEREST_CAP, Math.floor((S.gold || 0) / GOLD_PER_INTEREST));
-  const slotInterest = emptySlots; // +1 per empty slot
-  const baseInterest = Math.min(INTEREST_CAP, goldInterest + slotInterest);
   // Apply difficulty multiplier to interest
   const interestMult = DIFF_INTEREST_MULT[S.difficulty || 0];
-  const totalInterest = Math.floor(baseInterest * interestMult);
-  return { goldInterest, slotInterest, totalInterest, emptySlots, interestMult };
+  const totalInterest = Math.floor(goldInterest * interestMult);
+  // slotInterest/emptySlots kept (as 0) for display call sites' destructuring
+  return { goldInterest, slotInterest: 0, totalInterest, emptySlots: 0, interestMult };
 }
 
 // === BALATRO-STYLE DIFFICULTY SCALING ===
@@ -7135,7 +7130,8 @@ let S={
   // Chapter boss tracking (unique bosses at round 9, 18, 27, etc.)
   foughtChapterBosses: [], // IDs of chapter bosses already fought (cycles when exhausted)
   chapterBoss: null, // Current chapter boss data (if fighting one)
-  blockedSlot: null // Red Aktins: which slot is blocked for this fight
+  blockedSlot: null, // Red Aktins: which slot is blocked for this fight
+  vendorRemovals: 0 // DECK MODE (Task 12): retire-a-word purchases this run (cost escalator)
 },audioOn=true;
 
 // === STEAM INTEGRATION ===
@@ -7352,6 +7348,7 @@ function applyRunState(data){
 
   // Deck mode: rebuild transient zones; persist only the card list.
   S.deckCards = S.deckCards || [];
+  S.vendorRemovals = S.vendorRemovals || 0;
   DeckSys.syncUidCounter(S);
   S.discardsLeft = S.discardsLeft ?? DECK_DISCARDS_PER_COMBAT;
   S.strikeNum = S.strikeNum ?? 1;
@@ -11111,7 +11108,7 @@ function init(){
     shopExitBtn.onclick = async () => {
       if(shopExitBtn.disabled) return;
       try {
-      // Grant interest on shop exit: gold interest + empty slot interest
+      // Grant interest on shop exit (legacy non-deck path; gold interest only)
       const { totalInterest } = calculateInterest();
       if(totalInterest > 0){
         S.gold += totalInterest;
@@ -11641,6 +11638,7 @@ async function startNewRun(){
   S.chapterBoss = null;
   S.blockedSlot = null;
   S.deckCards = []; // deck mode: explicit reset; rebuilt by initRunDeck at hero select
+  S.vendorRemovals = 0; // deck mode: vendor retire cost escalator resets each run
   // Reset chapter tracking
   S.chapterAPBonus = 0; // Cumulative AP bonus from completing chapters
   S.currentChapter = 0;
@@ -11930,6 +11928,7 @@ function showHeroSelect(){
 
       // Deck mode: the run deck replaces the word inventory.
       DeckSys.initRunDeck(S, WORDS, S.hero);
+      S.gamePhase = 'forge'; // deck runs never visit the shop phase
 
       newEnc();
 
@@ -17072,6 +17071,257 @@ function showCardPick(isBossReward) {
   });
 }
 
+// === DECK MODE (Task 12): Forge Vendor ===
+// Visits after the round-6/15/24 victories (wired in afterCombat, before the
+// talent select). Replaces the legacy per-round shop: retire (remove) a deck
+// card, engrave (+1 AP permanent), buy premium cards, buy tools.
+const VENDOR_REMOVE_BASE = 15;   // +10 per prior removal this run
+const VENDOR_ENGRAVE_COST = 25;  // permanent +1 AP
+// Tools the vendor stocks: only those that work without the legacy word
+// inventory (same_day_delivery / quality_assurance / antithesis / tautology
+// all operate on S.inv / S.pendingWord, which deck mode retired).
+const VENDOR_TOOL_IDS = ['weapon_master_consumable', 'polymorph', 'shackles', 'quench_flask'];
+
+function showVendor() {
+  return new Promise(resolve => {
+    const ov = document.getElementById('vendor-overlay');
+    if (!ov || !S.deckCards || !S.deckCards.length) { resolve(); return; }
+    if (typeof S.vendorRemovals !== 'number') S.vendorRemovals = 0;
+
+    // Roll this visit's stock once; re-renders (after purchases) keep it stable.
+    const premiumStock = deckRollRewardCards(S.roundIndex, true, 2)
+      .map(w => ({ word: w, price: 15 * Math.max(1, w.rarity || 1) * 2, sold: false }));
+    const toolStock = shuf([...VENDOR_TOOL_IDS])
+      .slice(0, 3)
+      .map(id => ({ item: CONSUMABLES.find(c => c.id === id), sold: false }))
+      .filter(t => t.item);
+
+    const removeCost = () => VENDOR_REMOVE_BASE + 10 * (S.vendorRemovals || 0);
+    const toolPrice = (c) => {
+      let cost = Math.ceil((c.cost || 0) * DIFF_PRICE_MULT[S.difficulty || 0]);
+      if (S.talents && S.talents.includes('tinkerer')) cost = Math.ceil(cost * 0.75);
+      return cost;
+    };
+    const toolLimit = () => (S.talents && S.talents.includes('well_equipped')) ? CONSUMABLE_LIMIT + 1 : CONSUMABLE_LIMIT;
+    const spend = (cost) => {
+      S.gold -= cost;
+      S.goldSpent = (S.goldSpent || 0) + cost;
+    };
+
+    function renderAll() {
+      const goldEl = document.getElementById('vendor-gold');
+      if (goldEl) goldEl.innerHTML = `Your gold: ${icon('coin')}${S.gold}`;
+
+      // --- RETIRE A WORD ---
+      const retireNote = document.getElementById('vendor-retire-note');
+      const canShrink = S.deckCards.length > DECK_HAND_SIZE;
+      if (retireNote) retireNote.textContent = `${removeCost()}g · deck can never drop below ${DECK_HAND_SIZE} cards`;
+      const retireGrid = document.getElementById('vendor-retire-grid');
+      retireGrid.innerHTML = '';
+      S.deckCards.forEach(card => {
+        const el = cuiCardEl(card, { mini: true });
+        const cost = removeCost();
+        const blocked = !canShrink || S.gold < cost;
+        el.title = !canShrink
+          ? `Cannot retire: deck is at the minimum of ${DECK_HAND_SIZE} cards`
+          : `Retire ${card.name} — ${cost}g`;
+        if (blocked) el.classList.add('vendor-disabled');
+        el.onclick = () => {
+          if (!canShrink) { showQuickToast(`Your Lexicon can't drop below ${DECK_HAND_SIZE} cards.`); return; }
+          if (S.gold < cost) { showQuickToast(`Not enough gold! Retiring costs ${cost}g.`); return; }
+          spend(cost);
+          S.vendorRemovals = (S.vendorRemovals || 0) + 1;
+          DeckSys.removeCard(S, card.uid);
+          sfxClick();
+          showQuickToast(`${card.name} retired from your Lexicon`, null, 'success');
+          renderAll();
+        };
+        el.onmouseenter = sfxHover;
+        retireGrid.appendChild(el);
+      });
+
+      // --- ENGRAVE A WORD ---
+      const engraveNote = document.getElementById('vendor-engrave-note');
+      if (engraveNote) engraveNote.textContent = `${VENDOR_ENGRAVE_COST}g · permanent +1 AP`;
+      const engraveGrid = document.getElementById('vendor-engrave-grid');
+      engraveGrid.innerHTML = '';
+      S.deckCards.forEach(card => {
+        const el = cuiCardEl(card, { mini: true }); // engraved cards get their badge from cuiCardEl
+        const blocked = card.engraved || S.gold < VENDOR_ENGRAVE_COST;
+        el.title = card.engraved
+          ? `${card.name} is already engraved`
+          : `Engrave ${card.name} — ${VENDOR_ENGRAVE_COST}g (permanent +1 AP)`;
+        if (blocked) el.classList.add('vendor-disabled');
+        el.onclick = () => {
+          if (card.engraved) { showQuickToast(`${card.name} is already engraved.`); return; }
+          if (S.gold < VENDOR_ENGRAVE_COST) { showQuickToast(`Not enough gold! Engraving costs ${VENDOR_ENGRAVE_COST}g.`); return; }
+          spend(VENDOR_ENGRAVE_COST);
+          card.engraved = true;
+          card.engraveAp = 1;
+          sfxClick();
+          showQuickToast(`${card.name} engraved (+1 AP, permanent)`, null, 'success');
+          renderAll();
+        };
+        el.onmouseenter = sfxHover;
+        engraveGrid.appendChild(el);
+      });
+
+      // --- RARE STOCK (premium cards, boss-weighted roll) ---
+      const rareRow = document.getElementById('vendor-rare-row');
+      rareRow.innerHTML = '';
+      premiumStock.forEach(offer => {
+        const wrap = document.createElement('div');
+        wrap.className = 'vendor-rare-offer';
+        const el = cuiCardEl(offer.word, {});
+        const price = document.createElement('div');
+        price.className = 'vendor-price';
+        price.innerHTML = offer.sold ? 'SOLD' : `${icon('coin')}${offer.price}`;
+        if (offer.sold) wrap.classList.add('vendor-sold');
+        else if (S.gold < offer.price) wrap.classList.add('vendor-disabled');
+        wrap.onclick = () => {
+          if (offer.sold) return;
+          if (S.gold < offer.price) { showQuickToast(`Not enough gold! ${offer.word.name} costs ${offer.price}g.`); return; }
+          spend(offer.price);
+          offer.sold = true;
+          DeckSys.addCard(S, offer.word);
+          sfxClick();
+          showQuickToast(`${offer.word.name} added to your Lexicon`, null, 'success');
+          renderAll();
+        };
+        wrap.onmouseenter = sfxHover;
+        wrap.appendChild(el);
+        wrap.appendChild(price);
+        rareRow.appendChild(wrap);
+      });
+
+      // --- TOOLS (consumables; mirrors the legacy shop purchase rules) ---
+      const toolsNote = document.getElementById('vendor-tools-note');
+      if (toolsNote) toolsNote.textContent = `carry up to ${toolLimit()}`;
+      const toolsRow = document.getElementById('vendor-tools-row');
+      toolsRow.innerHTML = '';
+      toolStock.forEach(offer => {
+        const c = offer.item;
+        const cost = toolPrice(c);
+        const atLimit = S.consumables.length >= toolLimit();
+        const chip = document.createElement('div');
+        chip.className = 'consumable-item has-tooltip';
+        const tooltip = `<div class="tooltip"><div class="tooltip-title">${c.name}</div><div class="tooltip-line">${c.desc}</div></div>`;
+        const infoLabel = offer.sold ? 'Sold' : `${atLimit ? 'At capacity' : 'Buy'} · ${icon('coin')}${cost}`;
+        chip.innerHTML = `<div class="chip-name" style="color:#fbbf24">${c.name}</div><div class="chip-info">${infoLabel}</div>${tooltip}`;
+        if (offer.sold) chip.classList.add('vendor-sold');
+        else if (atLimit || S.gold < cost) chip.classList.add('disabled');
+        chip.onclick = () => {
+          if (offer.sold) return;
+          if (atLimit) { showQuickToast(`You can only carry ${toolLimit()} Tools.`); return; }
+          if (S.gold < cost) { showQuickToast(`Not enough gold! Need ${icon('coin')}${cost}, have ${icon('coin')}${S.gold}`); return; }
+          spend(cost);
+          offer.sold = true;
+          S.consumables.push(c.id);
+          playSample('buy_crate.ogg', 0.9);
+          showQuickToast(`${c.name} acquired`, null, 'success');
+          renderConsumables(); // refresh the inline tool pills behind the overlay
+          renderAll();
+        };
+        chip.onmouseenter = sfxHover;
+        toolsRow.appendChild(chip);
+      });
+    }
+
+    const leaveBtn = document.getElementById('vendor-leave');
+    if (leaveBtn) {
+      leaveBtn.onclick = async () => {
+        sfxClick();
+        ov.classList.remove('show');
+        await saveRun(); // persist removals/engraves/purchases immediately
+        resolve();
+      };
+      leaveBtn.onmouseenter = sfxHover;
+    }
+
+    renderAll();
+    ov.classList.add('show');
+  });
+}
+
+// DECK MODE (Task 12): bridge between rounds. Replaces the legacy shop-exit
+// handler's essential steps: grant interest, reset reroll cost, clear forge
+// selection, roll the next encounter, switch the scene back to the forge with
+// the round intro, persist with gamePhase 'forge', render.
+async function deckNextRound(skipTransition = false) {
+  // Flat gold interest (+1 per 10g held, max +6) - single source of truth.
+  const { totalInterest: interest } = calculateInterest();
+  if (interest > 0) {
+    S.gold += interest;
+    checkTreasureHunterAchievement();
+    playSample('gem.ogg', 0.5);
+    showQuickToast(`Interest: +${interest} gold`, null, 'success');
+  }
+
+  // Prepare the next encounter before the scene switch (mirrors the exit handler).
+  S.rerollCost = 5;
+  clrSel();
+  newEnc();
+
+  const switchScene = () => {
+    if (musicEngine && musicEngine.initialized && musicEngine.inShopMode) {
+      musicEngine.exitShopMode();
+    }
+    setFlameColor('battle');
+    if (sparkManager) {
+      const isBossRound = S.roundIndex % 9 === 0 && S.roundIndex > 0;
+      sparkManager.setColorMode(isBossRound ? 'boss' : 'normal');
+    }
+    // Show intro immediately during transition
+    showRoundIntro();
+  };
+  // skipTransition: callers that are already mid-transition (black screen or an
+  // outer playSceneTransition) — a nested playSceneTransition would no-op on
+  // the isTransitioning guard and silently skip the scene switch.
+  if (skipTransition) switchScene();
+  else await playSceneTransition(switchScene);
+
+  // The intro overlay (z 9000) covers the screen; fade the black spotlight tint
+  // behind it so the forge is revealed when the intro is dismissed.
+  const spotlightTint = document.getElementById('spotlight-tint');
+  if (spotlightTint) {
+    spotlightTint.classList.remove('full');
+    await dly(RHYTHM.EIGHTH);
+    spotlightTint.classList.remove('show');
+  }
+
+  // Wait for intro to be dismissed
+  await waitForIntroDismiss();
+
+  // Show forge after intro completes
+  const forgeEl = document.getElementById('forge');
+  if (forgeEl) forgeEl.classList.remove('shop-hidden');
+
+  // Mark game phase for save/load restoration
+  S.gamePhase = 'forge';
+  await saveRun();
+
+  render();
+}
+
+// DECK MODE (Task 12): single exit point from the talent/upgrade flow.
+// Deck mode goes straight to the next round; the legacy (non-deck) path keeps
+// the per-round shop.
+async function postTalentProceed() {
+  if (S.deckCards && S.deckCards.length) {
+    await playSceneTransition(() => {
+      $("#talent-overlay").classList.remove("show");
+    });
+    await deckNextRound(true);
+    return;
+  }
+  setFlameColor('shop'); // Start flame transition early for smooth blend
+  await playSceneTransition(async () => {
+    $("#talent-overlay").classList.remove("show");
+    await dly(RHYTHM.QUARTER); // Brief pause before shop appears
+    await showShop(true);
+  });
+}
+
 let isForging = false; // Guard against double-clicking forge button
 
 async function forge(){
@@ -17404,9 +17654,10 @@ async function forge(){
       }
     });
 
-    // Boss loot
+    // Boss loot preview (legacy only - deck mode's boss reward is the
+    // boss-weighted card pick, so don't promise inventory drops)
     const isBoss = (S.roundIndex % 3 === 0);
-    if(isBoss){
+    if(isBoss && !(S.deckCards && S.deckCards.length)){
       // Preview what loot will be granted: 1 weapon + 3 words with a guaranteed Tier-3 drop
       const bossLoot = rollBossLootDrops();
       S.pendingBossLoot = bossLoot;
@@ -17765,36 +18016,42 @@ async function afterCombat(){
         unlockSteamAchievement('MINIMALIST');
       }
 
-      const bossLoot = pendingBossLoot || rollBossLootDrops();
-      const dropOrder = [];
-      if(bossLoot && Array.isArray(bossLoot.words)){
-        dropOrder.push(...bossLoot.words);
-      }
-      if(bossLoot && bossLoot.weapon){
-        dropOrder.push(bossLoot.weapon);
-      }
+      // DECK MODE (Task 12): legacy boss loot dropped 1 weapon + 3 words into
+      // the word inventory, which deck mode retired. Word/weapon drops are
+      // covered by the boss-weighted card pick below; rollBossLootDrops never
+      // granted gems or consumables, so there is nothing else to convert.
+      if(!(S.deckCards && S.deckCards.length)){
+        const bossLoot = pendingBossLoot || rollBossLootDrops();
+        const dropOrder = [];
+        if(bossLoot && Array.isArray(bossLoot.words)){
+          dropOrder.push(...bossLoot.words);
+        }
+        if(bossLoot && bossLoot.weapon){
+          dropOrder.push(bossLoot.weapon);
+        }
 
-      // Only count visible words (exclude hiddenInBank words)
-      const visibleCount = S.inv.filter(w => !w.hiddenInBank).length;
-      const availableSlots = Math.max(0, INV_LIMIT - visibleCount);
+        // Only count visible words (exclude hiddenInBank words)
+        const visibleCount = S.inv.filter(w => !w.hiddenInBank).length;
+        const availableSlots = Math.max(0, INV_LIMIT - visibleCount);
 
-      // Add items that fit in inventory
-      if(availableSlots > 0){
-        dropOrder.slice(0, availableSlots).forEach(drop => S.inv.push({ ...drop }));
-        checkHoarderAchievement();
-      }
+        // Add items that fit in inventory
+        if(availableSlots > 0){
+          dropOrder.slice(0, availableSlots).forEach(drop => S.inv.push({ ...drop }));
+          checkHoarderAchievement();
+        }
 
-      // Convert overflow items to gold (same as sell prices: T1=1g, T2=2g, T3=5g)
-      const overflowItems = dropOrder.slice(availableSlots);
-      if(overflowItems.length > 0){
-        let overflowGold = 0;
-        overflowItems.forEach(item => {
-          const tier = item.rarity || 0;
-          overflowGold += tier === 0 ? 1 : tier === 2 ? 2 : 5;
-        });
-        S.gold += overflowGold;
-        S.lastOverflowGold = overflowGold; // Track for display
-        S.lastOverflowCount = overflowItems.length;
+        // Convert overflow items to gold (same as sell prices: T1=1g, T2=2g, T3=5g)
+        const overflowItems = dropOrder.slice(availableSlots);
+        if(overflowItems.length > 0){
+          let overflowGold = 0;
+          overflowItems.forEach(item => {
+            const tier = item.rarity || 0;
+            overflowGold += tier === 0 ? 1 : tier === 2 ? 2 : 5;
+          });
+          S.gold += overflowGold;
+          S.lastOverflowGold = overflowGold; // Track for display
+          S.lastOverflowCount = overflowItems.length;
+        }
       }
     }
 
@@ -17810,7 +18067,7 @@ async function afterCombat(){
       const isFinalVictory = (S.roundIndex === 27) || (IS_DEMO && S.roundIndex >= DEMO_ROUND_LIMIT);
       if (S.deckCards && S.deckCards.length && !isFinalVictory) {
         await showCardPick(isBoss); // isBoss = miniboss OR chapter boss reward weighting
-        // Forge Vendor placeholder (implemented in Task 12)
+        // Forge Vendor (Task 12): retire/engrave/buy between chapters-ish beats
         if ([6, 15, 24].includes(S.roundIndex) && typeof showVendor === 'function') {
           await showVendor();
         }
@@ -17879,10 +18136,14 @@ async function afterCombat(){
         // Wait for onboarding overlay fade-out (0.4s) before shop transition
         await new Promise(r => setTimeout(r, RHYTHM.BEAT));
       }
-      // Screen is already black (spotlight tint full) - skip showShop's transition
-      // and let spotlight tint fade out after shop appears
-      await showShop(true);
-      // Fade out spotlight tint smoothly
+      // Screen is already black (spotlight tint full) - skip the transition.
+      // DECK MODE (Task 12): no per-round shop; go straight to the next round.
+      if (S.deckCards && S.deckCards.length) {
+        await deckNextRound(true);
+      } else {
+        await showShop(true);
+      }
+      // Fade out spotlight tint smoothly (no-op if deckNextRound already did)
       if (spotlightTint) {
         spotlightTint.classList.remove('full');
         await dly(RHYTHM.EIGHTH);
@@ -17905,10 +18166,16 @@ async function afterCombat(){
         saveStats();
       }
 
-      newEnc(); // Generate new enemy
-      // Screen is already black (spotlight tint full) - skip showShop's transition
-      await showShop(true);
-      // Fade out spotlight tint smoothly
+      // Screen is already black (spotlight tint full) - skip the transition.
+      // DECK MODE (Task 12): straight to the next round (deckNextRound rolls
+      // the new enemy itself via newEnc).
+      if (S.deckCards && S.deckCards.length) {
+        await deckNextRound(true);
+      } else {
+        newEnc(); // Generate new enemy
+        await showShop(true);
+      }
+      // Fade out spotlight tint smoothly (no-op if deckNextRound already did)
       if (spotlightTint) {
         spotlightTint.classList.remove('full');
         await dly(RHYTHM.EIGHTH);
@@ -18395,8 +18662,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
   const availableTalents = TALENTS.filter(t => !S.talents.includes(t.id) && !t.disabled);
 
   if(availableTalents.length === 0){
-    // No more talents to choose from, go to shop
-    showShop();
+    // No more talents to choose from - proceed (next round in deck mode, shop in legacy)
+    postTalentProceed();
     return;
   }
 
@@ -18447,8 +18714,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 
   const container = $("#talent-choices");
   if(!container){
-    console.error('[showTalentSelect] #talent-choices not found, falling back to shop');
-    showShop();
+    console.error('[showTalentSelect] #talent-choices not found, proceeding without talent pick');
+    postTalentProceed();
     return;
   }
   const rarityLabelMap = {common: 'T1', uncommon: 'T2', rare: 'T3'};
@@ -18800,13 +19067,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             // Transition to upgrade phase within same overlay
             await showUpgradeSelection(upgradeCount, renderContainer);
           } else {
-            // No upgrades (or first talent) - go directly to shop
-            setFlameColor('shop'); // Start flame transition early for smooth blend
-            await playSceneTransition(async () => {
-              $("#talent-overlay").classList.remove("show");
-              await dly(RHYTHM.QUARTER); // Brief pause before shop appears
-              await showShop(true);
-            });
+            // No upgrades (or first talent) - proceed (next round / legacy shop)
+            await postTalentProceed();
           }
         }
       };
@@ -19043,13 +19305,8 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
             await dly(RHYTHM.HALF);
             await showUpgradeSelection(upgradeCount, container);
           } else {
-            // No upgrades (or first talent) - go to shop
-            setFlameColor('shop'); // Start flame transition early for smooth blend
-            await playSceneTransition(async () => {
-              $("#talent-overlay").classList.remove("show");
-              await dly(RHYTHM.QUARTER); // Brief pause before shop appears
-              await showShop(true);
-            });
+            // No upgrades (or first talent) - proceed (next round / legacy shop)
+            await postTalentProceed();
           }
         }
       };
@@ -19133,14 +19390,9 @@ async function showTalentSelect(numChoices = 5, numPicks = 2, isChapterBoss = fa
 // Separate upgrade selection phase - mandatory picks, no skip
 // If existingContainer is provided, we're transitioning smoothly within the same modal
 async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) {
-  // If player has no talents, skip upgrade and go to shop
+  // If player has no talents, skip upgrade and proceed
   if (!S.talents || S.talents.length === 0) {
-    setFlameColor('shop'); // Start flame transition early for smooth blend
-    await playSceneTransition(async () => {
-      $("#talent-overlay").classList.remove("show");
-      await dly(RHYTHM.QUARTER); // Brief pause before shop appears
-      await showShop(true);
-    });
+    await postTalentProceed();
     return;
   }
 
@@ -19149,9 +19401,8 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
   const isInlineTransition = !!existingContainer; // Smooth transition from talent selection
 
   if (!container) {
-    // Fallback: go to shop if container not found
-    setFlameColor('shop'); // Ensure flame is blue
-    await showShop(true);
+    // Fallback: proceed if container not found
+    await postTalentProceed();
     return;
   }
 
@@ -19296,14 +19547,9 @@ async function showUpgradeSelection(upgradeCount = 1, existingContainer = null) 
           // More upgrades to do - re-render
           await renderUpgradeCards();
         } else {
-          // All upgrades complete - proceed to shop
+          // All upgrades complete - proceed (next round / legacy shop)
           await saveRun();
-          setFlameColor('shop'); // Start flame transition early for smooth blend
-          await playSceneTransition(async () => {
-            overlay.classList.remove("show");
-            await dly(RHYTHM.QUARTER); // Brief pause before shop appears
-            await showShop(true);
-          });
+          await postTalentProceed();
         }
       };
 
@@ -20512,15 +20758,14 @@ function renderShop(){
   // Update gold display and show current inventory count under the shop title
   $("#shop-gold").textContent = `${S.gold}`;
 
-  // Update shop gold pill with new interest system display
-  // Shows total interest earned on shop exit: gold interest (max +6) + slot interest (max +24)
-  const { goldInterest, slotInterest, totalInterest, emptySlots } = calculateInterest();
+  // Update shop gold pill with interest display (gold interest only; the
+  // empty-slot component was removed with the deck-mode interest rework)
+  const { totalInterest } = calculateInterest();
   const shopGoldInterestEl = document.getElementById('shop-gold-interest');
   if(shopGoldInterestEl){
     if(totalInterest > 0){
-      // Show breakdown: total (+gold from gold, +slots from empty slots)
-      shopGoldInterestEl.innerHTML = `| +${totalInterest} <span style="font-size:9px;opacity:0.7">(${goldInterest}g+${slotInterest}s)</span>`;
-      shopGoldInterestEl.title = `Interest on Exit: +${totalInterest}\n• Gold: +${goldInterest} (${S.gold}/60g)\n• Slots: +${slotInterest} (${emptySlots} empty)`;
+      shopGoldInterestEl.innerHTML = `| +${totalInterest}`;
+      shopGoldInterestEl.title = `Interest on Exit: +${totalInterest} (+1 per 10 Gold held, max +${GOLD_INTEREST_CAP})`;
     } else {
       shopGoldInterestEl.textContent = '';
       shopGoldInterestEl.title = '';
@@ -23578,9 +23823,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Clear forge selections to avoid loading mid-forge with random words
       clrSel();
 
-      // Restore to the appropriate game phase
-      if(S.gamePhase === 'shop'){
-        // Player was in shop - show shop
+      // Restore to the appropriate game phase.
+      // DECK MODE (Task 12): there is no shop phase anymore - deck saves are
+      // written by deckNextRound with gamePhase 'forge'. Any deck save (even an
+      // old/early one stamped 'shop') restores to the forge.
+      if(S.gamePhase === 'shop' && !(S.deckCards && S.deckCards.length)){
+        // Legacy save mid-shop - show shop
         showShop();
       } else {
         // Player was in forge - generate fresh encounter and show forge

@@ -4503,3 +4503,42 @@ body:not(.deck-combat) #deck-discards-left { display:none; }
   box-shadow:0 2px 10px rgba(251,191,36,.45);
   pointer-events:none;
 }
+
+/* === DECK MODE (Task 12): Forge Vendor === */
+.vendor-modal{min-width:680px;max-width:880px;max-height:92vh;overflow-y:auto;}
+.vendor-gold-line{
+  text-align:center;font-size:13px;color:#fbbf24;margin:-4px 0 10px;
+  letter-spacing:.06em;
+}
+.vendor-section{margin:10px 0;}
+.vendor-section h3{
+  font-variant:small-caps;letter-spacing:.18em;font-size:12px;
+  color:#d1d5db;margin:0 0 6px;border-bottom:1px solid #374151;padding-bottom:3px;
+}
+.vendor-section h3 .vendor-note{
+  font-variant:normal;letter-spacing:.04em;font-size:10px;color:#9ca3af;
+  text-transform:none;margin-left:8px;
+}
+.vendor-deck-grid{display:flex;flex-wrap:wrap;gap:8px;max-height:26vh;overflow-y:auto;}
+.vendor-deck-grid .wcard{margin:0;}
+/* unaffordable / blocked vendor items */
+.vendor-disabled{opacity:.45;cursor:not-allowed !important;}
+.vendor-disabled .wcard-face{cursor:not-allowed;}
+#vendor-rare-row{display:flex;justify-content:center;gap:24px;padding:8px 0;}
+.vendor-rare-offer{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+.vendor-rare-offer .wcard{margin:0;}
+.vendor-price{
+  font-size:11px;color:#fbbf24;letter-spacing:.08em;
+  padding:2px 10px;border:1px solid #4b5563;border-radius:10px;background:#111827;
+}
+.vendor-sold{opacity:.35;pointer-events:none;}
+#vendor-tools-row{justify-content:center;}
+#vendor-leave{
+  display:block;margin:14px auto 0;
+  padding:9px 30px;font-size:13px;letter-spacing:.08em;
+  border-radius:8px;background:#111827;border:1px solid #374151;color:#d1d5db;
+  cursor:pointer;transition:background .15s ease,border-color .15s ease;
+}
+#vendor-leave:hover{background:#1f2937;border-color:#6b7280;color:#fde68a;}
+/* legacy word-inventory counter is meaningless in deck mode (bank replaced by hand) */
+body.deck-combat #inv-counter{display:none !important;}
